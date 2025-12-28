@@ -7,7 +7,8 @@
         "sourceMap": true,
         "strict": true,
         "target": "ES2022",
-        "noImplicitAny": true
+        "noImplicitAny": true,
+        "esModuleInterop": true
     },
     "compileOnSave": true,
     "include": [

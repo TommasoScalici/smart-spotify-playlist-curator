@@ -57,4 +57,4 @@ Follow the on-screen instructions to log in. The tokens will be printed in the t
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE.md)

@@ -1,5 +1,5 @@
 {
-  "name": "functions",
+  "name": "smart-spotify-playlist-curator",
   "scripts": {
     "lint": "eslint .",
     "build": "tsc",
@@ -22,6 +22,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/spotify-web-api-node": "^5.0.11",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",

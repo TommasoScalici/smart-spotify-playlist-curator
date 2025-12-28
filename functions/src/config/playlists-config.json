@@ -1,0 +1,264 @@
+[
+  {
+    "id": "spotify:playlist:32xYNI24QWMWfSgG1xZgjI",
+    "name": "Instrumental Prog | Modern Metal, Djent & Math Rock",
+    "enabled": true,
+    "settings": {
+      "targetTotalTracks": 100,
+      "description": "The best modern Instrumental Progressive Metal & Math Rock. Featuring: Animals As Leaders, Plini, Polyphia, Dream Theater & more. Perfect for Gaming, Coding, and High-Energy Focus. Heavy riffs, Djent, and Virtuoso Guitar."
+    },
+    "aiGeneration": {
+      "prompt": "Generate a playlist of modern Instrumental Progressive Metal, Djent & Math Rock. Strictly instrumental, no vocals. Focus on heavy riffs and virtuoso guitar. Similar to Animals As Leaders, Plini, Polyphia.",
+      "refillBatchSize": 10,
+      "isInstrumentalOnly": true
+    },
+    "curationRules": {
+      "maxTrackAgeDays": 30,
+      "removeDuplicates": true
+    },
+    "mandatoryTracks": [
+      {
+        "uri": "spotify:track:0UlFeHRwZRy1bGFrIFsQ4K",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:5sCio8tyDkHiYEwwvTPHHP",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:1c9sHTG3wSIfnB5cOtwftn",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:6fSAxgQa8NBk26htZ3XcMh",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:01Qsc0h2oHIj5ABv5qdWZJ",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:3tYp9RhOjIf92vDYufo4dT",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:0o2ClglDRM6Ep30VhxKVFk",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:4rgIEX8U9r0kgnPo5NVnnW",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:25E2MMekRWSIOIYzRYE15i",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:3RrW7F3euo5tFszCcRJHgg",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:2PvSo3TDClWfzl9l0VJImJ",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:6BOooQu7z1mltcoU2FW00Z",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:3D4QBerl1Iuohf2uIqqhJb",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:7f2Omz9atkFURe5Qqqxo28",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      },
+      {
+        "uri": "spotify:track:26tLpKBMFcDkIIjGhqh7jU",
+        "positionRange": {
+          "min": 10,
+          "max": 50
+        }
+      }
+    ]
+  },
+  {
+    "id": "spotify:playlist:49NveLmBkE159Zt6g0Novv",
+    "name": "Heavy Riffs | Hard Rock, Metal & Alternative",
+    "enabled": true,
+    "settings": {
+      "targetTotalTracks": 200,
+      "description": "Heavy Riffs & Legends. From classic Metallica & Megadeth to modern giants like Alter Bridge, Gojira & Ghost + the best new talent. The ultimate Hard Rock, Alt-Metal & Heavy Metal mix. No pop, just power & fresh discoveries."
+    },
+    "aiGeneration": {
+      "prompt": "Generate a playlist of Heavy Riffs, Hard Rock, Metal & Alternative. Include classic and modern bands like Metallica, Megadeth, Alter Bridge, Gojira, and Ghost. Ensure a mix of power and fresh discoveries. No pop.",
+      "refillBatchSize": 10,
+      "isInstrumentalOnly": false
+    },
+    "curationRules": {
+      "maxTrackAgeDays": 30,
+      "removeDuplicates": true
+    },
+    "mandatoryTracks": [
+      {
+        "uri": "spotify:track:0UlFeHRwZRy1bGFrIFsQ4K",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:5sCio8tyDkHiYEwwvTPHHP",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:1c9sHTG3wSIfnB5cOtwftn",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      },
+      {
+        "uri": "spotify:track:6fSAxgQa8NBk26htZ3XcMh",
+        "positionRange": {
+          "min": 3,
+          "max": 30
+        }
+      }
+    ]
+  },
+  {
+    "id": "spotify:playlist:7sO9HU4rqRAnF7A15zqc5K",
+    "name": "Progressive Rock Odyssey | Classic, Modern & Psych",
+    "enabled": true,
+    "settings": {
+      "targetTotalTracks": 200,
+      "description": "A journey through the evolution of Progressive Rock. From the legends (Pink Floyd, Genesis, Yes) to the modern masters (Porcupine Tree, Haken, Steven Wilson) and the best new psychedelic discoveries. Atmospheric, melodic, and epic."
+    },
+    "aiGeneration": {
+      "prompt": "Generate a playlist of Progressive Rock, covering its evolution from classic legends like Pink Floyd, Genesis, and Yes to modern masters like Porcupine Tree, Haken, and Steven Wilson. Include psychedelic discoveries. Atmospheric, melodic, and epic.",
+      "refillBatchSize": 10,
+      "isInstrumentalOnly": false
+    },
+    "curationRules": {
+      "maxTrackAgeDays": 30,
+      "removeDuplicates": true
+    },
+    "mandatoryTracks": [
+      {
+        "uri": "spotify:track:3wku2GEYrbgXzJCNVBPNR7",
+        "positionRange": {
+          "min": 10,
+          "max": 20
+        }
+      },
+      {
+        "uri": "spotify:track:1ySwXXdNVHpoowiN3OsXUC",
+        "positionRange": {
+          "min": 10,
+          "max": 20
+        }
+      },
+      {
+        "uri": "spotify:track:5kmM2uCnxqj1wUL4xq0xzH",
+        "positionRange": {
+          "min": 15,
+          "max": 15
+        }
+      },
+      {
+        "uri": "spotify:track:56v9RJDcntqZ0TqeLJVw6X",
+        "positionRange": {
+          "min": 16,
+          "max": 16
+        }
+      }
+    ]
+  },
+  {
+    "id": "spotify:playlist:0yF9pJ62XkAgxDGMlbyenf",
+    "name": "Lofi Coding | Focus & Deep Work (Instrumental)",
+    "enabled": true,
+    "settings": {
+      "targetTotalTracks": 200,
+      "description": "Focus music for Programming & Deep Work. 100% Instrumental Lofi to boost concentration. Perfect for Python, JS, C++ coding sessions. Distraction-free beats for the Flow State. Curated by a Software Dev."
+    },
+    "aiGeneration": {
+      "prompt": "Generate a Lofi Coding playlist for focus and deep work. Strictly instrumental, no vocals. Distraction-free beats to boost concentration.",
+      "refillBatchSize": 10,
+      "isInstrumentalOnly": true
+    },
+    "curationRules": {
+      "maxTrackAgeDays": 30,
+      "removeDuplicates": true
+    },
+    "mandatoryTracks": [
+      {
+        "uri": "spotify:track:3lSg8FH0I8E8RxnDxwd7T4",
+        "positionRange": {
+          "min": 3,
+          "max": 20
+        }
+      },
+      {
+        "uri": "spotify:track:580UDyj0Ndz5T4F3mL6FdZ",
+        "positionRange": {
+          "min": 3,
+          "max": 20
+        }
+      },
+      {
+        "uri": "spotify:track:27RiFnYuJCXm4cOJw4vDpC",
+        "positionRange": {
+          "min": 3,
+          "max": 20
+        }
+      }
+    ]
+  }
+]

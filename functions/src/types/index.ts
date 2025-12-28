@@ -1,50 +1,43 @@
-/**
- * Application configuration interfacing with environment variables.
- */
-export interface AppConfig {
-    spotifyClientId: string;
-    spotifyClientSecret: string;
-    spotifyRedirectUri: string;
-    openAiApiKey: string;
+export interface PositionRange {
+    min: number;
+    max: number;
 }
 
-/**
- * Settings for a specific playlist managed by the curator.
- */
-export interface PlaylistSettings {
-    id: string;
-    name: string;
-    description?: string;
-    isActive: boolean;
-    rules: {
-        minTempo?: number;
-        maxTempo?: number;
-        genres?: string[];
-        // Add other rules as needed
-    };
-}
-
-/**
- * Definition of a track that must be included in a playlist.
- */
 export interface MandatoryTrack {
     uri: string;
-    position?: number; // Desired position in the playlist
+    positionRange: PositionRange;
+    note?: string;
 }
 
-/**
- * Represents a range of positions in a playlist.
- */
-export interface PositionRange {
-    start: number;
-    end: number;
+export interface AiGenerationConfig {
+    /** The technical prompt for the LLM to find matching tracks */
+    prompt: string;
+    /** How many new tracks to add per run (max) */
+    refillBatchSize?: number;
+    /** Whether the playlist should strictly exclude vocals */
+    isInstrumentalOnly?: boolean;
 }
 
-/**
- * Configuration for the AI curator logic.
- */
-export interface AiCuratorConfig {
-    model: string;
-    temperature: number;
-    maxTokens?: number;
+export interface CurationRules {
+    /** How many days a non-mandatory track can stay in the playlist */
+    maxTrackAgeDays: number;
+    /** Whether to aggressively remove duplicates found in the playlist */
+    removeDuplicates: boolean;
 }
+
+export interface PlaylistConfig {
+    id: string;
+    name: string; // Internal name for logs
+    enabled: boolean;
+    settings: {
+        targetTotalTracks: number;
+        description?: string;
+        allowExplicit?: boolean;
+    };
+    aiGeneration: AiGenerationConfig;
+    curationRules: CurationRules;
+    mandatoryTracks: MandatoryTrack[];
+}
+
+// The root config is now an array
+export type AppConfig = PlaylistConfig[];
