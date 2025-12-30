@@ -3,7 +3,7 @@ import SpotifyWebApi from "spotify-web-api-node";
 import open from "open";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: '../functions/.env' });
 
 async function main() {
     const scopes = [
@@ -16,7 +16,7 @@ async function main() {
 
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
-    const redirectUri = "http://127.0.0.1:8888/callback";
+    const redirectUri = process.env.SPOTIFY_REDIRECT_URI || "http://127.0.0.1:8888/callback";
 
     if (!clientId || !clientSecret) {
         console.error("Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET in .env file");

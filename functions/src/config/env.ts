@@ -1,25 +1,17 @@
 import { z } from "zod";
 import * as dotenv from "dotenv";
+import * as path from 'path';
 
-dotenv.config();
+// Parse .env file
+dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
-const EnvSchema = z.object({
-    SPOTIFY_CLIENT_ID: z.string().min(1, "SPOTIFY_CLIENT_ID is required"),
-    SPOTIFY_CLIENT_SECRET: z.string().min(1, "SPOTIFY_CLIENT_SECRET is required"),
-    SPOTIFY_REFRESH_TOKEN: z.string().min(1, "SPOTIFY_REFRESH_TOKEN is required"),
+const envSchema = z.object({
+    SPOTIFY_CLIENT_ID: z.string().min(1, "SPOTIFY_CLIENT_ID is missing"),
+    SPOTIFY_CLIENT_SECRET: z.string().min(1, "SPOTIFY_CLIENT_SECRET is missing"),
+    SPOTIFY_REFRESH_TOKEN: z.string().min(1, "SPOTIFY_REFRESH_TOKEN is missing"),
+    GOOGLE_AI_API_KEY: z.string().min(1, "GOOGLE_AI_API_KEY is missing"),
+    SPOTIFY_REDIRECT_URI: z.string().optional(),
+    TEST_PLAYLIST_ID: z.string().optional(),
 });
 
-const processEnv = {
-    SPOTIFY_CLIENT_ID: process.env.SPOTIFY_CLIENT_ID,
-    SPOTIFY_CLIENT_SECRET: process.env.SPOTIFY_CLIENT_SECRET,
-    SPOTIFY_REFRESH_TOKEN: process.env.SPOTIFY_REFRESH_TOKEN,
-};
-
-const parseResult = EnvSchema.safeParse(processEnv);
-
-if (!parseResult.success) {
-    console.error("❌ Invalid environment variables:", parseResult.error.format());
-    throw new Error("Invalid environment configuration");
-}
-
-export const config = parseResult.data;
+export const config = envSchema.parse(process.env);

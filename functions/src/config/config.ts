@@ -72,7 +72,7 @@ export function loadAppConfig(): AppConfig {
     const parseResult = AppConfigSchema.safeParse(rawConfig);
 
     if (!parseResult.success) {
-        const errorMessages = parseResult.error.errors
+        const errorMessages = parseResult.error.issues
             .map((e) => `[${e.path.join(".")}] ${e.message}`)
             .join("\n");
         throw new Error(`Configuration validation failed:\n${errorMessages}`);
