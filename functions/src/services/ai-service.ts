@@ -63,7 +63,13 @@ export class AiService {
             // But good to be safe with basic cleanup if model adds markdown blocks
             const cleanText = text.replace(/```json/g, "").replace(/```/g, "").trim();
 
-            const suggestions: AiSuggestion[] = JSON.parse(cleanText);
+            let suggestions: AiSuggestion[];
+            try {
+                suggestions = JSON.parse(cleanText);
+            } catch (parseError) {
+                logger.error("Failed to parse AI response as JSON", { rawText: text, cleanText, error: parseError });
+                throw new Error("AI response was not valid JSON.");
+            }
 
             // Basic validation
             if (!Array.isArray(suggestions)) {

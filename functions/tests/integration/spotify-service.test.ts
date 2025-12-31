@@ -1,8 +1,4 @@
 import { SpotifyService } from '../../src/services/spotify-service';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // Use environment variable or fallback to sandbox playlist
 const TEST_PLAYLIST_ID = process.env.TEST_PLAYLIST_ID || '49NveLmBkE159Zt6g0Novv';

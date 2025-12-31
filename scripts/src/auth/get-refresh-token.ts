@@ -3,7 +3,13 @@ import SpotifyWebApi from "spotify-web-api-node";
 import open from "open";
 import dotenv from "dotenv";
 
-dotenv.config({ path: '../functions/.env' });
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 
 async function main() {
     const scopes = [

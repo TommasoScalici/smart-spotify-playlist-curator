@@ -1,6 +1,9 @@
 # Dependencies
 node_modules/
 
+# Service account
+service-account.json
+
 # Environment variables
 .env
 .env.local
@@ -10,9 +13,6 @@ node_modules/
 dist/
 lib/
 build/
-
-# Config files
-functions/src/config/playlists-config.json
 
 # Logs
 npm-debug.log*

@@ -1,38 +1,42 @@
-/**
- * Import function triggers from their respective submodules:
- *
- * import {onCall} from "firebase-functions/v2/https";
- * import {onDocumentWritten} from "firebase-functions/v2/firestore";
- *
- * See a full list of supported triggers at https://firebase.google.com/docs/functions
- */
-
 import { setGlobalOptions } from "firebase-functions";
 import { onRequest } from "firebase-functions/https";
 import * as logger from "firebase-functions/logger";
 
-// Set max instances to control costs and concurrency
-setGlobalOptions({ maxInstances: 10 });
+// Set max instances to 1 for sequential processing (safety against rate limits)
+setGlobalOptions({ maxInstances: 1 });
 
-import { loadAppConfig } from "./config/config";
+import { ConfigService } from "./services/config-service";
 import { AiService } from "./services/ai-service";
 import { SpotifyService } from "./services/spotify-service";
 import { PlaylistOrchestrator } from "./core/orchestrator";
 import { TrackCleaner } from "./core/track-cleaner";
 import { SlotManager } from "./core/slot-manager";
+import { PlaylistConfig } from "./types";
 
-// Set max instances to control costs and concurrency
-setGlobalOptions({ maxInstances: 1 }); // Sequential processing might be safer for now to avoid rate limits if running parallel
+export const updatePlaylists = onRequest({
+    timeoutSeconds: 540,
+    secrets: [
+        "SPOTIFY_CLIENT_ID",
+        "SPOTIFY_CLIENT_SECRET",
+        "SPOTIFY_REFRESH_TOKEN",
+        "GOOGLE_AI_API_KEY"
+    ]
+}, async (request, response) => {
+    logger.info("Received request to update playlists (Firestore-backed).");
 
-export const updatePlaylists = onRequest({ timeoutSeconds: 540 }, async (request, response) => {
-    logger.info("Received request to update playlists.");
+    const configService = new ConfigService();
+    let configs: PlaylistConfig[] = [];
 
-    let config;
     try {
-        config = loadAppConfig();
+        configs = await configService.getEnabledPlaylists();
+        if (configs.length === 0) {
+            logger.info("No enabled playlists found to update.");
+            response.json({ message: "No enabled playlists found.", results: [] });
+            return;
+        }
     } catch (e) {
-        logger.error("Failed to load configuration", e);
-        response.status(500).send("Configuration Error: " + (e as Error).message);
+        logger.error("Failed to load configuration from Firestore", e);
+        response.status(500).send("Configuration Back-end Error: " + (e as Error).message);
         return;
     }
 
@@ -50,12 +54,8 @@ export const updatePlaylists = onRequest({ timeoutSeconds: 540 }, async (request
 
     const results = [];
 
-    for (const playlistConfig of config) {
-        if (!playlistConfig.enabled) {
-            logger.info(`Skipping disabled playlist: ${playlistConfig.name}`);
-            results.push({ name: playlistConfig.name, status: "skipped" });
-            continue;
-        }
+    for (const playlistConfig of configs) {
+
 
         try {
             await orchestrator.curatePlaylist(playlistConfig);

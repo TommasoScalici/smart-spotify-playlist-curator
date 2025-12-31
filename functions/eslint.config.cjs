@@ -6,7 +6,7 @@ const prettier = require("eslint-config-prettier");
 module.exports = tseslint.config(
     // Global ignores
     {
-        ignores: ["lib/**/*", "**/*.js"],
+        ignores: ["lib/**/*", "**/*.js", "eslint.config.cjs"],
     },
     // Base JS config
     js.configs.recommended,

@@ -40,31 +40,26 @@ export class PlaylistOrchestrator {
 
         // 2. Logic Paths
         if (currentSize === 0) {
-            // Path 1: Empty Playlist - Full Refill
-
+            // Path 1: Empty Playlist
             const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
             keptTracks = result.keptTracks;
             slotsNeeded = result.slotsNeeded;
 
         } else if (currentSize < targetTotal) {
-            // Path 2: Under Target - Standard Clean & Fill
+            // Path 2: Under Target (Standard Fill)
             const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
             keptTracks = result.keptTracks;
             tracksToRemove = result.tracksToRemove;
             slotsNeeded = result.slotsNeeded;
 
         } else {
-            // Path 3: Over Target - Aggressive Cleanup
-            // Force a gap to allow new tracks (Target - 15)
-            // Ensure we don't go negative or too low? (e.g. if target is 10)
+            // Path 3: Over Target (Aggressive Cleanup)
+            // Force a 15-track gap to allow fresh rotation
             const aggressiveTarget = Math.max(0, targetTotal - 15);
-
             const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris, aggressiveTarget);
+
             keptTracks = result.keptTracks;
             tracksToRemove = result.tracksToRemove;
-            // Recalculate slots needed based on ORIGINAL target
-            // internal cleaner used aggressiveTarget to chop tracks, so keptTracks.length <= aggressiveTarget
-            // slotsNeeded should be targetTotal - keptTracks.length
             slotsNeeded = Math.max(0, targetTotal - keptTracks.length);
         }
 
@@ -73,11 +68,9 @@ export class PlaylistOrchestrator {
         if (slotsNeeded > 0) {
             logger.info(`Need ${slotsNeeded} new tracks.`, { slotsNeeded });
 
-            // Get existing URIs to exclude from AI suggestions (includes kept tracks + tracks we just removed to avoid instant re-add)
-            // Ideally we also track "recently removed" in DB, but for now just current session context.
+            // Exclude already kept or removed tracks to avoid immediate duplicates
             const existingUris = [...keptTracks.map(t => t.uri), ...tracksToRemove];
 
-            // Request a buffer to account for search failures (e.g. track not found or mismatch)
             const buffer = 5;
             const requestCount = slotsNeeded + buffer;
 

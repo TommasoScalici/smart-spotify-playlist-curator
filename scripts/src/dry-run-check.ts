@@ -1,18 +1,31 @@
-
-import { SpotifyService } from '../../functions/src/services/spotify-service';
-import { AiService } from '../../functions/src/services/ai-service';
-import { PlaylistOrchestrator } from '../../functions/src/core/orchestrator';
-import { TrackCleaner } from '../../functions/src/core/track-cleaner';
-import { SlotManager } from '../../functions/src/core/slot-manager';
-import { PlaylistConfig } from '../../functions/src/types';
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
 import * as dotenv from 'dotenv';
-import { resolve } from 'path';
+
+// Import Types (ESM compatible for types)
+import type { PlaylistConfig } from '../../functions/src/types/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+const require = createRequire(import.meta.url);
+
+// Require services (CJS compatibility)
+// We point to .ts files because tsx handles them
+const { SpotifyService } = require('../../functions/src/services/spotify-service.ts');
+const { AiService } = require('../../functions/src/services/ai-service.ts');
+const { PlaylistOrchestrator } = require('../../functions/src/core/orchestrator.ts');
+const { TrackCleaner } = require('../../functions/src/core/track-cleaner.ts');
+const { SlotManager } = require('../../functions/src/core/slot-manager.ts');
 
 // Load environment variables
-dotenv.config({ path: resolve(__dirname, '../../functions/.env') });
+dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 async function main() {
-    console.log("🚀 Starting DRY RUN Check...");
+    console.log("🚀 Starting DRY RUN Check (Firestore Mode)...");
 
     // 1. Initialize Services
     const spotifyService = SpotifyService.getInstance();
@@ -21,28 +34,30 @@ async function main() {
     const slotManager = new SlotManager();
     const orchestrator = new PlaylistOrchestrator(spotifyService, aiService, trackCleaner, slotManager);
 
-    // 2. Define Test Config with DryRun = TRUE
+    // 2. Initialize Firebase Admin (for Config)
+    if (!getApps().length) {
+        initializeApp();
+    }
+    const db = getFirestore();
+
+    // 3. Fetch Config from Firestore
+    // We'll grab the first enabled playlist to test against
+    console.log("Fetching enabled playlists from Firestore...");
+    const snapshot = await db.collection('playlists').where('enabled', '==', true).limit(1).get();
+
+    if (snapshot.empty) {
+        console.error("❌ No enabled playlists found in Firestore to test.");
+        process.exit(1);
+    }
+
+    const doc = snapshot.docs[0];
+    const rawConfig = doc.data() as PlaylistConfig;
+    console.log(`Testing against playlist: ${rawConfig.name} (${rawConfig.id})`);
+
+    // 4. Force Dry Run
     const testConfig: PlaylistConfig = {
-        id: "spotify:playlist:49NveLmBkE159Zt6g0Novv", // Use your real test playlist ID
-        name: "Dry Run Verification Playlist",
-        enabled: true,
-        dryRun: true, // <--- CRITICAL
-        settings: {
-            targetTotalTracks: 50,
-            description: "Dry run test",
-            referenceArtists: ["Dua Lipa", "The Weeknd"]
-        },
-        curationRules: {
-            maxTrackAgeDays: 30,
-            removeDuplicates: true
-        },
-        mandatoryTracks: [],
-        aiGeneration: {
-            prompt: "Modern Pop Hits",
-            model: "gemini-2.5-flash",
-            temperature: 0.7,
-            refillBatchSize: 5
-        }
+        ...rawConfig,
+        dryRun: true, // <--- CRITICAL OVERRIDE
     };
 
     const runId = `dry-run-${Date.now()}`;

@@ -1,9 +1,4 @@
 import { SpotifyService } from '../../src/services/spotify-service';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-// Load .env from functions dir
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 describe('Spotify Integration: Search', () => {
     let service: SpotifyService;

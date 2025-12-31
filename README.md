@@ -52,29 +52,27 @@ cp scripts/.env.example scripts/.env
 -   `SPOTIFY_CLIENT_SECRET`: From Spotify Dashboard.
 -   `SPOTIFY_REFRESH_TOKEN`: Generated via the auth script (see below).
 -   `GOOGLE_AI_API_KEY`: From Google AI Studio.
+-   `GOOGLE_APPLICATION_CREDENTIALS`: Absolute path to your Firebase Admin Service Account JSON (required for local scripts).
 
-### 2. Playlist Configuration
-Define your playlists in `functions/src/config/playlists-config.json`.
-Example:
-```json
-[
-  {
-    "id": "spotify:playlist:YOUR_ID",
-    "name": "My AI Pop Mix",
-    "enabled": true,
-    "dryRun": true,  // <-- Set to true to test safely
-    "settings": {
-      "targetTotalTracks": 50,
-      "referenceArtists": ["Dua Lipa", " দ্য Weeknd"]
-    },
-    "aiGeneration": {
-      "prompt": "Upbeat modern pop hits",
-      "model": "gemini-2.5-flash", 
-      "temperature": 0.7
-    }
-  }
-]
+### 2. Firestore Database
+This project uses **Firestore** to store playlist configuration dynamically.
+
+1.  **Create Database**: Go to Firebase Console -> Build -> Firestore Database -> Create Database (Start in Production Mode).
+2.  **Define Playlists**: You can define your initial playlists in `functions/src/config/playlists-config.json`.
+3.  **Seed Database**: Upload this config to Firestore using the seeding script.
+    ```bash
+    cd scripts
+    npm run seed-config
+    ```
+    *Note: The local JSON file is now only used for seeding. Runtime changes should be made directly in Firestore.*
+
+### 3. Verification
+Verify your config is correctly stored and readable:
+```bash
+cd scripts
+npm run dry-run-check
 ```
+*This script now fetches live configuration from Firestore to simulate a run.*
 
 ## 🏃 Usage
 
@@ -101,12 +99,22 @@ cd functions
 npm test
 ```
 
-### 4. Deploying
-Deploy the functions to Firebase.
-```bash
-cd functions
-npm run deploy
-```
+### 4. Deploying (Production)
+For production security, we use **Cloud Secret Manager** instead of `.env` files.
+
+1.  **Set Secrets**:
+    ```bash
+    firebase functions:secrets:set SPOTIFY_CLIENT_ID
+    firebase functions:secrets:set SPOTIFY_CLIENT_SECRET
+    firebase functions:secrets:set SPOTIFY_REFRESH_TOKEN
+    firebase functions:secrets:set GOOGLE_AI_API_KEY
+    ```
+
+2.  **Deploy**:
+    ```bash
+    cd functions
+    npm run deploy
+    ```
 
 ## 🏗️ Project Structure
 
