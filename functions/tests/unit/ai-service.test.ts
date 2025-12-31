@@ -75,10 +75,23 @@ describe('AiService', () => {
         });
 
         const excluded = ['Excluded - Track'];
-        await aiService.generateSuggestions(mockPromptConfig, 5, [], excluded);
+        await aiService.generateSuggestions(mockPromptConfig, 5, excluded);
 
         // Verify prompt construction logic indirectly via mock call arg
         const callArg = mockGenerateContent.mock.calls[0][0];
-        expect(callArg).toContain('Excluded - Track');
+        expect(callArg).toContain('Constraint: Do NOT suggest these tracks');
+    });
+
+    it('should include reference artists in prompt', async () => {
+        mockGenerateContent.mockResolvedValue({
+            response: { text: () => "[]" }
+        });
+
+        const referenceArtists = ['Artist 1', 'Artist 2'];
+        await aiService.generateSuggestions(mockPromptConfig, 5, [], referenceArtists);
+
+        const callArg = mockGenerateContent.mock.calls[0][0];
+        expect(callArg).toContain('Reference Artists');
+        expect(callArg).toContain('Artist 1, Artist 2');
     });
 });

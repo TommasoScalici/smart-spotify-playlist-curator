@@ -203,9 +203,6 @@ export class SpotifyService {
         const playlistData = await this.executeWithRetry(() => this.spotifyApi.getPlaylist(playlistId, { fields: 'snapshot_id' }));
         let snapshotId = playlistData.body.snapshot_id;
 
-
-        // let moves = 0;
-
         for (let i = 0; i < targetOrderedUris.length; i++) {
             const targetUri = targetOrderedUris[i];
 
@@ -238,8 +235,6 @@ export class SpotifyService {
                 // Update local state
                 const [movedTrack] = currentOrder.splice(currentIndex, 1);
                 currentOrder.splice(i, 0, movedTrack);
-
-                // moves++;
             }
         }
 

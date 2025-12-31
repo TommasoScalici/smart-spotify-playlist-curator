@@ -4,14 +4,16 @@
     "description": "Local scripts for smart-spotify-playlist-curator",
     "main": "index.js",
     "scripts": {
-        "get-refresh-token": "tsx get-refresh-token.ts",
+        "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
         "lint": "eslint ."
     },
     "dependencies": {
+        "@google/generative-ai": "^0.24.1",
         "dotenv": "^17.2.3",
         "express": "^5.2.1",
         "open": "^11.0.0",
-        "spotify-web-api-node": "^5.0.2"
+        "spotify-web-api-node": "^5.0.2",
+        "zod": "^4.3.2"
     },
     "devDependencies": {
         "@eslint/js": "^9.39.2",

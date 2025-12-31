@@ -33,6 +33,7 @@ export interface PlaylistConfig {
         targetTotalTracks: number;
         description?: string;
         allowExplicit?: boolean;
+        referenceArtists?: string[];
     };
     aiGeneration: AiGenerationConfig;
     curationRules: CurationRules;

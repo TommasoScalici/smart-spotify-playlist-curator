@@ -12,11 +12,15 @@ export class TrackCleaner {
     public processCurrentTracks(
         currentTracks: { track: { uri: string }; added_at: string }[],
         config: PlaylistConfig,
-        vipUris: string[]
+        vipUris: string[],
+        targetSizeAfterCleanup?: number // Optional override for aggressive cleaning
     ): ProcessingResult {
         const { curationRules, settings } = config;
         const maxAgeDays = curationRules.maxTrackAgeDays;
-        const targetTotal = settings.targetTotalTracks;
+
+        // Use override if provided, otherwise default to settings target
+        const effectiveTarget = targetSizeAfterCleanup !== undefined ? targetSizeAfterCleanup : settings.targetTotalTracks;
+
         const now = new Date();
 
         // 1. Map to internal format and Identify VIPs
@@ -50,8 +54,8 @@ export class TrackCleaner {
         });
 
         // 3. Size Cleanup (Hard Limit)
-        // If totalTracks > targetTotal, remove oldest non-VIPs
-        if (tracks.length > targetTotal) {
+        // If totalTracks > effectiveTarget, remove oldest non-VIPs
+        if (tracks.length > effectiveTarget) {
             // Separate VIPs and Non-VIPs
             const vips = tracks.filter((t) => t.isVip);
             let nonVips = tracks.filter((t) => !t.isVip);
@@ -61,9 +65,9 @@ export class TrackCleaner {
             nonVips.sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
 
             // Calculate how many we need to remove
-            // We want (vips.length + nonVips.length) <= targetTotal
-            // So newNonVipsCount = targetTotal - vips.length
-            const slotsForNonVips = Math.max(0, targetTotal - vips.length);
+            // We want (vips.length + nonVips.length) <= effectiveTarget
+            // So newNonVipsCount = effectiveTarget - vips.length
+            const slotsForNonVips = Math.max(0, effectiveTarget - vips.length);
 
             // If we have more non-VIPs than slots available for them, remove the oldest (start of array)
             if (nonVips.length > slotsForNonVips) {
@@ -78,7 +82,7 @@ export class TrackCleaner {
             tracks = [...vips, ...nonVips];
         }
 
-        const slotsNeeded = Math.max(0, targetTotal - tracks.length);
+        const slotsNeeded = Math.max(0, effectiveTarget - tracks.length);
 
         return {
             keptTracks: tracks,

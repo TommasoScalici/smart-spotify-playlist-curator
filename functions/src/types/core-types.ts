@@ -11,3 +11,9 @@ export interface ProcessingResult {
     tracksToRemove: string[];
     slotsNeeded: number;
 }
+export interface PlaylistSettings {
+    targetTotalTracks: number;
+    description?: string;
+    allowExplicit?: boolean;
+    referenceArtists?: string[];
+}

@@ -17,31 +17,48 @@ export class AiService {
         }
         this.genAI = new GoogleGenerativeAI(config.GOOGLE_AI_API_KEY);
         this.model = this.genAI.getGenerativeModel({
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             generationConfig: { responseMimeType: "application/json" }
         });
     }
 
     /**
      * Generates track suggestions based on the playlist vibe and constraints.
-     * @param promptConfig Configuration for the AI prompt (vibe description)
      * @param limit Number of suggestions to request
      * @param vipArtists List of VIP artists to influence style (optional)
      * @param excludedTracks List of "Artist - Title" strings to exclude (optional)
      * @returns Array of suggested tracks
      */
     public async generateSuggestions(
-        promptConfig: AiGenerationConfig,
-        limit: number,
-        vipArtists: string[] = [],
-        excludedTracks: string[] = []
-    ): Promise<AiTrackSuggestion[]> {
+        config: AiGenerationConfig,
+        count: number,
+        existingTracks: string[] = [],
+        referenceArtists: string[] = [] // Optional reference artists
+    ): Promise<Array<{ artist: string; track: string }>> {
         try {
-            // 1. Construct Prompt
-            const prompt = this.constructPrompt(promptConfig, limit, vipArtists, excludedTracks);
+            const { prompt, isInstrumentalOnly } = config;
+
+            let fullPrompt = `You are a Spotify playlist curator.
+        Goal: Suggest ${count} tracks matching this vibe: "${prompt}".
+        
+        Strict Output Format: JSON Array of objects with "artist" and "track" keys. No markdown.
+        Example: [{"artist": "Band", "track": "Song"}]
+        `;
+
+            if (referenceArtists && referenceArtists.length > 0) {
+                fullPrompt += `\n\nReference Artists (Base your suggestions on these or similar): ${referenceArtists.join(", ")}`;
+            }
+
+            if (isInstrumentalOnly) {
+                fullPrompt += `\nConstraint: STRICTLY INSTRUMENTAL ONLY. No vocals.`;
+            }
+
+            if (existingTracks.length > 0) {
+                fullPrompt += `\nConstraint: Do NOT suggest these tracks: ${JSON.stringify(existingTracks.slice(0, 50))}`;
+            }
 
             // 2. Call Gemini
-            const result = await this.model.generateContent(prompt);
+            const result = await this.model.generateContent(fullPrompt);
             const response = await result.response;
             const text = response.text();
 
@@ -53,7 +70,7 @@ export class AiService {
                 return [];
             }
 
-            console.log(`AI suggested ${suggestions.length} tracks (requested ${limit}).`);
+            console.log(`AI suggested ${suggestions.length} tracks (requested ${count}).`);
             return suggestions;
 
         } catch (error) {
@@ -61,33 +78,6 @@ export class AiService {
             return []; // Fail gracefully
         }
     }
-
-    private constructPrompt(
-        config: AiGenerationConfig,
-        limit: number,
-        vipArtists: string[],
-        excludedTracks: string[]
-    ): string {
-        // Truncate exclude list if too long to save tokens (last 50)
-        const safeExcluded = excludedTracks.slice(-50);
-
-        return `
-            You are an expert music curator.
-            Your task is to suggest ${limit} songs that strictly match the following vibe:
-            "${config.prompt}"
-
-            ${vipArtists.length > 0 ? `The vibe is similar to these artists: ${vipArtists.join(", ")}.` : ""}
-            
-            ${config.isInstrumentalOnly ? "Strictly INSTRUMENTAL tracks only. No vocals." : ""}
-
-            Constraints:
-            - Return a strict JSON array of objects with keys: "artist" and "track".
-            - Do NOT include markdown formatting (like \`\`\`json).
-            - Do NOT suggest these specific tracks (duplicates):
-              ${safeExcluded.join(", ")}
-            
-            Example Output:
-            [{"artist": "Pink Floyd", "track": "Time"}, {"artist": "Rush", "track": "YYZ"}]
-        `;
-    }
 }
+
+

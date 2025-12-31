@@ -103,14 +103,24 @@ export class SlotManager {
             }
         }
 
-        // 4. Phase C: Shuffle & Fill
-        // Combine survivors and new tracks
-        // Note: We might have duplicate URIs if not filtered upstream, but assuming input is clean.
-        // Also assuming mandatoryTracks are NOT in survivorTracks/newAiTracks or if they are, they are handled.
+        // 4. Phase C: Stratified Fill (Top 30 Priority for AI)
+        const topSlotsLimit = 30;
+        const newAiTracksPool = [...newAiTracks]; // Copy to mutate (consume)
 
-        // Deduplicate: Exclude any track that is already mandatory (and thus placed or handled)
+        // Try to place AI tracks in empty slots < 30 first
+        for (let i = 0; i < Math.min(topSlotsLimit, totalSlots); i++) {
+            if (playlist[i] === null && newAiTracksPool.length > 0) {
+                // Must not be a mandatory URI (though usually AI tracks are new)
+                // Just take the first one
+                const track = newAiTracksPool.shift();
+                if (track) playlist[i] = track;
+            }
+        }
+
+        // 5. Phase D: Shuffle & Fill Remaining
+        // Combine survivors and REMAINING AI tracks
         const mandatoryUris = new Set(mandatoryTracks.map(m => m.uri));
-        const pool = [...survivorTracks, ...newAiTracks].filter(uri => !mandatoryUris.has(uri));
+        const pool = [...survivorTracks, ...newAiTracksPool].filter(uri => !mandatoryUris.has(uri));
 
         // Fisher-Yates Shuffle
         for (let i = pool.length - 1; i > 0; i--) {

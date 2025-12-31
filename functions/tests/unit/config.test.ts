@@ -15,7 +15,7 @@ describe('Config Loader', () => {
             id: "spotify:playlist:49NveLmBkE159Zt6g0Novv",
             name: "Heavy Riffs | Hard Rock, Metal & Alternative",
             enabled: true,
-            settings: { targetTotalTracks: 50 },
+            settings: { targetTotalTracks: 50, referenceArtists: ["Artist A"] },
             aiGeneration: { prompt: "Test", refillBatchSize: 5 },
             curationRules: { maxTrackAgeDays: 90, removeDuplicates: true },
             mandatoryTracks: []

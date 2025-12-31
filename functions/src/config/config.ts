@@ -38,6 +38,7 @@ const PlaylistConfigSchema = z.object({
         targetTotalTracks: z.number().int().positive(),
         description: z.string().optional(),
         allowExplicit: z.boolean().optional(),
+        referenceArtists: z.array(z.string()).optional(),
     }),
     aiGeneration: AiGenerationConfigSchema,
     curationRules: CurationRulesSchema,

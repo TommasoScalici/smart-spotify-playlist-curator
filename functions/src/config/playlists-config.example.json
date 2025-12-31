@@ -5,7 +5,11 @@
         "enabled": true,
         "settings": {
             "targetTotalTracks": 100,
-            "description": "Example description."
+            "description": "Example description.",
+            "referenceArtists": [
+                "Artist A",
+                "Artist B"
+            ]
         },
         "aiGeneration": {
             "prompt": "Example AI prompt.",
