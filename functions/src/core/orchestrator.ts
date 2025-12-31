@@ -3,6 +3,7 @@ import { AiService } from '../services/ai-service';
 import { TrackCleaner } from './track-cleaner';
 import { SlotManager } from './slot-manager';
 import { PlaylistConfig } from '../types';
+import * as logger from "firebase-functions/logger";
 
 export class PlaylistOrchestrator {
     constructor(
@@ -12,11 +13,11 @@ export class PlaylistOrchestrator {
         private slotManager: SlotManager
     ) { }
 
-    public async curatePlaylist(config: PlaylistConfig): Promise<void> {
-        const { settings } = config;
+    public async curatePlaylist(config: PlaylistConfig, runId?: string): Promise<void> {
+        const { settings, dryRun } = config;
         const targetTotal = settings.targetTotalTracks;
 
-        console.log(`Starting curation for playlist: ${config.name} (${config.id})`);
+        logger.info(`Starting curation for playlist: ${config.name}`, { playlistId: config.id, dryRun, runId });
 
         // Sanitize ID (handle spotify:playlist: prefix)
         const playlistId = config.id.replace("spotify:playlist:", "");
@@ -68,9 +69,9 @@ export class PlaylistOrchestrator {
         }
 
         // 3. AI Refill
-        let newAiTrackUris: string[] = [];
+        const newAiTrackUris: string[] = [];
         if (slotsNeeded > 0) {
-            console.log(`Need ${slotsNeeded} new tracks.`);
+            logger.info(`Need ${slotsNeeded} new tracks.`, { slotsNeeded });
 
             // Get existing URIs to exclude from AI suggestions (includes kept tracks + tracks we just removed to avoid instant re-add)
             // Ideally we also track "recently removed" in DB, but for now just current session context.
@@ -80,7 +81,7 @@ export class PlaylistOrchestrator {
             const buffer = 5;
             const requestCount = slotsNeeded + buffer;
 
-            console.log(`Requesting ${requestCount} suggestions from AI...`);
+            logger.info(`Requesting ${requestCount} suggestions from AI...`, { requestCount });
 
             const suggestions = await this.aiService.generateSuggestions(
                 config.aiGeneration,
@@ -99,10 +100,10 @@ export class PlaylistOrchestrator {
                 if (uri) {
                     newAiTrackUris.push(uri);
                 } else {
-                    console.warn(`\u26A0 Could not find track on Spotify: "${suggestion.artist} - ${suggestion.track}"`);
+                    logger.warn(`Could not find track on Spotify: "${suggestion.artist} - ${suggestion.track}"`, { suggestion });
                 }
             }
-            console.log(`Successfully found ${newAiTrackUris.length} valid tracks.`);
+            logger.info(`Successfully found ${newAiTrackUris.length} valid tracks.`);
         }
 
         // 4. Arrange & Update
@@ -119,9 +120,10 @@ export class PlaylistOrchestrator {
             playlistId,
             tracksToRemove,
             newAiTrackUris,
-            finalTrackList
+            finalTrackList,
+            dryRun
         );
 
-        console.log(`Curation complete for ${config.name}.`);
+        logger.info(`Curation complete for ${config.name}.`, { playlistId, changesApplied: !dryRun });
     }
 }

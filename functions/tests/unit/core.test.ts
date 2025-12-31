@@ -1,6 +1,6 @@
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
-import { PlaylistConfig } from '../../src/types';
+import { PlaylistConfig, MandatoryTrack } from '../../src/types';
 
 describe('Core Logic', () => {
     // --- MOCK DATA SETUP ---
@@ -14,6 +14,8 @@ describe('Core Logic', () => {
         },
         aiGeneration: {
             prompt: 'Test Prompt',
+            model: 'gemini-2.5-flash',
+            temperature: 0.7,
             refillBatchSize: 10,
             isInstrumentalOnly: false
         },
@@ -157,7 +159,7 @@ describe('Core Logic', () => {
 
         it('should prioritize AI tracks in top 30 (Stratified Placement)', () => {
             const slotManager = new SlotManager();
-            const mandatory: any[] = [];
+            const mandatory: MandatoryTrack[] = [];
             const survivors: string[] = [];
             // Create 50 AI tracks
             const aiTracks = Array.from({ length: 50 }, (_, i) => `ai-${i}`);

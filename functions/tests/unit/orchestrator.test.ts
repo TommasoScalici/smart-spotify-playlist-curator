@@ -19,6 +19,7 @@ describe('PlaylistOrchestrator', () => {
     let mockTrackCleaner: jest.Mocked<TrackCleaner>;
     let mockSlotManager: jest.Mocked<SlotManager>;
 
+    // Type casting to Bypass strict partial matching for test config
     const mockConfig: PlaylistConfig = {
         id: 'test-playlist',
         name: 'Test Playlist',
@@ -27,13 +28,13 @@ describe('PlaylistOrchestrator', () => {
         aiGeneration: { prompt: 'test', refillBatchSize: 10 },
         curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
         mandatoryTracks: []
-    } as any;
+    } as unknown as PlaylistConfig;
 
     beforeEach(() => {
-        mockSpotifyService = new (SpotifyService as any)();
-        mockAiService = new AiService() as any;
-        mockTrackCleaner = new TrackCleaner() as any;
-        mockSlotManager = new SlotManager() as any;
+        mockSpotifyService = new (SpotifyService as unknown as new () => SpotifyService)() as unknown as jest.Mocked<SpotifyService>;
+        mockAiService = new AiService() as unknown as jest.Mocked<AiService>;
+        mockTrackCleaner = new TrackCleaner() as unknown as jest.Mocked<TrackCleaner>;
+        mockSlotManager = new SlotManager() as unknown as jest.Mocked<SlotManager>;
 
         orchestrator = new PlaylistOrchestrator(
             mockSpotifyService,
@@ -62,8 +63,8 @@ describe('PlaylistOrchestrator', () => {
 
         // Verify cleaner called (with default target implicit)
         expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-        // Verify AI called for full amount
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 50, expect.any(Array), undefined);
+        // Verify AI called for full amount + buffer (5)
+        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 55, expect.any(Array), undefined);
     });
 
     it('Path 2: Under Target', async () => {
@@ -79,8 +80,8 @@ describe('PlaylistOrchestrator', () => {
         await orchestrator.curatePlaylist(mockConfig);
 
         expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-        // Verify AI called for gap
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 20, expect.any(Array), undefined);
+        // Verify AI called for gap + buffer (5)
+        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 25, expect.any(Array), undefined);
     });
 
     it('Path 3: Over Target (Aggressive Clean)', async () => {
@@ -104,6 +105,7 @@ describe('PlaylistOrchestrator', () => {
         );
 
         // Orchestrator logic: kept 35. Target 50. Gap needed = 15.
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 15, expect.any(Array), undefined);
+        // With Buffer: 15 + 5 = 20
+        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 20, expect.any(Array), undefined);
     });
 });

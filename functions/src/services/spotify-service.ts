@@ -1,5 +1,6 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { config } from "../config/env";
+import * as logger from "firebase-functions/logger";
 
 export interface TrackInfo {
     uri: string;
@@ -50,14 +51,14 @@ export class SpotifyService {
             // Handle 429 Too Many Requests
             if (error.statusCode === 429) {
                 const retryAfter = error.headers && error.headers["retry-after"] ? parseInt(error.headers["retry-after"]) : 1;
-                console.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`);
+                logger.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`, { retryAfter });
                 await this.delay((retryAfter * 1000) + 100); // Wait + buffer
                 return this.executeWithRetry(operation, retries - 1);
             }
 
             // Handle 401 Unauthorized (Expired Token) - typically ensureAccessToken handles this, but double check
             if (error.statusCode === 401) {
-                console.warn("Got 401, refreshing token and retrying...");
+                logger.warn("Got 401, refreshing token and retrying...");
                 this.tokenExpirationEpoch = 0; // Force refresh
                 await this.ensureAccessToken();
                 return this.executeWithRetry(operation, retries - 1);
@@ -83,7 +84,7 @@ export class SpotifyService {
                 this.tokenExpirationEpoch = now + expiresInSeconds * 1000;
 
             } catch (error) {
-                console.error("Failed to refresh access token:", error);
+                logger.error("Failed to refresh access token:", error);
                 throw error;
             }
         }
@@ -139,8 +140,13 @@ export class SpotifyService {
         });
     }
 
-    public async removeTracks(playlistId: string, uris: string[]): Promise<void> {
+    public async removeTracks(playlistId: string, uris: string[], dryRun: boolean = false): Promise<void> {
         if (uris.length === 0) return;
+
+        if (dryRun) {
+            logger.info("DRY RUN: Would remove tracks", { playlistId, count: uris.length, uris });
+            return;
+        }
 
         // Chunk into batches of 100
         for (let i = 0; i < uris.length; i += 100) {
@@ -149,8 +155,13 @@ export class SpotifyService {
         }
     }
 
-    public async addTracks(playlistId: string, uris: string[]): Promise<void> {
+    public async addTracks(playlistId: string, uris: string[], dryRun: boolean = false): Promise<void> {
         if (uris.length === 0) return;
+
+        if (dryRun) {
+            logger.info("DRY RUN: Would add tracks", { playlistId, count: uris.length, uris });
+            return;
+        }
 
         // Chunk into batches of 100
         for (let i = 0; i < uris.length; i += 100) {
@@ -170,23 +181,26 @@ export class SpotifyService {
         playlistId: string,
         tracksToRemove: string[],
         tracksToAdd: string[],
-        targetOrderedUris: string[]
+        targetOrderedUris: string[],
+        dryRun: boolean = false
     ): Promise<void> {
-        console.log(`Starting Smart Update for ${playlistId}`);
+        logger.info(`Starting Smart Update for ${playlistId}`, { dryRun, removeCount: tracksToRemove.length, addCount: tracksToAdd.length });
 
         // 1. Remove
         if (tracksToRemove.length > 0) {
-
-            await this.removeTracks(playlistId, tracksToRemove);
+            await this.removeTracks(playlistId, tracksToRemove, dryRun);
         }
 
         // 2. Add (Append)
         if (tracksToAdd.length > 0) {
-
-            await this.addTracks(playlistId, tracksToAdd);
+            await this.addTracks(playlistId, tracksToAdd, dryRun);
         }
 
         // 3. Reorder Logic
+        if (dryRun) {
+            logger.info("DRY RUN: Would reorder tracks to match target order.", { targetOrderedUris });
+            return;
+        }
 
         // Re-fetch to get accurate positions after add/remove
         const currentTracks = await this.getPlaylistTracks(playlistId);
@@ -194,7 +208,10 @@ export class SpotifyService {
 
         // Validation check
         if (currentOrder.length !== targetOrderedUris.length) {
-            console.warn(`Mismatch in track counts! Current: ${currentOrder.length}, Target: ${targetOrderedUris.length}. Reordering might be imperfect.`);
+            logger.warn("Mismatch in track counts! Reordering might be imperfect.", {
+                currentCount: currentOrder.length,
+                targetCount: targetOrderedUris.length
+            });
             // Proceed anyway to fix what we can, or strict error? 
             // Better to warn and proceed for robustness.
         }
@@ -214,11 +231,9 @@ export class SpotifyService {
                 const currentIndex = currentOrder.indexOf(targetUri, i); // Search from i onwards
 
                 if (currentIndex === -1) {
-                    console.error(`Track ${targetUri} expected at pos ${i} but not found in remaining playlist! Skipping.`);
+                    logger.error(`Track expected at pos ${i} but not found in remaining playlist! Skipping.`, { targetUri, position: i });
                     continue;
                 }
-
-
 
                 // Pass snapshot_id to ensure we are modifying the latest version
                 const response = await this.executeWithRetry(() =>
@@ -228,7 +243,6 @@ export class SpotifyService {
                 // Update snapshot_id for the next call
                 snapshotId = response.body.snapshot_id;
 
-
                 // Wait to respect rate limits
                 await this.delay(500);
 
@@ -237,7 +251,5 @@ export class SpotifyService {
                 currentOrder.splice(i, 0, movedTrack);
             }
         }
-
-
     }
 }

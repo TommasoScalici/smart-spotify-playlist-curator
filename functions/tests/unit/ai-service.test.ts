@@ -34,6 +34,8 @@ describe('AiService', () => {
 
     const mockPromptConfig: AiGenerationConfig = {
         prompt: 'Upbeat Pop',
+        model: 'gemini-2.5-flash',
+        temperature: 0.7,
         refillBatchSize: 5,
         isInstrumentalOnly: false
     };
@@ -56,7 +58,7 @@ describe('AiService', () => {
         expect(mockGenerateContent).toHaveBeenCalledTimes(1);
     });
 
-    it('should handle invalid JSON response gracefully', async () => {
+    it('should handle invalid JSON response by throwing error', async () => {
         // Mock Invalid JSON
         mockGenerateContent.mockResolvedValue({
             response: {
@@ -64,9 +66,9 @@ describe('AiService', () => {
             }
         });
 
-        // Should catch error and return empty array
-        const result = await aiService.generateSuggestions(mockPromptConfig, 2);
-        expect(result).toEqual([]);
+        // Should throw error now (Robustness)
+        await expect(aiService.generateSuggestions(mockPromptConfig, 2))
+            .rejects.toThrow();
     });
 
     it('should include negative constraints in prompt', async () => {
@@ -91,7 +93,7 @@ describe('AiService', () => {
         await aiService.generateSuggestions(mockPromptConfig, 5, [], referenceArtists);
 
         const callArg = mockGenerateContent.mock.calls[0][0];
-        expect(callArg).toContain('Reference Artists');
+        expect(callArg).toContain('please bias your selection towards style/vibe of these artists');
         expect(callArg).toContain('Artist 1, Artist 2');
     });
 });

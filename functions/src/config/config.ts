@@ -19,6 +19,8 @@ const MandatoryTrackSchema = z.object({
 // Zod schema for AiGenerationConfig
 const AiGenerationConfigSchema = z.object({
     prompt: z.string().min(1, "Prompt cannot be empty"),
+    model: z.string().default("gemini-2.5-flash"),
+    temperature: z.number().default(0.7),
     refillBatchSize: z.number().int().positive().optional(),
     isInstrumentalOnly: z.boolean().optional(),
 });
@@ -34,6 +36,7 @@ const PlaylistConfigSchema = z.object({
     id: z.string().regex(/^spotify:playlist:[a-zA-Z0-9]{22}$/, "Invalid Spotify Playlist URI"),
     name: z.string().min(1),
     enabled: z.boolean(),
+    dryRun: z.boolean().optional().default(false),
     settings: z.object({
         targetTotalTracks: z.number().int().positive(),
         description: z.string().optional(),

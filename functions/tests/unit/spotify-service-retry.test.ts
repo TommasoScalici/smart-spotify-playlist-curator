@@ -21,16 +21,16 @@ describe('SpotifyService Retry Logic', () => {
 
     beforeEach(() => {
         // Reset singleton
-        (SpotifyService as any).instance = undefined;
+        (SpotifyService as unknown as { instance: SpotifyService | undefined }).instance = undefined;
         jest.clearAllMocks();
 
         service = SpotifyService.getInstance();
 
         // Access the private spotifyApi instance which is now a mock
-        mockSpotifyApi = (service as any).spotifyApi;
+        mockSpotifyApi = (service as unknown as { spotifyApi: jest.Mocked<SpotifyWebApi> }).spotifyApi;
 
         // Mock delay helper to avoid timer issues
-        jest.spyOn(service as any, 'delay').mockResolvedValue(undefined);
+        jest.spyOn(service as unknown as { delay: () => Promise<void> }, 'delay').mockResolvedValue(undefined);
     });
 
     it('should retry on 429 Rate Limit', async () => {

@@ -3,8 +3,12 @@
     "version": "1.0.0",
     "description": "Local scripts for smart-spotify-playlist-curator",
     "main": "index.js",
+    "engines": {
+        "node": "24"
+    },
     "scripts": {
         "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
+        "dry-run-check": "tsx src/dry-run-check.ts",
         "lint": "eslint ."
     },
     "dependencies": {

@@ -20,13 +20,13 @@ async function main() {
 
         if (data.models) {
             console.log("Available Models:");
-            data.models.forEach((m: any) => console.log(`- ${m.name} (${m.displayName})`));
+            data.models.forEach((m: { name: string; displayName: string }) => console.log(`- ${m.name} (${m.displayName})`));
         } else {
             console.log("No models found or error:", data);
         }
 
-    } catch (error) {
-        console.error("Error listing models:", error);
+    } catch (error: unknown) {
+        console.error("Error listing models:", error instanceof Error ? error.message : String(error));
     }
 }
 
