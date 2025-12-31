@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
 import { config } from "../config/env";
 import { AiGenerationConfig } from "../types";
 
@@ -9,7 +9,7 @@ interface AiTrackSuggestion {
 
 export class AiService {
     private genAI: GoogleGenerativeAI;
-    private model: any;
+    private model: GenerativeModel;
 
     constructor() {
         if (!config.GOOGLE_AI_API_KEY) {

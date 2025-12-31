@@ -44,7 +44,7 @@ export class SpotifyService {
 
         try {
             return await operation();
-        } catch (error: any) {
+        } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
             if (retries <= 0) throw error;
 
             // Handle 429 Too Many Requests
@@ -204,7 +204,7 @@ export class SpotifyService {
         let snapshotId = playlistData.body.snapshot_id;
 
 
-        let moves = 0;
+        // let moves = 0;
 
         for (let i = 0; i < targetOrderedUris.length; i++) {
             const targetUri = targetOrderedUris[i];
@@ -239,7 +239,7 @@ export class SpotifyService {
                 const [movedTrack] = currentOrder.splice(currentIndex, 1);
                 currentOrder.splice(i, 0, movedTrack);
 
-                moves++;
+                // moves++;
             }
         }
 

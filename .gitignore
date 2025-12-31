@@ -11,6 +11,9 @@ dist/
 lib/
 build/
 
+# Config files
+functions/src/config/playlists-config.json
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
