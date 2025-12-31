@@ -13,13 +13,16 @@ export class PlaylistOrchestrator {
     ) { }
 
     public async curatePlaylist(config: PlaylistConfig): Promise<void> {
-        const { id, settings } = config;
+        const { settings } = config;
         const targetTotal = settings.targetTotalTracks;
 
-        console.log(`Starting curation for playlist: ${config.name} (${id})`);
+        console.log(`Starting curation for playlist: ${config.name} (${config.id})`);
+
+        // Sanitize ID (handle spotify:playlist: prefix)
+        const playlistId = config.id.replace("spotify:playlist:", "");
 
         // 1. Fetch Current State
-        const currentTracks = await this.spotifyService.getPlaylistTracks(id);
+        const currentTracks = await this.spotifyService.getPlaylistTracks(playlistId);
 
         // Map to format expected by cleaner
         const cleanerInput = currentTracks.map(t => ({
@@ -36,25 +39,22 @@ export class PlaylistOrchestrator {
 
         // 2. Logic Paths
         if (currentSize === 0) {
-            // PATH 1: Empty Playlist
-            console.log("Path 1: Empty Playlist. Full refill.");
+            // Path 1: Empty Playlist - Full Refill
 
             const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
             keptTracks = result.keptTracks;
             slotsNeeded = result.slotsNeeded;
 
         } else if (currentSize < targetTotal) {
-            // PATH 2: Under Target (Standard Clean & Fill)
-            console.log("Path 2: Under Target. Standard Clean & Fill.");
+            // Path 2: Under Target - Standard Clean & Fill
             const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
             keptTracks = result.keptTracks;
             tracksToRemove = result.tracksToRemove;
             slotsNeeded = result.slotsNeeded;
 
         } else {
-            // PATH 3: Over Target (Aggressive Clean)
-            console.log("Path 3: Over/At Target. Aggressive Cleanup.");
-            // Target size after cleanup = Target - 15 (Force Gap)
+            // Path 3: Over Target - Aggressive Cleanup
+            // Force a gap to allow new tracks (Target - 15)
             // Ensure we don't go negative or too low? (e.g. if target is 10)
             const aggressiveTarget = Math.max(0, targetTotal - 15);
 
@@ -76,24 +76,33 @@ export class PlaylistOrchestrator {
             // Ideally we also track "recently removed" in DB, but for now just current session context.
             const existingUris = [...keptTracks.map(t => t.uri), ...tracksToRemove];
 
-            // Call AI
-            // We might need to batch this if slotsNeeded is huge (e.g. 100) -> logic for another day or batch inside service
-            // For now assuming robust service
+            // Request a buffer to account for search failures (e.g. track not found or mismatch)
+            const buffer = 5;
+            const requestCount = slotsNeeded + buffer;
+
+            console.log(`Requesting ${requestCount} suggestions from AI...`);
+
             const suggestions = await this.aiService.generateSuggestions(
                 config.aiGeneration,
-                slotsNeeded,
+                requestCount,
                 existingUris,
                 config.settings.referenceArtists
             );
 
             // Search Spotify for URIs
             for (const suggestion of suggestions) {
+                // Stop if we have enough
+                if (newAiTrackUris.length >= slotsNeeded) break;
+
                 const query = `track:${suggestion.track} artist:${suggestion.artist}`;
                 const uri = await this.spotifyService.searchTrack(query);
                 if (uri) {
                     newAiTrackUris.push(uri);
+                } else {
+                    console.warn(`\u26A0 Could not find track on Spotify: "${suggestion.artist} - ${suggestion.track}"`);
                 }
             }
+            console.log(`Successfully found ${newAiTrackUris.length} valid tracks.`);
         }
 
         // 4. Arrange & Update
@@ -107,7 +116,7 @@ export class PlaylistOrchestrator {
         );
 
         await this.spotifyService.performSmartUpdate(
-            id,
+            playlistId,
             tracksToRemove,
             newAiTrackUris,
             finalTrackList
