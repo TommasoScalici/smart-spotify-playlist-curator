@@ -1,111 +1,240 @@
-
-import { PlaylistOrchestrator } from '../../src/core/orchestrator';
-import { SpotifyService } from '../../src/services/spotify-service';
-import { AiService } from '../../src/services/ai-service';
-import { TrackCleaner } from '../../src/core/track-cleaner';
-import { SlotManager } from '../../src/core/slot-manager';
-import { PlaylistConfig } from '../../src/types';
+import { PlaylistOrchestrator } from "../../src/core/orchestrator";
+import { SpotifyService } from "../../src/services/spotify-service";
+import { AiService } from "../../src/services/ai-service";
+import { TrackCleaner } from "../../src/core/track-cleaner";
+import { SlotManager } from "../../src/core/slot-manager";
+import { PlaylistConfig } from "../../src/types";
 
 // Mock dependencies
-jest.mock('../../src/services/spotify-service');
-jest.mock('../../src/services/ai-service');
-jest.mock('../../src/core/track-cleaner');
-jest.mock('../../src/core/slot-manager');
+jest.mock("../../src/services/spotify-service");
+jest.mock("../../src/services/ai-service");
+jest.mock("../../src/core/track-cleaner");
+jest.mock("../../src/core/slot-manager");
 
-describe('PlaylistOrchestrator', () => {
-    let orchestrator: PlaylistOrchestrator;
-    let mockSpotifyService: jest.Mocked<SpotifyService>;
-    let mockAiService: jest.Mocked<AiService>;
-    let mockTrackCleaner: jest.Mocked<TrackCleaner>;
-    let mockSlotManager: jest.Mocked<SlotManager>;
+describe("PlaylistOrchestrator", () => {
+  let orchestrator: PlaylistOrchestrator;
+  let mockSpotifyService: jest.Mocked<SpotifyService>;
+  let mockAiService: jest.Mocked<AiService>;
+  let mockTrackCleaner: jest.Mocked<TrackCleaner>;
+  let mockSlotManager: jest.Mocked<SlotManager>;
 
-    // Type casting to Bypass strict partial matching for test config
-    const mockConfig: PlaylistConfig = {
-        id: 'test-playlist',
-        name: 'Test Playlist',
-        enabled: true,
-        settings: { targetTotalTracks: 50 },
-        aiGeneration: { prompt: 'test', refillBatchSize: 10 },
-        curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
-        mandatoryTracks: []
-    } as unknown as PlaylistConfig;
+  // Type casting to Bypass strict partial matching for test config
+  const mockConfig: PlaylistConfig = {
+    id: "test-playlist",
+    name: "Test Playlist",
+    enabled: true,
+    settings: { targetTotalTracks: 50 },
+    aiGeneration: { prompt: "test", overfetchRatio: 2.0 },
+    curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
+    mandatoryTracks: [],
+  } as unknown as PlaylistConfig;
 
-    beforeEach(() => {
-        mockSpotifyService = new (SpotifyService as unknown as new () => SpotifyService)() as unknown as jest.Mocked<SpotifyService>;
-        mockAiService = new AiService() as unknown as jest.Mocked<AiService>;
-        mockTrackCleaner = new TrackCleaner() as unknown as jest.Mocked<TrackCleaner>;
-        mockSlotManager = new SlotManager() as unknown as jest.Mocked<SlotManager>;
+  beforeEach(() => {
+    mockSpotifyService =
+      new (SpotifyService as unknown as new () => SpotifyService)() as unknown as jest.Mocked<SpotifyService>;
+    mockAiService = new AiService() as unknown as jest.Mocked<AiService>;
+    mockTrackCleaner =
+      new TrackCleaner() as unknown as jest.Mocked<TrackCleaner>;
+    mockSlotManager = new SlotManager() as unknown as jest.Mocked<SlotManager>;
 
-        orchestrator = new PlaylistOrchestrator(
-            mockSpotifyService,
-            mockAiService,
-            mockTrackCleaner,
-            mockSlotManager
-        );
+    orchestrator = new PlaylistOrchestrator(
+      mockSpotifyService,
+      mockAiService,
+      mockTrackCleaner,
+      mockSlotManager,
+    );
 
-        // Default mocks
-        mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-        mockSpotifyService.searchTrack.mockResolvedValue('spotify:track:new-ai-uri');
-        mockAiService.generateSuggestions.mockResolvedValue([{ artist: 'A', track: 'B' }]);
-        mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
+    // Default mocks
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+    mockSpotifyService.searchTrack.mockResolvedValue({
+      uri: "spotify:track:new-ai-uri",
+      artist: "A",
+      name: "N",
+      addedAt: "",
+      id: "1",
+    });
+    mockSpotifyService.getTracks.mockResolvedValue([]); // Default empty
+    mockAiService.generateSuggestions.mockResolvedValue([
+      { artist: "A", track: "B" },
+    ]);
+    mockSlotManager.arrangePlaylist.mockReturnValue(["uri1", "uri2"]);
+  });
+
+  it("Path 1: Empty Playlist", async () => {
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+
+    mockTrackCleaner.processCurrentTracks.mockReturnValue({
+      keptTracks: [],
+      tracksToRemove: [],
+      slotsNeeded: 50,
     });
 
-    it('Path 1: Empty Playlist', async () => {
-        mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+    // Mock AI Metadata Fetch
+    mockSpotifyService.getTracks.mockResolvedValue([
+      {
+        uri: "spotify:track:new-ai-uri",
+        artist: "Artist A",
+        name: "Track A",
+        addedAt: "",
+        id: "1",
+      },
+    ]);
 
-        mockTrackCleaner.processCurrentTracks.mockReturnValue({
-            keptTracks: [],
-            tracksToRemove: [],
-            slotsNeeded: 50 // Full refill
-        });
+    await orchestrator.curatePlaylist(mockConfig);
 
-        await orchestrator.curatePlaylist(mockConfig);
+    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
+    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
+      expect.any(Object),
+      105,
+      expect.any(Array),
+    );
+  });
 
-        // Verify cleaner called (with default target implicit)
-        expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-        // Verify AI called for full amount + buffer (5)
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 55, expect.any(Array), undefined);
+  it("Path 2: Under Target", async () => {
+    // 30 tracks existing (under 50)
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue(
+      new Array(30).fill({
+        uri: "uri",
+        addedAt: "timestamp",
+        artist: "Artist Existing",
+      }),
+    );
+
+    mockTrackCleaner.processCurrentTracks.mockReturnValue({
+      keptTracks: new Array(30).fill({ uri: "uri", artist: "Artist Existing" }),
+      tracksToRemove: [],
+      slotsNeeded: 20,
     });
 
-    it('Path 2: Under Target', async () => {
-        // 30 tracks existing (under 50)
-        mockSpotifyService.getPlaylistTracks.mockResolvedValue(new Array(30).fill({ uri: 'uri', addedAt: 'timestamp' }));
+    mockSpotifyService.getTracks.mockResolvedValue(
+      new Array(20).fill({ uri: "ai-uri", artist: "AI Artist" }),
+    );
 
-        mockTrackCleaner.processCurrentTracks.mockReturnValue({
-            keptTracks: new Array(30).fill({ uri: 'uri' }), // Keep all
-            tracksToRemove: [],
-            slotsNeeded: 20 // 50 - 30
-        });
+    await orchestrator.curatePlaylist(mockConfig);
 
-        await orchestrator.curatePlaylist(mockConfig);
+    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
+    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
+      expect.any(Object),
+      45,
+      expect.any(Array),
+    );
+  });
 
-        expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-        // Verify AI called for gap + buffer (5)
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 25, expect.any(Array), undefined);
+  it("Path 3: Over Target (Aggressive Clean)", async () => {
+    // 60 tracks existing
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue(
+      new Array(60).fill({
+        uri: "uri",
+        addedAt: "timestamp",
+        artist: "Artist",
+      }),
+    );
+
+    mockTrackCleaner.processCurrentTracks.mockReturnValue({
+      keptTracks: new Array(35).fill({ uri: "uri", artist: "Survivor" }),
+      tracksToRemove: ["removed-uri"],
+      slotsNeeded: 0,
     });
 
-    it('Path 3: Over Target (Aggressive Clean)', async () => {
-        // 60 tracks existing (over 50)
-        mockSpotifyService.getPlaylistTracks.mockResolvedValue(new Array(60).fill({ uri: 'uri', addedAt: 'timestamp' }));
+    mockSpotifyService.getTracks.mockResolvedValue([]);
 
-        mockTrackCleaner.processCurrentTracks.mockReturnValue({
-            keptTracks: new Array(35).fill({ uri: 'uri' }), // Cut down to 35 (50 - 15)
-            tracksToRemove: ['removed-uri'],
-            slotsNeeded: 0 // Cleaner internal logic might say 0 relative to aggressive target, but orchestrator recalc
-        });
+    await orchestrator.curatePlaylist(mockConfig);
 
-        await orchestrator.curatePlaylist(mockConfig);
+    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalledWith(
+      expect.any(Array),
+      mockConfig,
+      expect.any(Array),
+      35,
+    );
 
-        // Expected Aggressive Target = 50 - 15 = 35
-        expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalledWith(
-            expect.any(Array),
-            mockConfig,
-            expect.any(Array),
-            35 // <--- verify aggressive override 
-        );
+    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
+      expect.any(Object),
+      35,
+      expect.any(Array),
+    );
+  });
 
-        // Orchestrator logic: kept 35. Target 50. Gap needed = 15.
-        // With Buffer: 15 + 5 = 20
-        expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(expect.any(Object), 20, expect.any(Array), undefined);
+  it("should filter tracks based on Audio Features (Sonic Consistency)", async () => {
+    // Setup empty playlist asking for tracks
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+    mockTrackCleaner.processCurrentTracks.mockReturnValue({
+      keptTracks: [],
+      tracksToRemove: [],
+      slotsNeeded: 10,
     });
+
+    // Config with Sonic Rules
+    const sonicConfig = {
+      ...mockConfig,
+      curationRules: {
+        ...mockConfig.curationRules,
+        audioFeatures: { instrumentalness: { min: 0.5 } },
+      },
+    };
+
+    // AI returns 2 candidates
+    mockAiService.generateSuggestions.mockResolvedValue([
+      { artist: "Band", track: "Instrumental Track" },
+      { artist: "Band", track: "Vocal Track" },
+    ]);
+
+    // Search finds them
+    mockSpotifyService.searchTrack.mockResolvedValueOnce({
+      uri: "uri:inst",
+      artist: "Band",
+      name: "Instrumental",
+      addedAt: "",
+      id: "1",
+    });
+    mockSpotifyService.searchTrack.mockResolvedValueOnce({
+      uri: "uri:vocal",
+      artist: "Band",
+      name: "Vocal",
+      addedAt: "",
+      id: "2",
+    });
+
+    // GetTracks info
+    mockSpotifyService.getTracks.mockResolvedValue([
+      {
+        uri: "uri:inst",
+        artist: "Band",
+        name: "Instrumental",
+        addedAt: "",
+        id: "1",
+      },
+      { uri: "uri:vocal", artist: "Band", name: "Vocal", addedAt: "", id: "2" },
+    ]);
+
+    // MOCK AUDIO FEATURES
+    mockSpotifyService.getAudioFeatures.mockResolvedValue([
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { uri: "uri:inst", instrumentalness: 0.9, energy: 0.5 } as any, // Pass
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      { uri: "uri:vocal", instrumentalness: 0.0, energy: 0.5 } as any, // Fail
+    ]);
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await orchestrator.curatePlaylist(sonicConfig as any);
+
+    // Expect getAudioFeatures to be called
+    expect(mockSpotifyService.getAudioFeatures).toHaveBeenCalledWith(
+      expect.arrayContaining(["uri:inst", "uri:vocal"]),
+    );
+
+    // Expect result passed to slot manager to ONLY contain the instrumental track
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      expect.arrayContaining([expect.objectContaining({ uri: "uri:inst" })]), // Contains Inst
+      expect.any(Number),
+    );
+
+    // Should NOT contain vocal track in the new tracks list passed to slot manager
+    const callArgs = mockSlotManager.arrangePlaylist.mock.calls[0];
+    const newTracksArg = callArgs[2];
+    expect(newTracksArg).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ uri: "uri:vocal" })]),
+    );
+  });
 });

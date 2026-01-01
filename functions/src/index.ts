@@ -13,31 +13,35 @@ import { TrackCleaner } from "./core/track-cleaner";
 import { SlotManager } from "./core/slot-manager";
 import { PlaylistConfig } from "./types";
 
-export const updatePlaylists = onRequest({
+export const updatePlaylists = onRequest(
+  {
     timeoutSeconds: 540,
     secrets: [
-        "SPOTIFY_CLIENT_ID",
-        "SPOTIFY_CLIENT_SECRET",
-        "SPOTIFY_REFRESH_TOKEN",
-        "GOOGLE_AI_API_KEY"
-    ]
-}, async (request, response) => {
+      "SPOTIFY_CLIENT_ID",
+      "SPOTIFY_CLIENT_SECRET",
+      "SPOTIFY_REFRESH_TOKEN",
+      "GOOGLE_AI_API_KEY",
+    ],
+  },
+  async (request, response) => {
     logger.info("Received request to update playlists (Firestore-backed).");
 
     const configService = new ConfigService();
     let configs: PlaylistConfig[] = [];
 
     try {
-        configs = await configService.getEnabledPlaylists();
-        if (configs.length === 0) {
-            logger.info("No enabled playlists found to update.");
-            response.json({ message: "No enabled playlists found.", results: [] });
-            return;
-        }
-    } catch (e) {
-        logger.error("Failed to load configuration from Firestore", e);
-        response.status(500).send("Configuration Back-end Error: " + (e as Error).message);
+      configs = await configService.getEnabledPlaylists();
+      if (configs.length === 0) {
+        logger.info("No enabled playlists found to update.");
+        response.json({ message: "No enabled playlists found.", results: [] });
         return;
+      }
+    } catch (e) {
+      logger.error("Failed to load configuration from Firestore", e);
+      response
+        .status(500)
+        .send("Configuration Back-end Error: " + (e as Error).message);
+      return;
     }
 
     const spotifyService = SpotifyService.getInstance();
@@ -46,25 +50,28 @@ export const updatePlaylists = onRequest({
     const slotManager = new SlotManager();
 
     const orchestrator = new PlaylistOrchestrator(
-        spotifyService,
-        aiService,
-        trackCleaner,
-        slotManager
+      spotifyService,
+      aiService,
+      trackCleaner,
+      slotManager,
     );
 
     const results = [];
 
     for (const playlistConfig of configs) {
-
-
-        try {
-            await orchestrator.curatePlaylist(playlistConfig);
-            results.push({ name: playlistConfig.name, status: "success" });
-        } catch (error) {
-            logger.error(`Error processing playlist ${playlistConfig.name}`, error);
-            results.push({ name: playlistConfig.name, status: "error", error: (error as Error).message });
-        }
+      try {
+        await orchestrator.curatePlaylist(playlistConfig);
+        results.push({ name: playlistConfig.name, status: "success" });
+      } catch (error) {
+        logger.error(`Error processing playlist ${playlistConfig.name}`, error);
+        results.push({
+          name: playlistConfig.name,
+          status: "error",
+          error: (error as Error).message,
+        });
+      }
     }
 
     response.json({ message: "Playlist update completed", results });
-});
+  },
+);

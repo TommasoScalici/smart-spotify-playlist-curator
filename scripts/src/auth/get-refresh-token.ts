@@ -17,7 +17,9 @@ async function main() {
         "playlist-modify-public",
         "playlist-modify-private",
         "user-library-read",
-        "user-library-modify"
+        "user-library-modify",
+        "user-read-private",
+        "user-read-email"
     ];
 
     const clientId = process.env.SPOTIFY_CLIENT_ID;

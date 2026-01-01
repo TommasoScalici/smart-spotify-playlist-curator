@@ -11,7 +11,14 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Load env vars
-dotenv.config({ path: path.resolve(__dirname, '../../../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+
+// Resolve credentials path relative to project root (if set)
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.startsWith('.')) {
+    const rootDir = path.resolve(__dirname, '../../../');
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = path.resolve(rootDir, process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    console.log(`Resolved Google Credentials: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+}
 
 const SERVICE_ACCOUNT_PATH = process.env.GOOGLE_APPLICATION_CREDENTIALS;
 

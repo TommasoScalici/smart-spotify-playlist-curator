@@ -3,253 +3,368 @@ import { config } from "../config/env";
 import * as logger from "firebase-functions/logger";
 
 export interface TrackInfo {
-    uri: string;
-    name: string;
-    artist: string;
-    addedAt: string;
-    id: string; // Spotify ID (not URI) useful for some operations
+  uri: string;
+  name: string;
+  artist: string;
+  addedAt: string;
+  id: string; // Spotify ID (not URI) useful for some operations
 }
 
 export class SpotifyService {
-    private static instance: SpotifyService;
-    private spotifyApi: SpotifyWebApi;
-    private tokenExpirationEpoch: number = 0;
+  private static instance: SpotifyService;
+  private spotifyApi: SpotifyWebApi;
+  private tokenExpirationEpoch: number = 0;
 
-    private constructor() {
-        this.spotifyApi = new SpotifyWebApi({
-            clientId: config.SPOTIFY_CLIENT_ID,
-            clientSecret: config.SPOTIFY_CLIENT_SECRET,
-            refreshToken: config.SPOTIFY_REFRESH_TOKEN,
+  private constructor() {
+    this.spotifyApi = new SpotifyWebApi({
+      clientId: config.SPOTIFY_CLIENT_ID,
+      clientSecret: config.SPOTIFY_CLIENT_SECRET,
+      refreshToken: config.SPOTIFY_REFRESH_TOKEN,
+    });
+  }
+
+  public static getInstance(): SpotifyService {
+    if (!SpotifyService.instance) {
+      SpotifyService.instance = new SpotifyService();
+    }
+    return SpotifyService.instance;
+  }
+
+  /**
+   * Delay helper to avoid rate limits
+   */
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Executes an API operation with retry logic for 401 (Auth) and 429 (Rate Limit).
+   */
+  private async executeWithRetry<T>(
+    operation: () => Promise<T>,
+    retries = 3,
+  ): Promise<T> {
+    await this.ensureAccessToken();
+
+    try {
+      return await operation();
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } catch (error: any) {
+      if (retries <= 0) throw error;
+
+      // Handle 429 Too Many Requests
+      if (error.statusCode === 429) {
+        const retryAfter =
+          error.headers && error.headers["retry-after"]
+            ? parseInt(error.headers["retry-after"])
+            : 1;
+        logger.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`, {
+          retryAfter,
         });
-    }
+        await this.delay(retryAfter * 1000 + 100); // Wait + buffer
+        return this.executeWithRetry(operation, retries - 1);
+      }
 
-    public static getInstance(): SpotifyService {
-        if (!SpotifyService.instance) {
-            SpotifyService.instance = new SpotifyService();
-        }
-        return SpotifyService.instance;
-    }
-
-    /**
-     * Delay helper to avoid rate limits
-     */
-    private delay(ms: number): Promise<void> {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-    }
-
-    /**
-     * Executes an API operation with retry logic for 401 (Auth) and 429 (Rate Limit).
-     */
-    private async executeWithRetry<T>(operation: () => Promise<T>, retries = 3): Promise<T> {
+      // Handle 401 Unauthorized (Expired Token)
+      if (error.statusCode === 401) {
+        logger.warn("Got 401, refreshing token and retrying...");
+        this.tokenExpirationEpoch = 0; // Force refresh
         await this.ensureAccessToken();
+        return this.executeWithRetry(operation, retries - 1);
+      }
 
-        try {
-            return await operation();
-        } catch (error: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
-            if (retries <= 0) throw error;
+      // Handle Network Errors (ETIMEDOUT, ECONNRESET, ENOTFOUND)
+      // Node.js error codes are typically strings in error.code
+      const networkErrors = ["ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EPIPE"];
+      if (
+        networkErrors.includes(error.code) ||
+        (error.cause && networkErrors.includes((error.cause as any).code))
+      ) {
+        logger.warn(
+          `Network error (${error.code || "unknown"}). Retrying in 2s...`,
+          { error },
+        );
+        await this.delay(2000); // 2s wait for network glitches
+        return this.executeWithRetry(operation, retries - 1);
+      }
 
-            // Handle 429 Too Many Requests
-            if (error.statusCode === 429) {
-                const retryAfter = error.headers && error.headers["retry-after"] ? parseInt(error.headers["retry-after"]) : 1;
-                logger.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`, { retryAfter });
-                await this.delay((retryAfter * 1000) + 100); // Wait + buffer
-                return this.executeWithRetry(operation, retries - 1);
-            }
-
-            // Handle 401 Unauthorized (Expired Token) - typically ensureAccessToken handles this, but double check
-            if (error.statusCode === 401) {
-                logger.warn("Got 401, refreshing token and retrying...");
-                this.tokenExpirationEpoch = 0; // Force refresh
-                await this.ensureAccessToken();
-                return this.executeWithRetry(operation, retries - 1);
-            }
-
-            throw error;
-        }
+      throw error;
     }
+  }
 
-    /**
-     * Ensures a valid access token exists. Refreshes if expired or missing.
-     */
-    private async ensureAccessToken(): Promise<void> {
-        const now = Date.now();
-        // Refresh if token is missing or expires in less than 5 minutes
-        if (now + 5 * 60 * 1000 > this.tokenExpirationEpoch) {
-            try {
-                const data = await this.spotifyApi.refreshAccessToken();
-                const accessToken = data.body["access_token"];
-                const expiresInSeconds = data.body["expires_in"];
 
-                this.spotifyApi.setAccessToken(accessToken);
-                this.tokenExpirationEpoch = now + expiresInSeconds * 1000;
+  /**
+   * Ensures a valid access token exists. Refreshes if expired or missing.
+   */
+  private async ensureAccessToken(): Promise<void> {
+    const now = Date.now();
+    // Refresh if token is missing or expires in less than 5 minutes
+    if (now + 5 * 60 * 1000 > this.tokenExpirationEpoch) {
+      try {
+        const data = await this.spotifyApi.refreshAccessToken();
+        const accessToken = data.body["access_token"];
+        const expiresInSeconds = data.body["expires_in"];
 
-            } catch (error) {
-                logger.error("Failed to refresh access token:", error);
-                throw error;
-            }
-        }
+        this.spotifyApi.setAccessToken(accessToken);
+        this.tokenExpirationEpoch = now + expiresInSeconds * 1000;
+      } catch (error) {
+        logger.error("Failed to refresh access token:", error);
+        throw error;
+      }
     }
+  }
 
-    /**
-     * Fetches ALL tracks from a playlist, handling pagination.
-     * @param playlistId The Spotify ID of the playlist
-     * @returns Array of simplified TrackInfo objects
-     */
-    public async getPlaylistTracks(playlistId: string): Promise<TrackInfo[]> {
-        const allTracks: TrackInfo[] = [];
-        let offset = 0;
-        const limit = 100;
-        let hasMore = true;
+  /**
+   * Fetches ALL tracks from a playlist, handling pagination.
+   * @param playlistId The Spotify ID of the playlist
+   * @returns Array of simplified TrackInfo objects
+   */
+  public async getPlaylistTracks(playlistId: string): Promise<TrackInfo[]> {
+    const allTracks: TrackInfo[] = [];
+    let offset = 0;
+    const limit = 100;
+    let hasMore = true;
 
-        await this.executeWithRetry(async () => {
-            while (hasMore) {
-                const response = await this.spotifyApi.getPlaylistTracks(playlistId, { offset, limit });
-                const items = response.body.items;
-
-                for (const item of items) {
-                    if (item.track && item.track.type === "track") {
-                        allTracks.push({
-                            uri: item.track.uri,
-                            name: item.track.name,
-                            artist: item.track.artists.map((a: { name: string }) => a.name).join(", "),
-                            addedAt: item.added_at,
-                            id: item.track.id,
-                        });
-                    }
-                }
-
-                if (items.length < limit) {
-                    hasMore = false;
-                } else {
-                    offset += limit;
-                }
-            }
+    await this.executeWithRetry(async () => {
+      while (hasMore) {
+        const response = await this.spotifyApi.getPlaylistTracks(playlistId, {
+          offset,
+          limit,
         });
+        const items = response.body.items;
 
-        return allTracks;
-    }
-
-    public async searchTrack(query: string): Promise<string | null> {
-        return this.executeWithRetry(async () => {
-            const response = await this.spotifyApi.searchTracks(query, { limit: 1 });
-            const tracks = response.body.tracks?.items;
-            if (tracks && tracks.length > 0) {
-                return tracks[0].uri;
-            }
-            return null;
-        });
-    }
-
-    public async removeTracks(playlistId: string, uris: string[], dryRun: boolean = false): Promise<void> {
-        if (uris.length === 0) return;
-
-        if (dryRun) {
-            logger.info("DRY RUN: Would remove tracks", { playlistId, count: uris.length, uris });
-            return;
-        }
-
-        // Chunk into batches of 100
-        for (let i = 0; i < uris.length; i += 100) {
-            const batch = uris.slice(i, i + 100).map((uri) => ({ uri }));
-            await this.executeWithRetry(() => this.spotifyApi.removeTracksFromPlaylist(playlistId, batch));
-        }
-    }
-
-    public async addTracks(playlistId: string, uris: string[], dryRun: boolean = false): Promise<void> {
-        if (uris.length === 0) return;
-
-        if (dryRun) {
-            logger.info("DRY RUN: Would add tracks", { playlistId, count: uris.length, uris });
-            return;
-        }
-
-        // Chunk into batches of 100
-        for (let i = 0; i < uris.length; i += 100) {
-            const batch = uris.slice(i, i + 100);
-            await this.executeWithRetry(() => this.spotifyApi.addTracksToPlaylist(playlistId, batch));
-        }
-    }
-
-    /**
-     * Performs a surgical update to the playlist:
-     * 1. Removes specified tracks.
-     * 2. Appends new tracks.
-     * 3. Reorders tracks to match the target order ONE BY ONE to preserve timestamps.
-     * WARNING: This is slow due to rate limiting (500ms delay per move).
-     */
-    public async performSmartUpdate(
-        playlistId: string,
-        tracksToRemove: string[],
-        tracksToAdd: string[],
-        targetOrderedUris: string[],
-        dryRun: boolean = false
-    ): Promise<void> {
-        logger.info(`Starting Smart Update for ${playlistId}`, { dryRun, removeCount: tracksToRemove.length, addCount: tracksToAdd.length });
-
-        // 1. Remove
-        if (tracksToRemove.length > 0) {
-            await this.removeTracks(playlistId, tracksToRemove, dryRun);
-        }
-
-        // 2. Add (Append)
-        if (tracksToAdd.length > 0) {
-            await this.addTracks(playlistId, tracksToAdd, dryRun);
-        }
-
-        // 3. Reorder Logic
-        if (dryRun) {
-            logger.info("DRY RUN: Would reorder tracks to match target order.", { targetOrderedUris });
-            return;
-        }
-
-        // Re-fetch to get accurate positions after add/remove
-        const currentTracks = await this.getPlaylistTracks(playlistId);
-        const currentOrder = currentTracks.map(t => t.uri);
-
-        // Validation check
-        if (currentOrder.length !== targetOrderedUris.length) {
-            logger.warn("Mismatch in track counts! Reordering might be imperfect.", {
-                currentCount: currentOrder.length,
-                targetCount: targetOrderedUris.length
+        for (const item of items) {
+          if (item.track && item.track.type === "track") {
+            allTracks.push({
+              uri: item.track.uri,
+              name: item.track.name,
+              artist: item.track.artists
+                .map((a: { name: string }) => a.name)
+                .join(", "),
+              addedAt: item.added_at,
+              id: item.track.id,
             });
-            // Proceed anyway to fix what we can, or strict error? 
-            // Better to warn and proceed for robustness.
+          }
         }
 
-        // Fetch initial snapshot ID
-        const playlistData = await this.executeWithRetry(() => this.spotifyApi.getPlaylist(playlistId, { fields: 'snapshot_id' }));
-        let snapshotId = playlistData.body.snapshot_id;
-
-        for (let i = 0; i < targetOrderedUris.length; i++) {
-            const targetUri = targetOrderedUris[i];
-
-            // Safety check if we ran out of bounds in currentOrder
-            if (i >= currentOrder.length) break;
-
-            if (currentOrder[i] !== targetUri) {
-                // Mismatch found at position i.
-                const currentIndex = currentOrder.indexOf(targetUri, i); // Search from i onwards
-
-                if (currentIndex === -1) {
-                    logger.error(`Track expected at pos ${i} but not found in remaining playlist! Skipping.`, { targetUri, position: i });
-                    continue;
-                }
-
-                // Pass snapshot_id to ensure we are modifying the latest version
-                const response = await this.executeWithRetry(() =>
-                    this.spotifyApi.reorderTracksInPlaylist(playlistId, currentIndex, i, { snapshot_id: snapshotId })
-                );
-
-                // Update snapshot_id for the next call
-                snapshotId = response.body.snapshot_id;
-
-                // Wait to respect rate limits
-                await this.delay(500);
-
-                // Update local state
-                const [movedTrack] = currentOrder.splice(currentIndex, 1);
-                currentOrder.splice(i, 0, movedTrack);
-            }
+        if (items.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
         }
+      }
+    });
+
+    return allTracks;
+  }
+
+  public async getTracks(uris: string[]): Promise<TrackInfo[]> {
+    if (uris.length === 0) return [];
+    const trackIds = uris.map((uri) => uri.replace("spotify:track:", ""));
+    const allTracks: TrackInfo[] = [];
+
+    // Batch requests (limit 50 per call)
+    for (let i = 0; i < trackIds.length; i += 50) {
+      const batch = trackIds.slice(i, i + 50);
+      await this.executeWithRetry(async () => {
+        const response = await this.spotifyApi.getTracks(batch);
+        response.body.tracks.forEach((t) => {
+          if (t) {
+            allTracks.push({
+              uri: t.uri,
+              name: t.name,
+              artist: t.artists.map((a) => a.name).join(", "),
+              addedAt: new Date().toISOString(), // New tracks don't have addedAt yet
+              id: t.id,
+            });
+          }
+        });
+      });
     }
+    return allTracks;
+  }
+
+  public async getAudioFeatures(
+    uris: string[],
+  ): Promise<SpotifyApi.AudioFeaturesObject[]> {
+    if (uris.length === 0) return [];
+    const trackIds = uris.map((uri) => uri.replace("spotify:track:", ""));
+    const allFeatures: SpotifyApi.AudioFeaturesObject[] = [];
+
+    // Batch requests (limit 100 per call per Spotify API docs)
+    for (let i = 0; i < trackIds.length; i += 100) {
+      const batch = trackIds.slice(i, i + 100);
+      await this.executeWithRetry(async () => {
+        const response = await this.spotifyApi.getAudioFeaturesForTracks(batch);
+        response.body.audio_features.forEach((f) => {
+          if (f) allFeatures.push(f);
+        });
+      });
+    }
+    return allFeatures;
+  }
+
+  public async searchTrack(query: string): Promise<TrackInfo | null> {
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.searchTracks(query, { limit: 1 });
+      const tracks = response.body.tracks?.items;
+      if (tracks && tracks.length > 0) {
+        const t = tracks[0];
+        return {
+          uri: t.uri,
+          name: t.name,
+          artist: t.artists.map((a) => a.name).join(", "),
+          addedAt: new Date().toISOString(),
+          id: t.id,
+        };
+      }
+      return null;
+    });
+  }
+
+  public async removeTracks(
+    playlistId: string,
+    uris: string[],
+    dryRun: boolean = false,
+  ): Promise<void> {
+    if (uris.length === 0) return;
+
+    if (dryRun) {
+      logger.info("DRY RUN: Would remove tracks", {
+        playlistId,
+        count: uris.length,
+        uris,
+      });
+      return;
+    }
+
+    // Chunk into batches of 100
+    for (let i = 0; i < uris.length; i += 100) {
+      const batch = uris.slice(i, i + 100).map((uri) => ({ uri }));
+      await this.executeWithRetry(() =>
+        this.spotifyApi.removeTracksFromPlaylist(playlistId, batch),
+      );
+    }
+  }
+
+  public async addTracks(
+    playlistId: string,
+    uris: string[],
+    dryRun: boolean = false,
+  ): Promise<void> {
+    if (uris.length === 0) return;
+
+    if (dryRun) {
+      logger.info("DRY RUN: Would add tracks", {
+        playlistId,
+        count: uris.length,
+        uris,
+      });
+      return;
+    }
+
+    // Chunk into batches of 100
+    for (let i = 0; i < uris.length; i += 100) {
+      const batch = uris.slice(i, i + 100);
+      await this.executeWithRetry(() =>
+        this.spotifyApi.addTracksToPlaylist(playlistId, batch),
+      );
+    }
+  }
+
+  /**
+   * Performs a surgical update to the playlist:
+   * 1. Removes specified tracks.
+   * 2. Appends new tracks.
+   * 3. Reorders tracks to match the target order ONE BY ONE to preserve timestamps.
+   * WARNING: This is slow due to rate limiting (500ms delay per move).
+   */
+  public async performSmartUpdate(
+    playlistId: string,
+    tracksToRemove: string[],
+    tracksToAdd: string[],
+    targetOrderedUris: string[],
+    dryRun: boolean = false,
+  ): Promise<void> {
+    logger.info(`Starting Smart Update for ${playlistId}`, {
+      dryRun,
+      removeCount: tracksToRemove.length,
+      addCount: tracksToAdd.length,
+    });
+
+    // 1. Remove
+    if (tracksToRemove.length > 0) {
+      await this.removeTracks(playlistId, tracksToRemove, dryRun);
+    }
+
+    // 2. Add (Append)
+    if (tracksToAdd.length > 0) {
+      await this.addTracks(playlistId, tracksToAdd, dryRun);
+    }
+
+    // 3. Reorder Logic
+    if (dryRun) {
+      logger.info("DRY RUN: Would reorder tracks to match target order.", {
+        targetOrderedUris,
+      });
+      return;
+    }
+
+    // Re-fetch to get accurate positions after add/remove
+    const currentTracks = await this.getPlaylistTracks(playlistId);
+    const currentOrder = currentTracks.map((t) => t.uri);
+
+    // Validation check
+    if (currentOrder.length !== targetOrderedUris.length) {
+      logger.warn("Mismatch in track counts! Reordering might be imperfect.", {
+        currentCount: currentOrder.length,
+        targetCount: targetOrderedUris.length,
+      });
+      // Proceed anyway to fix what we can, or strict error?
+      // Better to warn and proceed for robustness.
+    }
+
+    // Fetch initial snapshot ID
+    const playlistData = await this.executeWithRetry(() =>
+      this.spotifyApi.getPlaylist(playlistId, { fields: "snapshot_id" }),
+    );
+    let snapshotId = playlistData.body.snapshot_id;
+
+    for (let i = 0; i < targetOrderedUris.length; i++) {
+      const targetUri = targetOrderedUris[i];
+
+      // Safety check if we ran out of bounds in currentOrder
+      if (i >= currentOrder.length) break;
+
+      if (currentOrder[i] !== targetUri) {
+        // Mismatch found at position i.
+        const currentIndex = currentOrder.indexOf(targetUri, i); // Search from i onwards
+
+        if (currentIndex === -1) {
+          logger.error(
+            `Track expected at pos ${i} but not found in remaining playlist! Skipping.`,
+            { targetUri, position: i },
+          );
+          continue;
+        }
+
+        // Pass snapshot_id to ensure we are modifying the latest version
+        const response = await this.executeWithRetry(() =>
+          this.spotifyApi.reorderTracksInPlaylist(playlistId, currentIndex, i, {
+            snapshot_id: snapshotId,
+          }),
+        );
+
+        // Update snapshot_id for the next call
+        snapshotId = response.body.snapshot_id;
+
+        // Wait to respect rate limits
+        await this.delay(500);
+
+        // Update local state
+        const [movedTrack] = currentOrder.splice(currentIndex, 1);
+        currentOrder.splice(i, 0, movedTrack);
+      }
+    }
+  }
 }

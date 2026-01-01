@@ -5,10 +5,12 @@ A powerful automation system that curates Spotify playlists using **Google Gemin
 ## 🚀 Key Features
 
 -   **🤖 AI-Powered Curation**: Uses Gemini 2.5 Flash to generate context-aware track suggestions (Pop, Rock, specific moods, etc.).
+-   **🎧 Sonic Consistency**: filters tracks using real-time audio analysis (Instrumentalness, Energy) to ensure vibes match mathematically.
+-   **⚡ High Efficiency**: Implements "Overfetch" strategies to minimize API calls and retry loops.
 -   **🛡️ Dry-Run Mode**: Simulate playlist updates without modifying your actual Spotify library. Great for testing prompts!
 -   **📊 Robust Observability**: Structured JSON logging via `firebase-functions/logger` and Execution Correlation IDs for easy debugging in GCP.
 -   **🔄 Smart Slot Management**: Intelligently mixes Mandatory "VIP" tracks with AI suggestions while preserving order logic.
--   **⚡ CI/CD**: Automated GitHub Actions pipeline for Linting, Building, and Testing on every push.
+-   **🔁 CI/CD**: Automated GitHub Actions pipeline for Linting, Building, and Testing on every push.
 
 ## 🛠️ Prerequisites
 

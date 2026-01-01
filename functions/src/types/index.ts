@@ -1,4 +1,4 @@
-export * from './core-types';
+export * from "./core-types";
 
-import { PlaylistConfig } from './core-types';
+import { PlaylistConfig } from "./core-types";
 export type AppConfig = PlaylistConfig[];

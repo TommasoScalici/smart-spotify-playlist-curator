@@ -19,6 +19,13 @@ const { SlotManager } = require('../../functions/src/core/slot-manager.ts');
 
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
+// Resolve credentials path relative to project root (if set)
+if (process.env.GOOGLE_APPLICATION_CREDENTIALS && process.env.GOOGLE_APPLICATION_CREDENTIALS.startsWith('.')) {
+    const rootDir = resolve(__dirname, '../../');
+    process.env.GOOGLE_APPLICATION_CREDENTIALS = resolve(rootDir, process.env.GOOGLE_APPLICATION_CREDENTIALS);
+    console.log(`Resolved Google Credentials: ${process.env.GOOGLE_APPLICATION_CREDENTIALS}`);
+}
+
 async function main() {
     console.log("🚀 Starting LIVE CURATOR Run...");
     console.warn("⚠️  WARNING: This will MODIFY your Spotify Playlists!");

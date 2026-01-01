@@ -1,18 +1,15 @@
 {
-    "compilerOptions": {
-        "module": "commonjs",
-        "noImplicitReturns": true,
-        "noUnusedLocals": true,
-        "outDir": "lib",
-        "sourceMap": true,
-        "strict": true,
-        "target": "ES2022",
-        "noImplicitAny": true,
-        "esModuleInterop": true
-    },
-    "compileOnSave": true,
-    "include": [
-        "src",
-        "tests"
-    ]
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true,
+    "target": "ES2022",
+    "noImplicitAny": true,
+    "esModuleInterop": true
+  },
+  "compileOnSave": true,
+  "include": ["src", "tests"]
 }
