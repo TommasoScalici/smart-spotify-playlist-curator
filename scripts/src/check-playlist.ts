@@ -1,38 +1,63 @@
+import { initializeApp, getApps } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'module';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+import * as dotenv from 'dotenv';
+import type { PlaylistConfig } from '../../functions/src/types/index.js';
 
-import { loadAppConfig } from "../../functions/src/config/config";
-import { SpotifyService } from "../../functions/src/services/spotify-service";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+const require = createRequire(import.meta.url);
+
+// Services
+const { SpotifyService } = require('../../functions/src/services/spotify-service.ts');
+
+dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 async function main() {
-    console.log("Checking Playlist State...");
+    console.log("🚀 Checking Playlist State (Firestore Mode)...");
 
-    try {
-        const config = loadAppConfig();
-        // Find the Instrumental Prog playlist
-        const playlistConfig = config.find(c => c.name.includes("Instrumental Prog"));
+    if (!getApps().length) {
+        initializeApp();
+    }
+    const db = getFirestore();
+    const spotifyService = SpotifyService.getInstance();
 
-        if (!playlistConfig) {
-            console.error("Playlist not found in config.");
-            return;
-        }
+    console.log("Fetching enabled playlists...");
+    const snapshot = await db.collection('playlists').where('enabled', '==', true).get();
 
-        const playlistId = playlistConfig.id.replace("spotify:playlist:", "");
-        console.log(`Inspecting: ${playlistConfig.name} (${playlistId})`);
+    for (const doc of snapshot.docs) {
+        const config = doc.data() as PlaylistConfig;
 
-        const spotifyService = SpotifyService.getInstance();
+        // Filter for "Instrumental Prog" if multiple
+        if (!config.name.includes("Instrumental Prog")) continue;
+
+        const playlistId = config.id.replace("spotify:playlist:", "");
+        console.log(`\nInspecting: ${config.name} (${playlistId})`);
+
+        // Log expected VIPs
+        console.log("Expected VIP Tracks:");
+        config.mandatoryTracks.forEach(m => console.log(`- [${m.uri}] @ Slot ${m.positionIndex}`));
+
         const tracks = await spotifyService.getPlaylistTracks(playlistId);
 
-        console.log(`\nTotal Tracks: ${tracks.length}`);
-        console.log(`Target Total: ${playlistConfig.settings.targetTotalTracks}`);
-        console.log(`Difference: ${tracks.length - playlistConfig.settings.targetTotalTracks}`);
-
-        console.log("\nCurrent Tracks:");
+        console.log(`\nActual Tracks (${tracks.length}):`);
         tracks.forEach((t, i) => {
-            console.log(`${i + 1}. ${t.artist} - ${t.name} (${t.uri})`);
+            const isVip = config.mandatoryTracks.some(m => m.uri === t.uri);
+            const marker = isVip ? "🌟 VIP" : "";
+            console.log(`${i}. [${t.uri}] ${t.artist} - ${t.name} ${marker}`);
         });
 
-    } catch (e) {
-        console.error("Error:", e);
+        // Verification
+        const missingVips = config.mandatoryTracks.filter(m => !tracks.some(t => t.uri === m.uri));
+        if (missingVips.length > 0) {
+            console.error("\n❌ FAILED: Missing VIP Tracks:");
+            missingVips.forEach(m => console.log(`- ${m.uri}`));
+        } else {
+            console.log("\n✅ All VIP Tracks Present.");
+        }
     }
 }
 
-main();
+main().catch(console.error);

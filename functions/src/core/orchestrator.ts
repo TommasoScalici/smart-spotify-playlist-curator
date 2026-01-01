@@ -109,10 +109,13 @@ export class PlaylistOrchestrator {
             targetTotal
         );
 
+        // Determine all tracks that need to be added (AI tracks + missing VIPs)
+        const tracksToAdd = finalTrackList.filter(uri => !survivorUris.includes(uri));
+
         await this.spotifyService.performSmartUpdate(
             playlistId,
             tracksToRemove,
-            newAiTrackUris,
+            tracksToAdd,
             finalTrackList,
             dryRun
         );
