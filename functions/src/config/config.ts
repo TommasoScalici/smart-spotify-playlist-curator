@@ -20,7 +20,7 @@ const AiGenerationConfigSchema = z.object({
   prompt: z.string().min(1, "Prompt cannot be empty"),
   model: z.string().default("gemini-2.5-flash"),
   temperature: z.number().default(0.7),
-  refillBatchSize: z.number().int().positive().optional(),
+  overfetchRatio: z.number().positive().default(2.0),
   isInstrumentalOnly: z.boolean().optional(),
 });
 

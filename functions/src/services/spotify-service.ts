@@ -7,7 +7,6 @@ export interface TrackInfo {
   name: string;
   artist: string;
   addedAt: string;
-  id: string; // Spotify ID (not URI) useful for some operations
 }
 
 export class SpotifyService {
@@ -142,7 +141,6 @@ export class SpotifyService {
                 .map((a: { name: string }) => a.name)
                 .join(", "),
               addedAt: item.added_at,
-              id: item.track.id,
             });
           }
         }
@@ -175,7 +173,6 @@ export class SpotifyService {
               name: t.name,
               artist: t.artists.map((a) => a.name).join(", "),
               addedAt: new Date().toISOString(), // New tracks don't have addedAt yet
-              id: t.id,
             });
           }
         });
@@ -184,25 +181,7 @@ export class SpotifyService {
     return allTracks;
   }
 
-  public async getAudioFeatures(
-    uris: string[],
-  ): Promise<SpotifyApi.AudioFeaturesObject[]> {
-    if (uris.length === 0) return [];
-    const trackIds = uris.map((uri) => uri.replace("spotify:track:", ""));
-    const allFeatures: SpotifyApi.AudioFeaturesObject[] = [];
 
-    // Batch requests (limit 100 per call per Spotify API docs)
-    for (let i = 0; i < trackIds.length; i += 100) {
-      const batch = trackIds.slice(i, i + 100);
-      await this.executeWithRetry(async () => {
-        const response = await this.spotifyApi.getAudioFeaturesForTracks(batch);
-        response.body.audio_features.forEach((f) => {
-          if (f) allFeatures.push(f);
-        });
-      });
-    }
-    return allFeatures;
-  }
 
   public async searchTrack(query: string): Promise<TrackInfo | null> {
     return this.executeWithRetry(async () => {
@@ -215,7 +194,6 @@ export class SpotifyService {
           name: t.name,
           artist: t.artists.map((a) => a.name).join(", "),
           addedAt: new Date().toISOString(),
-          id: t.id,
         };
       }
       return null;
@@ -251,6 +229,7 @@ export class SpotifyService {
     playlistId: string,
     uris: string[],
     dryRun: boolean = false,
+    position?: number,
   ): Promise<void> {
     if (uris.length === 0) return;
 
@@ -266,8 +245,12 @@ export class SpotifyService {
     // Chunk into batches of 100
     for (let i = 0; i < uris.length; i += 100) {
       const batch = uris.slice(i, i + 100);
+      // If position is provided, we must increment it for subsequent batches!
+      // Actually, if we insert at POS, the next batch should be at POS + 100.
+      const batchPosition = position !== undefined ? position + i : undefined;
+
       await this.executeWithRetry(() =>
-        this.spotifyApi.addTracksToPlaylist(playlistId, batch),
+        this.spotifyApi.addTracksToPlaylist(playlistId, batch, batchPosition !== undefined ? { position: batchPosition } : undefined),
       );
     }
   }
@@ -279,92 +262,158 @@ export class SpotifyService {
    * 3. Reorders tracks to match the target order ONE BY ONE to preserve timestamps.
    * WARNING: This is slow due to rate limiting (500ms delay per move).
    */
+  /**
+   * Performs a Hybrid Smart Update (Skeleton Strategy):
+   * 1. Removes all non-VIP tracks.
+   * 2. Reorders remaining VIP tracks to match target relative order (preserving timestamp).
+   * 3. Inserts new/non-VIP tracks in contiguous blocks.
+   */
   public async performSmartUpdate(
     playlistId: string,
-    tracksToRemove: string[],
-    tracksToAdd: string[],
+    tracksToRemove: string[], // Legacy param, kept for signature but logic calculates diff internally if needed, or we trust caller.
+    // Actually, for Skeleton Strategy, we just need to know which are VIPs.
+    // We will calculate removals based on "Current - VIPs".
+    // But wait, the caller 'Orchestrator' has already determined 'tracksToRemove'.
+    // If we want to strictly follow Skeleton Strategy, we should remove *everything that is not a kept VIP*.
+    // The 'tracksToRemove' passed by orchestrator is 'current - kept'.
+    // So 'tracksToRemove' IS the list of non-VIPs + expired VIPs?
+    // Orchestrator calculates 'tracksToRemove' as anything not in 'finalTrackList' + expired.
+    // Let's refine: We need to remove anything currently in the playlist that is NOT a VIP we intend to keep.
+    // The Orchestrator passes 'targetOrderedUris' which is the final desired state.
+    // It also passes 'tracksToRemove' and 'tracksToAdd'.
+    //
+    // Hybrid Strategy Implementation:
+    // 1. Bulk Remove 'tracksToRemove' (This should clear the way).
+    // 2. Identify remaining tracks (These should be the VIPs we kept).
+    // 3. Reorder these remaining tracks to match their relative order in 'targetOrderedUris'.
+    // 4. Iterate 'targetOrderedUris' and insert the 'tracksToAdd' (and any other non-VIPs?) in blocks.
+    //
+    // Wait, 'tracksToAdd' are just the NEW ones. What about "kept non-VIPs"?
+    // If we keep a non-VIP, we preserve its timestamp.
+    // But the user said: "Apply new logic exclusively to non-VIP tracks... fast removal / add (added_at resets)."
+    // This implies we SHOULD remove kept non-VIPs and re-add them to be fast?
+    // "Standard Tracks: Bulk remove / add (fast, added_at resets)."
+    // YES. We should remove ALL non-VIPs, even if they were "kept" by logic, to facilitate block insertion.
+    // So we need to calculate a SUPERSET of removals: All Current - All VIPs.
+    //
+    // So we need 'vipUris' passed in.
+    tracksToAdd: string[], // Legacy param, we can derive from target - vips.
     targetOrderedUris: string[],
     dryRun: boolean = false,
+    vipUris: string[] = [],
   ): Promise<void> {
     logger.info(`Starting Smart Update for ${playlistId}`, {
       dryRun,
-      removeCount: tracksToRemove.length,
-      addCount: tracksToAdd.length,
+      method: "Skeleton/Hybrid",
     });
 
-    // 1. Remove
-    if (tracksToRemove.length > 0) {
-      await this.removeTracks(playlistId, tracksToRemove, dryRun);
-    }
-
-    // 2. Add (Append)
-    if (tracksToAdd.length > 0) {
-      await this.addTracks(playlistId, tracksToAdd, dryRun);
-    }
-
-    // 3. Reorder Logic
     if (dryRun) {
-      logger.info("DRY RUN: Would reorder tracks to match target order.", {
-        targetOrderedUris,
-      });
+      logger.info("DRY RUN: Would execute Skeleton Strategy update.");
       return;
     }
 
-    // Re-fetch to get accurate positions after add/remove
+    // 1. Fetch Current State to determine what to purge
     const currentTracks = await this.getPlaylistTracks(playlistId);
-    const currentOrder = currentTracks.map((t) => t.uri);
+    const currentUris = currentTracks.map(t => t.uri);
 
-    // Validation check
-    if (currentOrder.length !== targetOrderedUris.length) {
-      logger.warn("Mismatch in track counts! Reordering might be imperfect.", {
-        currentCount: currentOrder.length,
-        targetCount: targetOrderedUris.length,
-      });
-      // Proceed anyway to fix what we can, or strict error?
-      // Better to warn and proceed for robustness.
+    // tracksToRemove passed in might be partial. We want to remove ALL non-VIPs.
+    // Filter: Remove if NOT in vipUris.
+    // Be careful: vipUris might contain tracks not in current playlist (future VIPs).
+    // We only care about protecting *current* VIPs.
+    const vipsSet = new Set(vipUris);
+
+    // We want to KEEP only tracks that are in 'targetOrderedUris' AND in 'vipUris'.
+    // (If a VIP is removed by logic e.g. age/dupe, it shouldn't be in targetOrderedUris, so we remove it too).
+    // Wait, if a VIP is in 'vipUris' but logic removed it (e.g. it was explicitly banned?), it wouldn't be in target.
+    // So we Keep T if (T in Current) AND (T in Target) AND (T in VIPs).
+
+    const targetSet = new Set(targetOrderedUris);
+    const toKeep = currentUris.filter(uri => vipsSet.has(uri) && targetSet.has(uri));
+    const toRemove = currentUris.filter(uri => !toKeep.includes(uri));
+
+    // 2. Bulk Remove
+    if (toRemove.length > 0) {
+      logger.info(`Removing ${toRemove.length} non-preserved tracks...`);
+      await this.removeTracks(playlistId, toRemove, dryRun);
     }
 
-    // Fetch initial snapshot ID
-    const playlistData = await this.executeWithRetry(() =>
-      this.spotifyApi.getPlaylist(playlistId, { fields: "snapshot_id" }),
-    );
-    let snapshotId = playlistData.body.snapshot_id;
+    // 3. Skeleton Reorder (VIPs)
+    // The playlist now contains only 'toKeep' tracks.
+    // We need them to be in the same relative order as they appear in 'targetOrderedUris'.
 
-    for (let i = 0; i < targetOrderedUris.length; i++) {
-      const targetUri = targetOrderedUris[i];
+    // Get fresh snapshot of what remains
+    // Optimization: We know what remains is 'toKeep' (in current order).
+    // Let's assume remove success.
+    const skeleton = [...toKeep];
 
-      // Safety check if we ran out of bounds in currentOrder
-      if (i >= currentOrder.length) break;
+    // Desired order of these backbone tracks
+    const backboneTarget = targetOrderedUris.filter(uri => vipsSet.has(uri) && skeleton.includes(uri));
 
-      if (currentOrder[i] !== targetUri) {
-        // Mismatch found at position i.
-        const currentIndex = currentOrder.indexOf(targetUri, i); // Search from i onwards
+    // Reorder skeleton to match backboneTarget
+    // Reuse the reorder logic but only for these few tracks
+    if (skeleton.length > 1) {
+      // Fetch snapshot ID once
+      const playlistData = await this.executeWithRetry(() =>
+        this.spotifyApi.getPlaylist(playlistId, { fields: "snapshot_id" }),
+      );
+      let snapshotId = playlistData.body.snapshot_id;
 
-        if (currentIndex === -1) {
-          logger.error(
-            `Track expected at pos ${i} but not found in remaining playlist! Skipping.`,
-            { targetUri, position: i },
-          );
-          continue;
+      for (let i = 0; i < backboneTarget.length; i++) {
+        const targetUri = backboneTarget[i];
+        if (i >= skeleton.length) break;
+
+        if (skeleton[i] !== targetUri) {
+          const currentIndex = skeleton.indexOf(targetUri, i);
+          if (currentIndex !== -1) {
+            const response = await this.executeWithRetry(() =>
+              this.spotifyApi.reorderTracksInPlaylist(playlistId, currentIndex, i, {
+                snapshot_id: snapshotId,
+              }),
+            );
+            snapshotId = response.body.snapshot_id;
+            await this.delay(300); // Faster delay for VIPs as they are few
+
+            const [moved] = skeleton.splice(currentIndex, 1);
+            skeleton.splice(i, 0, moved);
+          }
         }
-
-        // Pass snapshot_id to ensure we are modifying the latest version
-        const response = await this.executeWithRetry(() =>
-          this.spotifyApi.reorderTracksInPlaylist(playlistId, currentIndex, i, {
-            snapshot_id: snapshotId,
-          }),
-        );
-
-        // Update snapshot_id for the next call
-        snapshotId = response.body.snapshot_id;
-
-        // Wait to respect rate limits
-        await this.delay(500);
-
-        // Update local state
-        const [movedTrack] = currentOrder.splice(currentIndex, 1);
-        currentOrder.splice(i, 0, movedTrack);
       }
     }
+
+    // 4. Block Insertion
+    // Iterate through targetOrderedUris.
+    // We have a 'insertPointer' which starts at 0.
+    // When we encounter a VIP (from backboneTarget), we advance pointer (it's already there).
+    // When we encounter non-VIPs, we collect a batch and insert at pointer.
+
+    let insertPointer = 0;
+    let pendingBlock: string[] = [];
+
+    // Helper to flush block
+    const flushBlock = async () => {
+      if (pendingBlock.length > 0) {
+        logger.info(`Inserting block of ${pendingBlock.length} tracks at pos ${insertPointer}`);
+        await this.addTracks(playlistId, pendingBlock, dryRun, insertPointer);
+        insertPointer += pendingBlock.length;
+        pendingBlock = [];
+      }
+    };
+
+    for (const uri of targetOrderedUris) {
+      if (backboneTarget.includes(uri)) {
+        // It's a VIP that exists in our skeleton
+        // Flush any pending non-VIPs before this VIP
+        await flushBlock();
+        // The VIP is already at insertPointer (logically), so just skip over it
+        insertPointer++;
+      } else {
+        // It's a non-VIP (or a new VIP we didn't have before? Treated as non-VIP for insertion)
+        pendingBlock.push(uri);
+      }
+    }
+    // Flush updates at the end
+    await flushBlock();
+
+    logger.info("Hybrid Smart Update Complete.");
   }
 }

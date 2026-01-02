@@ -20,31 +20,19 @@ export interface AiGenerationConfig {
   isInstrumentalOnly?: boolean;
 }
 
-export interface AudioFeaturesTarget {
-  min?: number;
-  max?: number;
-  target?: number;
-}
 
-export interface AudioFeaturesConfig {
-  instrumentalness?: AudioFeaturesTarget;
-  energy?: AudioFeaturesTarget;
-  valence?: AudioFeaturesTarget;
-  danceability?: AudioFeaturesTarget;
-  tempo?: AudioFeaturesTarget;
-}
 
 export interface CurationRules {
   /** How many days a non-mandatory track can stay in the playlist */
   maxTrackAgeDays: number;
   /** Whether to aggressively remove duplicates found in the playlist */
   removeDuplicates: boolean;
-  /** Target ranges for audio features (energy, instrumentalness, etc.) */
-  audioFeatures?: AudioFeaturesConfig;
+
 }
 
 export interface TrackWithMeta {
   uri: string;
+  name: string; // Added for semantic exclusion
   artist: string; // Added for smart filtering
   addedAt: Date;
   isVip: boolean;

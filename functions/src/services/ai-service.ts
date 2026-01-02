@@ -28,7 +28,7 @@ export class AiService {
   public async generateSuggestions(
     config: AiGenerationConfig,
     count: number,
-    excludedUris: string[] = [], // TODO: We'll use this for deduplication in prompt
+    excludedTracks: string[] = [], // Semantic "Artist - Track" strings
     referenceArtists?: string[],
   ): Promise<AiSuggestion[]> {
     logger.info(`Sending request to Gemini 2.5 Flash...`, { count });
@@ -44,9 +44,9 @@ export class AiService {
       prompt += `\nFor this generation, please bias your selection towards style/vibe of these artists: ${referenceArtists.join(", ")}.`;
     }
 
-    if (excludedUris.length > 0) {
+    if (excludedTracks.length > 0) {
       // Only send a subset to avoid token limits, e.g. last 50
-      prompt += `\nConstraint: Do NOT suggest these tracks: ${JSON.stringify(excludedUris.slice(0, 50))}`;
+      prompt += `\nConstraint: Do NOT suggest these specific songs: ${JSON.stringify(excludedTracks.slice(0, 50))}`;
     }
 
     prompt += `\nReturn ONLY a valid JSON array of objects with 'artist' and 'track' fields.`;

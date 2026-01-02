@@ -73,19 +73,6 @@ export class SlotManager {
     const topSlotsLimit = 30;
     const newAiTracksPool = [...newAiTracks]; // Copy to mutate
 
-    // Simple fill for top slots, but respecting empty spots
-    // We can't really do "Smart Shuffle" properly here if we force AI tracks into slots 0-30 blindly.
-    // Better strategy: Treat this as "Reserved Slots" for AI, but fill them via the Smart Shuffle loop if possible?
-    // Or just fill them now. Let's fill now but try to avoid clumping *locally* if we can, or just trust the shuffle later?
-    // Actually, if we fill 0-30 with AI tracks, we MIGHT create clumps if AI generated 3 Metallica tracks.
-    // Let's rely on the main pool shuffle for better distribution?
-    // NO, the requirement was "Stratified", AI should be prominent.
-    // Let's keep Stratified but apply a mini-check?
-    // For now, let's keep it simple: Fill empty slots in top 30 with AI tracks until exhausted or limit reached.
-
-    // Optimized: Just mark these tracks as "to be placed in top 30" and let the smart shuffler handle it?
-    // Complexity alert. Let's stick to explicit placement but add a simple check against previous slot?
-
     for (let i = 0; i < Math.min(topSlotsLimit, totalSlots); i++) {
       if (playlist[i] === null && newAiTracksPool.length > 0) {
         const track = newAiTracksPool.shift();
@@ -116,18 +103,8 @@ export class SlotManager {
       if (playlist[i] === null) {
         if (pool.length === 0) break;
 
-        // Look at previous track's artist (if any)
-        // We need to look up the artist of the track at [i-1].
-        // But playlist array only has URIs.
-        // We need a lookup map.
-        // Build simple lookup from pool + mandatory
-        // Optimization: We know what we just placed at i-1 if we are in the loop.
-        // But i-1 might be a fixed track placed in Phase A/B.
-        // Let's rely on `playlist[i-1]` (the URI).
-        // We need to find its artist.
-        // We can search `mandatoryTracks` and `pool` (which we have).
-        // It's a bit expensive O(N) inside loop, but N=50 is tiny.
-
+        // Look up previous track's artist to prevent clumping.
+        // We check both the pool and mandatory tracks (though mandatory tracks don't store artist metadata effectively here, we do our best with the pool).
         let prevArtist: string | null = null;
         if (i > 0 && playlist[i - 1]) {
           const prevUri = playlist[i - 1];
@@ -136,11 +113,7 @@ export class SlotManager {
             (t) => t.uri === prevUri,
           );
           if (poolMatch) prevArtist = poolMatch.artist;
-          // Check mandatory (we don't have artist in MandatoryTrack interface! Only URI).
-          // This is a gap. We can't know artist of Fixed VIPs to avoid clumping next to them.
-          // But we can avoid clumping *within the filled slots*.
-          // Let's stick to avoiding clumping against what we *just* placed from the pool.
-          // If prevUri was a VIP, `poolMatch` is undefined. We accept risk.
+          // If prevUri was a VIP not in our pool, we might miss the artist, but this covers most dynamic cases.
         }
 
         // Weighted Random Pick: Pick an Artist, then pick a track.

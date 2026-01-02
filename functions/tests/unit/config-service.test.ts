@@ -28,6 +28,7 @@ describe("ConfigService", () => {
       prompt: "Test prompt",
       model: "gemini-2.5-flash",
       temperature: 0.7,
+      overfetchRatio: 2.0,
     },
     curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
     mandatoryTracks: [],

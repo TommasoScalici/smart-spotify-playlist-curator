@@ -56,7 +56,11 @@ describe("Core Logic", () => {
       const cleaner = new TrackCleaner();
       const cleanResult = cleaner.processCurrentTracks(
         currentTracksRaw.map((t) => ({
-          track: { uri: t.uri, artists: [{ name: "Test Artist" }] },
+          track: {
+            uri: t.uri,
+            name: "Test Track",
+            artists: [{ name: "Test Artist" }],
+          },
           added_at: t.addedAt.toISOString(),
         })),
         mockConfig,
@@ -112,7 +116,11 @@ describe("Core Logic", () => {
       ];
 
       const input = metallicaTracks.map((t) => ({
-        track: { uri: t.uri, artists: [{ name: t.artist }] },
+        track: {
+          uri: t.uri,
+          name: t.artist + " Track",
+          artists: [{ name: t.artist }],
+        },
         added_at: t.addedAt.toISOString(),
       }));
 

@@ -51,7 +51,6 @@ describe("PlaylistOrchestrator", () => {
       artist: "A",
       name: "N",
       addedAt: "",
-      id: "1",
     });
     mockSpotifyService.getTracks.mockResolvedValue([]); // Default empty
     mockAiService.generateSuggestions.mockResolvedValue([
@@ -76,7 +75,6 @@ describe("PlaylistOrchestrator", () => {
         artist: "Artist A",
         name: "Track A",
         addedAt: "",
-        id: "1",
       },
     ]);
 
@@ -154,87 +152,5 @@ describe("PlaylistOrchestrator", () => {
     );
   });
 
-  it("should filter tracks based on Audio Features (Sonic Consistency)", async () => {
-    // Setup empty playlist asking for tracks
-    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-    mockTrackCleaner.processCurrentTracks.mockReturnValue({
-      keptTracks: [],
-      tracksToRemove: [],
-      slotsNeeded: 10,
-    });
 
-    // Config with Sonic Rules
-    const sonicConfig = {
-      ...mockConfig,
-      curationRules: {
-        ...mockConfig.curationRules,
-        audioFeatures: { instrumentalness: { min: 0.5 } },
-      },
-    };
-
-    // AI returns 2 candidates
-    mockAiService.generateSuggestions.mockResolvedValue([
-      { artist: "Band", track: "Instrumental Track" },
-      { artist: "Band", track: "Vocal Track" },
-    ]);
-
-    // Search finds them
-    mockSpotifyService.searchTrack.mockResolvedValueOnce({
-      uri: "uri:inst",
-      artist: "Band",
-      name: "Instrumental",
-      addedAt: "",
-      id: "1",
-    });
-    mockSpotifyService.searchTrack.mockResolvedValueOnce({
-      uri: "uri:vocal",
-      artist: "Band",
-      name: "Vocal",
-      addedAt: "",
-      id: "2",
-    });
-
-    // GetTracks info
-    mockSpotifyService.getTracks.mockResolvedValue([
-      {
-        uri: "uri:inst",
-        artist: "Band",
-        name: "Instrumental",
-        addedAt: "",
-        id: "1",
-      },
-      { uri: "uri:vocal", artist: "Band", name: "Vocal", addedAt: "", id: "2" },
-    ]);
-
-    // MOCK AUDIO FEATURES
-    mockSpotifyService.getAudioFeatures.mockResolvedValue([
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { uri: "uri:inst", instrumentalness: 0.9, energy: 0.5 } as any, // Pass
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      { uri: "uri:vocal", instrumentalness: 0.0, energy: 0.5 } as any, // Fail
-    ]);
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await orchestrator.curatePlaylist(sonicConfig as any);
-
-    // Expect getAudioFeatures to be called
-    expect(mockSpotifyService.getAudioFeatures).toHaveBeenCalledWith(
-      expect.arrayContaining(["uri:inst", "uri:vocal"]),
-    );
-
-    // Expect result passed to slot manager to ONLY contain the instrumental track
-    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
-      expect.any(Array),
-      expect.any(Array),
-      expect.arrayContaining([expect.objectContaining({ uri: "uri:inst" })]), // Contains Inst
-      expect.any(Number),
-    );
-
-    // Should NOT contain vocal track in the new tracks list passed to slot manager
-    const callArgs = mockSlotManager.arrangePlaylist.mock.calls[0];
-    const newTracksArg = callArgs[2];
-    expect(newTracksArg).not.toEqual(
-      expect.arrayContaining([expect.objectContaining({ uri: "uri:vocal" })]),
-    );
-  });
 });

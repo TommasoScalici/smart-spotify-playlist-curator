@@ -2,7 +2,7 @@ import { SpotifyService } from "../services/spotify-service";
 import { AiService } from "../services/ai-service";
 import { TrackCleaner } from "./track-cleaner";
 import { SlotManager } from "./slot-manager";
-import { PlaylistConfig } from "../types";
+import { PlaylistConfig, TrackWithMeta } from "../types";
 import * as logger from "firebase-functions/logger";
 
 export class PlaylistOrchestrator {
@@ -37,7 +37,8 @@ export class PlaylistOrchestrator {
     const cleanerInput = currentTracks.map((t) => ({
       track: {
         uri: t.uri,
-        artists: [{ name: t.artist.split(", ")[0] }], // Simplified mapping from existing comma-joined string
+        name: t.name,
+        artists: [{ name: t.artist.split(", ")[0] }],
       },
       added_at: t.addedAt,
     }));
@@ -45,12 +46,7 @@ export class PlaylistOrchestrator {
     const vipUris = config.mandatoryTracks.map((m) => m.uri);
     const currentSize = currentTracks.length;
 
-    let keptTracks: {
-      uri: string;
-      artist: string;
-      addedAt: Date;
-      isVip: boolean;
-    }[] = [];
+    let keptTracks: TrackWithMeta[] = [];
     let tracksToRemove: string[] = [];
     let slotsNeeded = 0;
 
@@ -91,7 +87,7 @@ export class PlaylistOrchestrator {
     }
 
     // 3. AI Refill
-    const newAiStatus: { uri: string; artist: string }[] = [];
+    const newAiStatus: { uri: string; artist: string; track: string }[] = [];
 
     if (slotsNeeded > 0) {
       logger.info(`Need ${slotsNeeded} new tracks.`, { slotsNeeded });
@@ -123,18 +119,23 @@ export class PlaylistOrchestrator {
           `[Attempt ${attempts}/${maxAttempts}] Requesting ${requestCount} tracks to fill gap of ${currentGap} (Ratio: ${ratio})...`,
         );
 
-        // EXCLUDE: Pass distinct artists we already have to the prompt to encourage variety
-        // Existing `generateSuggestions` takes `candidates` (existing tracks) to filter duplicates.
-        // We should pass `[...survivorTracks, ...newAiStatus]` so it knows what NOT to suggest.
-        const exclusionList = [
+        // EXCLUDE: Pass distinct "Artist - Track" strings to the prompt to encourage variety
+        // Existing `generateSuggestions` checks against this list semantically.
+        const semanticExclusionList = [
+          ...keptTracks.map((t) => `${t.artist} - ${t.name}`),
+          ...newAiStatus.map((t) => `${t.artist} - ${t.track}`), // newAiStatus items have 'track' and 'artist'
+        ];
+
+        // URI list for internal duplication check
+        const uriExclusionList = [
           ...keptTracks.map((t) => t.uri),
           ...newAiStatus.map((t) => t.uri),
-        ]; // URI list for duplication check
+        ];
 
         const suggestions = await this.aiService.generateSuggestions(
           config.aiGeneration,
           requestCount,
-          exclusionList,
+          semanticExclusionList,
         );
 
         // Search tracks on Spotify
@@ -147,7 +148,7 @@ export class PlaylistOrchestrator {
             // Check if this specific URI is already in our list (Orchestrator level dedup)
             // (Though AiService exclude list handles most)
             if (
-              !exclusionList.includes(trackInfo.uri) &&
+              !uriExclusionList.includes(trackInfo.uri) &&
               !aiTrackUris.includes(trackInfo.uri)
             ) {
               aiTrackUris.push(trackInfo.uri);
@@ -161,78 +162,19 @@ export class PlaylistOrchestrator {
         }
 
         if (aiTrackUris.length > 0) {
-          let aiTracksInfo = await this.spotifyService.getTracks(aiTrackUris);
+          const aiTracksInfo = await this.spotifyService.getTracks(aiTrackUris);
 
-          // --- SONIC FILTERING ---
-          if (config.curationRules.audioFeatures) {
-            try {
-              const features =
-                await this.spotifyService.getAudioFeatures(aiTrackUris);
-              // Create map for easy lookup
-              const featureMap = new Map(
-                features.filter((f) => !!f).map((f) => [f.uri, f]),
-              );
 
-              aiTracksInfo = aiTracksInfo.filter((t) => {
-                const f = featureMap.get(t.uri);
-                if (!f) {
-                  logger.warn(
-                    `No audio features found for ${t.uri}. Skipping safely.`,
-                  );
-                  return false;
-                }
-
-                const rules = config.curationRules.audioFeatures!;
-
-                // Helper for range check
-                const check = (
-                  val: number,
-                  rule?: { min?: number; max?: number },
-                ) => {
-                  if (!rule) return true;
-                  if (rule.min !== undefined && val < rule.min) return false;
-                  if (rule.max !== undefined && val > rule.max) return false;
-                  return true;
-                };
-
-                const passesInstrumental = check(
-                  f.instrumentalness,
-                  rules.instrumentalness,
-                );
-                const passesEnergy = check(f.energy, rules.energy);
-                const passesValence = check(f.valence, rules.valence);
-                const passesTempo = check(f.tempo, rules.tempo);
-                const passesDance = check(f.danceability, rules.danceability);
-
-                if (!passesInstrumental)
-                  logger.info(
-                    `Skipping ${t.name}: Instrumentalness ${f.instrumentalness} mismatch.`,
-                  );
-                if (!passesEnergy)
-                  logger.info(`Skipping ${t.name}: Energy ${f.energy} mismatch.`);
-
-                return (
-                  passesInstrumental &&
-                  passesEnergy &&
-                  passesValence &&
-                  passesTempo &&
-                  passesDance
-                );
-              });
-            } catch (error) {
-              logger.warn(
-                "Failed to fetch Audio Features (API Error). Skipping Sonic Filtering -> Accepting all tracks.",
-                { error },
-              );
-            }
-          }
-          // -----------------------
 
           // FILTER: Enforce Artist Limit (Max 2)
           aiTracksInfo.forEach((t) => {
             const count = artistCounts[t.artist] || 0;
             if (count < 2) {
-              newAiStatus.push({ uri: t.uri, artist: t.artist });
+              newAiStatus.push({
+                uri: t.uri,
+                artist: t.artist,
+                track: t.name,
+              });
               artistCounts[t.artist] = count + 1;
             } else {
               logger.info(
@@ -286,6 +228,7 @@ export class PlaylistOrchestrator {
       tracksToAdd,
       finalTrackList,
       dryRun,
+      vipUris,
     );
 
     logger.info(`Curation complete for ${config.name}.`, {
