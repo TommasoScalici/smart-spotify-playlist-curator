@@ -1,6 +1,6 @@
 
 // import { GoogleGenerativeAI } from "@google/generative-ai";
-import { config } from "../../../functions/src/config/env";
+import { config } from "../../../functions/src/config/env.js";
 
 async function main() {
     console.log("Listing available models...");

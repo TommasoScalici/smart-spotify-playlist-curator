@@ -1,5 +1,5 @@
 
-import { AiService } from '../../../functions/src/services/ai-service';
+import { AiService } from '../../../functions/src/services/ai-service.js';
 
 async function main() {
     console.log("Initializing AiService...");
@@ -9,7 +9,9 @@ async function main() {
 
         const promptConfig = {
             prompt: "Suggest 3 upbeat pop songs from the 80s",
-            isInstrumentalOnly: false
+            isInstrumentalOnly: false,
+            model: "gemini-2.5-flash",
+            temperature: 0.7
         };
 
         console.log("Sending request to Gemini 1.5 Flash...");

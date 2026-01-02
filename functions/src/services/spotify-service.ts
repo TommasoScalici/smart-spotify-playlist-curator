@@ -78,7 +78,7 @@ export class SpotifyService {
       const networkErrors = ["ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EPIPE"];
       if (
         networkErrors.includes(error.code) ||
-        (error.cause && networkErrors.includes((error.cause as any).code))
+        (error.cause && networkErrors.includes((error.cause as { code?: string }).code as string))
       ) {
         logger.warn(
           `Network error (${error.code || "unknown"}). Retrying in 2s...`,

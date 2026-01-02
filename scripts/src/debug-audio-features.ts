@@ -50,6 +50,7 @@ async function main() {
             console.error("❌ Audio Features returned empty/null. Scopes might still be insufficient or track restricted.");
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
         console.error("❌ API Error:", error.message || error);
         if (error.statusCode === 403) {

@@ -48,7 +48,7 @@ async function main() {
             console.log(`${i}. [${t.uri}] ${t.artist} - ${t.name} ${marker}`);
         });
         // 1. VIP Verification
-        const missingVips = config.mandatoryTracks.filter(m => !tracks.some(t => t.uri === m.uri));
+        const missingVips = config.mandatoryTracks.filter(m => !tracks.some((t: any) => t.uri === m.uri));
         if (missingVips.length > 0) {
             console.error("❌ FAILED: Missing VIP Tracks:");
             missingVips.forEach(m => console.log(`- ${m.uri}`));

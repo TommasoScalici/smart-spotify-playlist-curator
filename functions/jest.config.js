@@ -13,4 +13,5 @@ module.exports = {
   verbose: true,
   // Setup file for env vars if needed
   setupFiles: ["dotenv/config"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
 };
