@@ -1,0 +1,24 @@
+# Build & Output
+dist/
+coverage/
+node_modules/
+lib/
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+
+# Environment
+.env
+.env.*
+
+# Artifacts & System
+.gemini/
+.git/
+.vscode/
+package-lock.json
+
+# Generated
+**/generated/**
