@@ -1,8 +1,7 @@
 import { SpotifyService } from "../../src/services/spotify-service";
 
-// Use environment variable or fallback to sandbox playlist
-const TEST_PLAYLIST_ID =
-  process.env.TEST_PLAYLIST_ID || "49NveLmBkE159Zt6g0Novv";
+// Use sandbox playlist for integration tests
+const SANDBOX_PLAYLIST_ID = "49NveLmBkE159Zt6g0Novv";
 
 describe("Spotify Integration: Service Logic", () => {
   let service: SpotifyService;
@@ -23,7 +22,7 @@ describe("Spotify Integration: Service Logic", () => {
 
     it("should swap tracks and verify atomic updates via snapshot_id", async () => {
       // 1. Setup Phase
-      const initialTracks = await service.getPlaylistTracks(TEST_PLAYLIST_ID);
+      const initialTracks = await service.getPlaylistTracks(SANDBOX_PLAYLIST_ID);
       if (initialTracks.length < 3) {
         console.warn("Skipping swap test: Playlist has fewer than 3 tracks.");
         return;
@@ -40,17 +39,17 @@ describe("Spotify Integration: Service Logic", () => {
       ];
 
       // 2. Execution Phase
-      await service.performSmartUpdate(TEST_PLAYLIST_ID, [], [], targetOrder);
+      await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, [], [], targetOrder);
 
       // Wait for eventual consistency
       await new Promise((r) => setTimeout(r, 5000));
 
       // 3. Verification Phase
-      const finalTracks = await service.getPlaylistTracks(TEST_PLAYLIST_ID);
+      const finalTracks = await service.getPlaylistTracks(SANDBOX_PLAYLIST_ID);
 
       // Cleanup: Revert changes immediately
       const revertOrder = initialTracks.map((t) => t.uri);
-      await service.performSmartUpdate(TEST_PLAYLIST_ID, [], [], revertOrder);
+      await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, [], [], revertOrder);
 
       // Assertions
       expect(finalTracks[0].uri).toBe(trackB.uri);

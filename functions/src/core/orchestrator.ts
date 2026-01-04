@@ -4,6 +4,7 @@ import { TrackCleaner } from "./track-cleaner";
 import { SlotManager } from "./slot-manager";
 import { PlaylistConfig, TrackWithMeta } from "../types";
 import * as logger from "firebase-functions/logger";
+import { db } from "../config/firebase";
 
 export class PlaylistOrchestrator {
   constructor(
@@ -29,9 +30,19 @@ export class PlaylistOrchestrator {
     // Sanitize ID (handle spotify:playlist: prefix)
     const playlistId = config.id.replace("spotify:playlist:", "");
 
-    // 1. Fetch Current State
-    const currentTracks =
-      await this.spotifyService.getPlaylistTracks(playlistId);
+    // 1. Fetch Current State & Metadata
+    const [currentTracks, metadata] = await Promise.all([
+      this.spotifyService.getPlaylistTracks(playlistId),
+      this.spotifyService.getPlaylistMetadata(playlistId)
+    ]);
+
+    // Update metadata in Firestore (background, don't await blocking)
+    db.collection('playlists').doc(config.id).update({
+      imageUrl: metadata.imageUrl || "", // clear if empty
+      owner: metadata.owner,
+      // Optional: Update name/desc if we want to sync from Spotify? 
+      // No, Config is source of truth for name/desc usually, but owner/image come from Spotify.
+    }).catch(err => logger.error("Failed to update playlist metadata in Firestore", err));
 
     // Map to format expected by cleaner
     const cleanerInput = currentTracks.map((t) => ({

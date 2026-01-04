@@ -127,6 +127,8 @@ For production security, we use **Cloud Secret Manager** instead of `.env` files
 -   **`scripts/`**: Local utility tools.
     -   `src/auth/`: Token generation.
     -   `src/dry-run-check.ts`: End-to-end verification script.
+-   **`web-app/`**: **Command Center UI** (React + Vite).
+    -   dashboard for editing playlist configs and triggering runs.
 -   **`.github/workflows/`**: CI/CD configurations.
 
 ## 📄 License

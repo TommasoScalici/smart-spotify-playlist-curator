@@ -56,6 +56,8 @@ export interface PlaylistConfig {
   id: string; // Spotify Playlist ID or URI
   name: string; // Human readable name
   enabled: boolean;
+  imageUrl?: string;
+  owner?: string;
   dryRun?: boolean; // If true, no changes will be applied to Spotify
   mandate?: "exact" | "flexible"; // How strict the rules are
   settings: PlaylistSettings;

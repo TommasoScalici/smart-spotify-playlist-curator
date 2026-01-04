@@ -9,6 +9,15 @@ export interface TrackInfo {
   addedAt: string;
 }
 
+export interface SearchResult {
+  uri: string;
+  name: string;
+  artist?: string; // For tracks
+  owner?: string; // For playlists
+  imageUrl?: string;
+  type: "track" | "playlist" | "artist";
+}
+
 export class SpotifyService {
   private static instance: SpotifyService;
   private spotifyApi: SpotifyWebApi;
@@ -183,6 +192,18 @@ export class SpotifyService {
 
 
 
+  public async getPlaylistMetadata(playlistId: string): Promise<{ name: string; description: string; imageUrl?: string; owner: string }> {
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.getPlaylist(playlistId, { fields: 'name,description,images,owner' });
+      return {
+        name: response.body.name,
+        description: response.body.description || "",
+        imageUrl: response.body.images?.[0]?.url,
+        owner: response.body.owner.display_name || "Unknown"
+      };
+    });
+  }
+
   public async searchTrack(query: string): Promise<TrackInfo | null> {
     return this.executeWithRetry(async () => {
       const response = await this.spotifyApi.searchTracks(query, { limit: 1 });
@@ -197,6 +218,57 @@ export class SpotifyService {
         };
       }
       return null;
+    });
+  }
+
+  /**
+   * Generic search for Tracks, Playlists, or Artists.
+   */
+  public async search(
+    query: string,
+    types: ("track" | "playlist" | "artist")[],
+    limit: number = 20,
+  ): Promise<SearchResult[]> {
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.search(query, types, { limit });
+      const results: SearchResult[] = [];
+
+      if (response.body.tracks) {
+        response.body.tracks.items.forEach((t) => {
+          results.push({
+            uri: t.uri,
+            name: t.name,
+            artist: t.artists.map((a) => a.name).join(", "),
+            imageUrl: t.album.images[0]?.url,
+            type: "track",
+          });
+        });
+      }
+
+      if (response.body.playlists) {
+        response.body.playlists.items.forEach((p) => {
+          results.push({
+            uri: p.uri,
+            name: p.name,
+            owner: p.owner.display_name,
+            imageUrl: p.images[0]?.url,
+            type: "playlist",
+          });
+        });
+      }
+
+      if (response.body.artists) {
+        response.body.artists.items.forEach((a) => {
+          results.push({
+            uri: a.uri,
+            name: a.name,
+            imageUrl: a.images[0]?.url,
+            type: "artist",
+          });
+        });
+      }
+
+      return results;
     });
   }
 

@@ -40,6 +40,8 @@ export const PlaylistConfigSchema = z.object({
     ),
   name: z.string().min(1),
   enabled: z.boolean(),
+  imageUrl: z.string().url().optional(),
+  owner: z.string().optional(),
   dryRun: z.boolean().optional().default(false),
   settings: z.object({
     targetTotalTracks: z.number().int().positive(),
