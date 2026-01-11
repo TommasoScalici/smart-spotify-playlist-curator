@@ -3,8 +3,8 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-
-  build-and-test-functions:
+  # 1. Build Shared Library (Foundation)
+  build-shared:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -13,20 +13,15 @@ jobs:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run build --workspace=shared
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist
 
-      - name: Install Dependencies
-        run: npm ci
-
-      - name: Lint Functions
-        run: npm run lint --workspace=functions
-
-      - name: Build Functions
-        run: npm run build --workspace=functions
-
-      - name: Test Functions
-        run: npm test --workspace=functions
-
-  web-app-build:
+  # 2. Fast Fail - Code Quality (Linting & Types)
+  test-code-quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -35,12 +30,78 @@ jobs:
           node-version: '24'
           cache: 'npm'
           cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npm run type-check # Root check
+      - run: npm run lint # Root lint (runs all workspaces)
 
-      - name: Install Dependencies
-        run: npm ci
+  # 3. Build Functions (Depends on Shared)
+  build-functions:
+    needs: build-shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist
+      - run: npm run build --workspace=functions
 
-      - name: Lint Web App
-        run: npm run lint --workspace=web-app
+  # 4. Test Functions (Depends on Shared)
+  test-functions:
+    needs: build-shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist
+      - run: npm test --workspace=functions
 
-      - name: Build Web App
-        run: npm run build --workspace=web-app
+  # 5. Build Web App (Depends on Shared)
+  build-webapp:
+    needs: build-shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist
+      - run: npm run build --workspace=web-app
+
+  # 6. Test Web App (Depends on Shared)
+  test-webapp:
+    needs: build-shared
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - uses: actions/download-artifact@v4
+        with:
+          name: shared-dist
+          path: shared/dist
+      - run: npm test --workspace=web-app
