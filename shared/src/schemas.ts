@@ -59,3 +59,6 @@ export const PlaylistConfigSchema = z.object({
 export type PlaylistConfig = z.infer<typeof PlaylistConfigSchema>;
 export type MandatoryTrack = z.infer<typeof MandatoryTrackSchema>;
 export type AiGenerationConfig = z.infer<typeof AiGenerationConfigSchema>;
+export type CurationRules = z.infer<typeof CurationRulesSchema>;
+export type PlaylistSettings = z.infer<typeof PlaylistSettingsSchema>;
+export type PositionRange = z.infer<typeof PositionRangeSchema>;

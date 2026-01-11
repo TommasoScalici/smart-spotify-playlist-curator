@@ -1,7 +1,7 @@
-import { GenerativeModel, GoogleGenerativeAI } from "@google/generative-ai";
-import { config } from "../config/env";
-import { AiGenerationConfig } from "../types";
-import * as logger from "firebase-functions/logger";
+import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
+import { config } from '../config/env';
+import { AiGenerationConfig } from '../types';
+import * as logger from 'firebase-functions/logger';
 
 export interface AiSuggestion {
   artist: string;
@@ -14,14 +14,14 @@ export class AiService {
 
   constructor() {
     if (!config.GOOGLE_AI_API_KEY) {
-      throw new Error("GOOGLE_AI_API_KEY is not set in environment variables.");
+      throw new Error('GOOGLE_AI_API_KEY is not set in environment variables.');
     }
     this.genAI = new GoogleGenerativeAI(config.GOOGLE_AI_API_KEY);
     this.model = this.genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: 'gemini-2.5-flash',
       generationConfig: {
-        responseMimeType: "application/json",
-      },
+        responseMimeType: 'application/json'
+      }
     });
   }
 
@@ -29,7 +29,7 @@ export class AiService {
     config: AiGenerationConfig,
     count: number,
     excludedTracks: string[] = [], // Semantic "Artist - Track" strings
-    referenceArtists?: string[],
+    referenceArtists?: string[]
   ): Promise<AiSuggestion[]> {
     logger.info(`Sending request to Gemini 2.5 Flash...`, { count });
 
@@ -41,7 +41,7 @@ export class AiService {
     prompt += `\nPlease generate exactly ${count} tracks.`;
 
     if (referenceArtists && referenceArtists.length > 0) {
-      prompt += `\nFor this generation, please bias your selection towards style/vibe of these artists: ${referenceArtists.join(", ")}.`;
+      prompt += `\nFor this generation, please bias your selection towards style/vibe of these artists: ${referenceArtists.join(', ')}.`;
     }
 
     if (excludedTracks.length > 0) {
@@ -57,42 +57,42 @@ export class AiService {
       const text = response.text();
 
       const duration = Date.now() - requestStart;
-      logger.info("AI Response received", {
+      logger.info('AI Response received', {
         durationMs: duration,
-        candidateCount: response.candidates?.length,
+        candidateCount: response.candidates?.length
       });
 
       // Since we enforced JSON mimeType, we should be able to parse directly
       // But good to be safe with basic cleanup if model adds markdown blocks
       const cleanText = text
-        .replace(/```json/g, "")
-        .replace(/```/g, "")
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
         .trim();
 
       let suggestions: AiSuggestion[];
       try {
         suggestions = JSON.parse(cleanText);
       } catch (parseError) {
-        logger.error("Failed to parse AI response as JSON", {
+        logger.error('Failed to parse AI response as JSON', {
           rawText: text,
           cleanText,
-          error: parseError,
+          error: parseError
         });
-        throw new Error("AI response was not valid JSON.");
+        throw new Error('AI response was not valid JSON.');
       }
 
       // Basic validation
       if (!Array.isArray(suggestions)) {
-        throw new Error("AI did not return an array");
+        throw new Error('AI did not return an array');
       }
 
-      logger.info("AI suggestions parsed successfully", {
-        count: suggestions.length,
+      logger.info('AI suggestions parsed successfully', {
+        count: suggestions.length
       });
 
       return suggestions.slice(0, count);
     } catch (error) {
-      logger.error("Error generating AI suggestions:", error);
+      logger.error('Error generating AI suggestions:', error);
       // Fallback or rethrow? For now rethrow.
       throw error;
     }

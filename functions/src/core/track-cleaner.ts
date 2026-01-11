@@ -1,5 +1,5 @@
-import { PlaylistConfig } from "../types";
-import { ProcessingResult, TrackWithMeta } from "../types/core-types";
+import { PlaylistConfig } from '../types';
+import { ProcessingResult, TrackWithMeta } from '../types/core-types';
 
 export class TrackCleaner {
   /**
@@ -16,16 +16,14 @@ export class TrackCleaner {
     }[],
     config: PlaylistConfig,
     vipUris: string[],
-    targetSizeAfterCleanup?: number, // Optional override for aggressive cleaning
+    targetSizeAfterCleanup?: number // Optional override for aggressive cleaning
   ): ProcessingResult {
     const { curationRules, settings } = config;
     const maxAgeDays = curationRules.maxTrackAgeDays;
 
     // Use override if provided, otherwise default to settings target
     const effectiveTarget =
-      targetSizeAfterCleanup !== undefined
-        ? targetSizeAfterCleanup
-        : settings.targetTotalTracks;
+      targetSizeAfterCleanup !== undefined ? targetSizeAfterCleanup : settings.targetTotalTracks;
 
     const now = new Date();
 
@@ -35,9 +33,7 @@ export class TrackCleaner {
       const isVip = vipUris.includes(t.track.uri);
       // Robust artist extraction
       const artist =
-        t.track.artists && t.track.artists.length > 0
-          ? t.track.artists[0].name
-          : "Unknown Artist";
+        t.track.artists && t.track.artists.length > 0 ? t.track.artists[0].name : 'Unknown Artist';
 
       return {
         uri: t.track.uri,
@@ -45,7 +41,7 @@ export class TrackCleaner {
         artist: artist,
         addedAt: addedAt,
         isVip: isVip,
-        originalIndex: index,
+        originalIndex: index
       };
     });
 
@@ -119,7 +115,7 @@ export class TrackCleaner {
     return {
       keptTracks: tracks,
       tracksToRemove: removedUris,
-      slotsNeeded: slotsNeeded,
+      slotsNeeded: slotsNeeded
     };
   }
 }

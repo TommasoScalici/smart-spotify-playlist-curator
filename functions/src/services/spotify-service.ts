@@ -1,6 +1,6 @@
-import SpotifyWebApi from "spotify-web-api-node";
-import { config } from "../config/env";
-import * as logger from "firebase-functions/logger";
+import SpotifyWebApi from 'spotify-web-api-node';
+import { config } from '../config/env';
+import * as logger from 'firebase-functions/logger';
 
 export interface TrackInfo {
   uri: string;
@@ -15,7 +15,7 @@ export interface SearchResult {
   artist?: string; // For tracks
   owner?: string; // For playlists
   imageUrl?: string;
-  type: "track" | "playlist" | "artist";
+  type: 'track' | 'playlist' | 'artist';
 }
 
 export class SpotifyService {
@@ -27,7 +27,7 @@ export class SpotifyService {
     this.spotifyApi = new SpotifyWebApi({
       clientId: config.SPOTIFY_CLIENT_ID,
       clientSecret: config.SPOTIFY_CLIENT_SECRET,
-      refreshToken: config.SPOTIFY_REFRESH_TOKEN,
+      refreshToken: config.SPOTIFY_REFRESH_TOKEN
     });
   }
 
@@ -48,10 +48,7 @@ export class SpotifyService {
   /**
    * Executes an API operation with retry logic for 401 (Auth) and 429 (Rate Limit).
    */
-  private async executeWithRetry<T>(
-    operation: () => Promise<T>,
-    retries = 3,
-  ): Promise<T> {
+  private async executeWithRetry<T>(operation: () => Promise<T>, retries = 3): Promise<T> {
     await this.ensureAccessToken();
 
     try {
@@ -63,11 +60,11 @@ export class SpotifyService {
       // Handle 429 Too Many Requests
       if (error.statusCode === 429) {
         const retryAfter =
-          error.headers && error.headers["retry-after"]
-            ? parseInt(error.headers["retry-after"])
+          error.headers && error.headers['retry-after']
+            ? parseInt(error.headers['retry-after'])
             : 1;
         logger.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`, {
-          retryAfter,
+          retryAfter
         });
         await this.delay(retryAfter * 1000 + 100); // Wait + buffer
         return this.executeWithRetry(operation, retries - 1);
@@ -75,7 +72,7 @@ export class SpotifyService {
 
       // Handle 401 Unauthorized (Expired Token)
       if (error.statusCode === 401) {
-        logger.warn("Got 401, refreshing token and retrying...");
+        logger.warn('Got 401, refreshing token and retrying...');
         this.tokenExpirationEpoch = 0; // Force refresh
         await this.ensureAccessToken();
         return this.executeWithRetry(operation, retries - 1);
@@ -83,15 +80,12 @@ export class SpotifyService {
 
       // Handle Network Errors (ETIMEDOUT, ECONNRESET, ENOTFOUND)
       // Node.js error codes are typically strings in error.code
-      const networkErrors = ["ETIMEDOUT", "ECONNRESET", "ENOTFOUND", "EPIPE"];
+      const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EPIPE'];
       if (
         networkErrors.includes(error.code) ||
         (error.cause && networkErrors.includes((error.cause as { code?: string }).code as string))
       ) {
-        logger.warn(
-          `Network error (${error.code || "unknown"}). Retrying in 2s...`,
-          { error },
-        );
+        logger.warn(`Network error (${error.code || 'unknown'}). Retrying in 2s...`, { error });
         await this.delay(2000); // 2s wait for network glitches
         return this.executeWithRetry(operation, retries - 1);
       }
@@ -99,7 +93,6 @@ export class SpotifyService {
       throw error;
     }
   }
-
 
   /**
    * Ensures a valid access token exists. Refreshes if expired or missing.
@@ -110,13 +103,13 @@ export class SpotifyService {
     if (now + 5 * 60 * 1000 > this.tokenExpirationEpoch) {
       try {
         const data = await this.spotifyApi.refreshAccessToken();
-        const accessToken = data.body["access_token"];
-        const expiresInSeconds = data.body["expires_in"];
+        const accessToken = data.body['access_token'];
+        const expiresInSeconds = data.body['expires_in'];
 
         this.spotifyApi.setAccessToken(accessToken);
         this.tokenExpirationEpoch = now + expiresInSeconds * 1000;
       } catch (error) {
-        logger.error("Failed to refresh access token:", error);
+        logger.error('Failed to refresh access token:', error);
         throw error;
       }
     }
@@ -137,19 +130,17 @@ export class SpotifyService {
       while (hasMore) {
         const response = await this.spotifyApi.getPlaylistTracks(playlistId, {
           offset,
-          limit,
+          limit
         });
         const items = response.body.items;
 
         for (const item of items) {
-          if (item.track && item.track.type === "track") {
+          if (item.track && item.track.type === 'track') {
             allTracks.push({
               uri: item.track.uri,
               name: item.track.name,
-              artist: item.track.artists
-                .map((a: { name: string }) => a.name)
-                .join(", "),
-              addedAt: item.added_at,
+              artist: item.track.artists.map((a: { name: string }) => a.name).join(', '),
+              addedAt: item.added_at
             });
           }
         }
@@ -167,7 +158,7 @@ export class SpotifyService {
 
   public async getTracks(uris: string[]): Promise<TrackInfo[]> {
     if (uris.length === 0) return [];
-    const trackIds = uris.map((uri) => uri.replace("spotify:track:", ""));
+    const trackIds = uris.map((uri) => uri.replace('spotify:track:', ''));
     const allTracks: TrackInfo[] = [];
 
     // Batch requests (limit 50 per call)
@@ -180,8 +171,8 @@ export class SpotifyService {
             allTracks.push({
               uri: t.uri,
               name: t.name,
-              artist: t.artists.map((a) => a.name).join(", "),
-              addedAt: new Date().toISOString(), // New tracks don't have addedAt yet
+              artist: t.artists.map((a) => a.name).join(', '),
+              addedAt: new Date().toISOString() // New tracks don't have addedAt yet
             });
           }
         });
@@ -190,16 +181,18 @@ export class SpotifyService {
     return allTracks;
   }
 
-
-
-  public async getPlaylistMetadata(playlistId: string): Promise<{ name: string; description: string; imageUrl?: string; owner: string }> {
+  public async getPlaylistMetadata(
+    playlistId: string
+  ): Promise<{ name: string; description: string; imageUrl?: string; owner: string }> {
     return this.executeWithRetry(async () => {
-      const response = await this.spotifyApi.getPlaylist(playlistId, { fields: 'name,description,images,owner' });
+      const response = await this.spotifyApi.getPlaylist(playlistId, {
+        fields: 'name,description,images,owner'
+      });
       return {
         name: response.body.name,
-        description: response.body.description || "",
+        description: response.body.description || '',
         imageUrl: response.body.images?.[0]?.url,
-        owner: response.body.owner.display_name || "Unknown"
+        owner: response.body.owner.display_name || 'Unknown'
       };
     });
   }
@@ -213,8 +206,8 @@ export class SpotifyService {
         return {
           uri: t.uri,
           name: t.name,
-          artist: t.artists.map((a) => a.name).join(", "),
-          addedAt: new Date().toISOString(),
+          artist: t.artists.map((a) => a.name).join(', '),
+          addedAt: new Date().toISOString()
         };
       }
       return null;
@@ -226,8 +219,8 @@ export class SpotifyService {
    */
   public async search(
     query: string,
-    types: ("track" | "playlist" | "artist")[],
-    limit: number = 20,
+    types: ('track' | 'playlist' | 'artist')[],
+    limit: number = 20
   ): Promise<SearchResult[]> {
     return this.executeWithRetry(async () => {
       const response = await this.spotifyApi.search(query, types, { limit });
@@ -238,9 +231,9 @@ export class SpotifyService {
           results.push({
             uri: t.uri,
             name: t.name,
-            artist: t.artists.map((a) => a.name).join(", "),
+            artist: t.artists.map((a) => a.name).join(', '),
             imageUrl: t.album.images[0]?.url,
-            type: "track",
+            type: 'track'
           });
         });
       }
@@ -252,7 +245,7 @@ export class SpotifyService {
             name: p.name,
             owner: p.owner.display_name,
             imageUrl: p.images[0]?.url,
-            type: "playlist",
+            type: 'playlist'
           });
         });
       }
@@ -263,7 +256,7 @@ export class SpotifyService {
             uri: a.uri,
             name: a.name,
             imageUrl: a.images[0]?.url,
-            type: "artist",
+            type: 'artist'
           });
         });
       }
@@ -275,15 +268,15 @@ export class SpotifyService {
   public async removeTracks(
     playlistId: string,
     uris: string[],
-    dryRun: boolean = false,
+    dryRun: boolean = false
   ): Promise<void> {
     if (uris.length === 0) return;
 
     if (dryRun) {
-      logger.info("DRY RUN: Would remove tracks", {
+      logger.info('DRY RUN: Would remove tracks', {
         playlistId,
         count: uris.length,
-        uris,
+        uris
       });
       return;
     }
@@ -292,7 +285,7 @@ export class SpotifyService {
     for (let i = 0; i < uris.length; i += 100) {
       const batch = uris.slice(i, i + 100).map((uri) => ({ uri }));
       await this.executeWithRetry(() =>
-        this.spotifyApi.removeTracksFromPlaylist(playlistId, batch),
+        this.spotifyApi.removeTracksFromPlaylist(playlistId, batch)
       );
     }
   }
@@ -301,15 +294,15 @@ export class SpotifyService {
     playlistId: string,
     uris: string[],
     dryRun: boolean = false,
-    position?: number,
+    position?: number
   ): Promise<void> {
     if (uris.length === 0) return;
 
     if (dryRun) {
-      logger.info("DRY RUN: Would add tracks", {
+      logger.info('DRY RUN: Would add tracks', {
         playlistId,
         count: uris.length,
-        uris,
+        uris
       });
       return;
     }
@@ -322,7 +315,11 @@ export class SpotifyService {
       const batchPosition = position !== undefined ? position + i : undefined;
 
       await this.executeWithRetry(() =>
-        this.spotifyApi.addTracksToPlaylist(playlistId, batch, batchPosition !== undefined ? { position: batchPosition } : undefined),
+        this.spotifyApi.addTracksToPlaylist(
+          playlistId,
+          batch,
+          batchPosition !== undefined ? { position: batchPosition } : undefined
+        )
       );
     }
   }
@@ -342,7 +339,7 @@ export class SpotifyService {
    */
   public async performSmartUpdate(
     playlistId: string,
-    tracksToRemove: string[], // Legacy param, kept for signature but logic calculates diff internally if needed, or we trust caller.
+    _tracksToRemove: string[], // Legacy param, kept for signature but logic calculates diff internally if needed, or we trust caller.
     // Actually, for Skeleton Strategy, we just need to know which are VIPs.
     // We will calculate removals based on "Current - VIPs".
     // But wait, the caller 'Orchestrator' has already determined 'tracksToRemove'.
@@ -369,24 +366,24 @@ export class SpotifyService {
     // So we need to calculate a SUPERSET of removals: All Current - All VIPs.
     //
     // So we need 'vipUris' passed in.
-    tracksToAdd: string[], // Legacy param, we can derive from target - vips.
+    _tracksToAdd: string[], // Legacy param, we can derive from target - vips.
     targetOrderedUris: string[],
     dryRun: boolean = false,
-    vipUris: string[] = [],
+    vipUris: string[] = []
   ): Promise<void> {
     logger.info(`Starting Smart Update for ${playlistId}`, {
       dryRun,
-      method: "Skeleton/Hybrid",
+      method: 'Skeleton/Hybrid'
     });
 
     if (dryRun) {
-      logger.info("DRY RUN: Would execute Skeleton Strategy update.");
+      logger.info('DRY RUN: Would execute Skeleton Strategy update.');
       return;
     }
 
     // 1. Fetch Current State to determine what to purge
     const currentTracks = await this.getPlaylistTracks(playlistId);
-    const currentUris = currentTracks.map(t => t.uri);
+    const currentUris = currentTracks.map((t) => t.uri);
 
     // tracksToRemove passed in might be partial. We want to remove ALL non-VIPs.
     // Filter: Remove if NOT in vipUris.
@@ -400,8 +397,8 @@ export class SpotifyService {
     // So we Keep T if (T in Current) AND (T in Target) AND (T in VIPs).
 
     const targetSet = new Set(targetOrderedUris);
-    const toKeep = currentUris.filter(uri => vipsSet.has(uri) && targetSet.has(uri));
-    const toRemove = currentUris.filter(uri => !toKeep.includes(uri));
+    const toKeep = currentUris.filter((uri) => vipsSet.has(uri) && targetSet.has(uri));
+    const toRemove = currentUris.filter((uri) => !toKeep.includes(uri));
 
     // 2. Bulk Remove
     if (toRemove.length > 0) {
@@ -419,14 +416,16 @@ export class SpotifyService {
     const skeleton = [...toKeep];
 
     // Desired order of these backbone tracks
-    const backboneTarget = targetOrderedUris.filter(uri => vipsSet.has(uri) && skeleton.includes(uri));
+    const backboneTarget = targetOrderedUris.filter(
+      (uri) => vipsSet.has(uri) && skeleton.includes(uri)
+    );
 
     // Reorder skeleton to match backboneTarget
     // Reuse the reorder logic but only for these few tracks
     if (skeleton.length > 1) {
       // Fetch snapshot ID once
       const playlistData = await this.executeWithRetry(() =>
-        this.spotifyApi.getPlaylist(playlistId, { fields: "snapshot_id" }),
+        this.spotifyApi.getPlaylist(playlistId, { fields: 'snapshot_id' })
       );
       let snapshotId = playlistData.body.snapshot_id;
 
@@ -439,8 +438,8 @@ export class SpotifyService {
           if (currentIndex !== -1) {
             const response = await this.executeWithRetry(() =>
               this.spotifyApi.reorderTracksInPlaylist(playlistId, currentIndex, i, {
-                snapshot_id: snapshotId,
-              }),
+                snapshot_id: snapshotId
+              })
             );
             snapshotId = response.body.snapshot_id;
             await this.delay(300); // Faster delay for VIPs as they are few
@@ -486,6 +485,6 @@ export class SpotifyService {
     // Flush updates at the end
     await flushBlock();
 
-    logger.info("Hybrid Smart Update Complete.");
+    logger.info('Hybrid Smart Update Complete.');
   }
 }

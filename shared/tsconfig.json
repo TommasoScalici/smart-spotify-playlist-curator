@@ -1,13 +1,12 @@
 {
   "extends": "../tsconfig.base.json",
   "compilerOptions": {
+    "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "outDir": "lib",
-    "sourceMap": true,
-    "target": "ESNext",
-    "rootDir": "src"
+    "declaration": true,
+    "outDir": "./dist",
+    "skipLibCheck": true
   },
-  "compileOnSave": true,
   "include": ["src"]
 }

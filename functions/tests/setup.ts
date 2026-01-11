@@ -1,9 +1,5 @@
-// Silence Firebase Logger
-jest.mock("firebase-functions/logger", () => ({
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    log: jest.fn(),
-    write: jest.fn(),
-}));
+// Basic setup or mocks config can go here
+// process.env.GOOGLE_AI_API_KEY = 'test-key';
+// process.env.SPOTIFY_CLIENT_ID = 'test-id';
+// process.env.SPOTIFY_CLIENT_SECRET = 'test-secret';
+// process.env.SPOTIFY_REFRESH_TOKEN = 'test-refresh';

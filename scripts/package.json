@@ -1,39 +1,39 @@
 {
-    "name": "scripts",
-    "version": "1.0.0",
-    "description": "Local scripts for smart-spotify-playlist-curator",
-    "type": "module",
-    "main": "index.js",
-    "engines": {
-        "node": "24"
-    },
-    "scripts": {
-        "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
-        "dry-run-check": "tsx src/dry-run-check.ts",
-        "seed-config": "tsx src/admin/seed-config.ts",
-        "run-curator": "tsx src/run-curator.ts",
-        "check-playlist": "tsx src/check-playlist.ts",
-        "lint": "eslint ."
-    },
-    "dependencies": {
-        "@google/generative-ai": "^0.24.1",
-        "dotenv": "^17.2.3",
-        "express": "^5.2.1",
-        "firebase-admin": "^13.6.0",
-        "open": "^11.0.0",
-        "spotify-web-api-node": "^5.0.2",
-        "zod": "^4.3.4"
-    },
-    "devDependencies": {
-        "@eslint/js": "^9.39.2",
-        "@types/express": "^5.0.6",
-        "@types/node": "^25.0.3",
-        "@types/spotify-web-api-node": "^5.0.11",
-        "eslint": "^9.39.2",
-        "eslint-config-prettier": "^10.1.8",
-        "globals": "^17.0.0",
-        "tsx": "^4.21.0",
-        "typescript": "^5.9.3",
-        "typescript-eslint": "^8.51.0"
-    }
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Local scripts for smart-spotify-playlist-curator",
+  "type": "module",
+  "main": "index.js",
+  "engines": {
+    "node": "24"
+  },
+  "scripts": {
+    "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
+    "dry-run-check": "tsx src/dry-run-check.ts",
+    "seed-config": "tsx src/admin/seed-config.ts",
+    "run-curator": "tsx src/run-curator.ts",
+    "check-playlist": "tsx src/check-playlist.ts",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "firebase-admin": "^13.6.0",
+    "open": "^11.0.0",
+    "spotify-web-api-node": "^5.0.2",
+    "zod": "^4.3.4"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.0.3",
+    "@types/spotify-web-api-node": "^5.0.11",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.51.0"
+  }
 }

@@ -90,7 +90,7 @@ export const updatePlaylists = onRequest(
       'GOOGLE_AI_API_KEY'
     ]
   },
-  async (request, response) => {
+  async (_request, response) => {
     logger.info('Received request to update playlists (HTTP).');
     try {
       const result = await runOrchestrator();

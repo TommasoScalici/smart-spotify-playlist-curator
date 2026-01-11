@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { PlaylistConfig, PlaylistConfigSchema } from '../types/schemas';
+import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { Save, Loader2, Plus, Trash2, HelpCircle, Music, X } from 'lucide-react';
 import { SpotifySearch } from './SpotifySearch';
 import {
@@ -15,6 +15,7 @@ import {
 } from 'react-hook-form';
 import { useState, useEffect } from 'react';
 import { FunctionsService } from '../services/functions-service';
+import { useQuery } from '@tanstack/react-query';
 
 interface ConfigEditorProps {
   initialConfig?: PlaylistConfig;
@@ -60,56 +61,27 @@ const TrackRow = ({ index, control, register, setValue, remove, errors }: TrackR
     name: `mandatoryTracks.${index}` as const
   });
 
-  // Local state only needed if we don't have stored metadata (backwards compatibility)
-  const [fetchedMetadata, setMetadata] = useState<{
-    name: string;
-    artist?: string;
-    imageUrl?: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(false);
-
-  // Derived display data: Prefer stored (fast), fall back to fetched (slow)
-  const displayMeta = {
-    name: trackValue.name || fetchedMetadata?.name || trackValue.uri, // Fallback to URI if nothing else
-    artist: trackValue.artist || fetchedMetadata?.artist,
-    imageUrl: trackValue.imageUrl || fetchedMetadata?.imageUrl
-  };
-
   // Side effect: Only fetch if we have a URI but NO stored metadata and NO fetched metadata
-  useEffect(() => {
-    let isMounted = true;
+  // Derived display data: Prefer stored (fast), fall back to fetched (slow)
+  const shouldFetch =
+    !!trackValue.uri && trackValue.uri.startsWith('spotify:track:') && !trackValue.name;
 
-    const uri = trackValue.uri;
-    const hasStoredMeta = !!trackValue.name; // If we have name, we assume we have enough
+  const { data: fetchedData, isLoading: loading } = useQuery({
+    queryKey: ['spotify', 'track', trackValue.uri],
+    queryFn: async () => {
+      if (!trackValue.uri) return null;
+      const results = await FunctionsService.searchSpotify(trackValue.uri, 'track');
+      return results && results.length > 0 ? results[0] : null;
+    },
+    enabled: shouldFetch,
+    staleTime: 1000 * 60 * 60 // Cache for 1 hour
+  });
 
-    if (uri && uri.startsWith('spotify:track:') && !hasStoredMeta && !fetchedMetadata) {
-      setLoading(true);
-      const doFetch = async () => {
-        try {
-          const results = await FunctionsService.searchSpotify(uri, 'track');
-          if (isMounted && results && results.length > 0) {
-            const match = results.find((r) => r.uri === uri) || results[0];
-            setMetadata({
-              name: match.name,
-              artist: match.artist,
-              imageUrl: match.imageUrl
-            });
-            // NOTE: In a future migration, we could auto-save this fetched data to the form here.
-            // But for now, we just display it.
-          }
-        } catch {
-          // Ignore
-        } finally {
-          if (isMounted) setLoading(false);
-        }
-      };
-      doFetch();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [trackValue.uri, trackValue.name, fetchedMetadata]);
+  const displayMeta = {
+    name: trackValue.name || fetchedData?.name || trackValue.uri,
+    artist: trackValue.artist || fetchedData?.artist,
+    imageUrl: trackValue.imageUrl || fetchedData?.imageUrl
+  };
 
   return (
     <div
@@ -230,7 +202,6 @@ const TrackRow = ({ index, control, register, setValue, remove, errors }: TrackR
                       setValue(`mandatoryTracks.${index}.name`, undefined);
                       setValue(`mandatoryTracks.${index}.artist`, undefined);
                       setValue(`mandatoryTracks.${index}.imageUrl`, undefined);
-                      setMetadata(null);
                     }}
                     style={{
                       background: 'none',
@@ -334,30 +305,31 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
   );
 
   // Fetch playlist meta if we have ID but no visuals (e.g. on load)
-  useEffect(() => {
-    if (playlistId && playlistId.startsWith('spotify:playlist:')) {
-      // We use the search to fetch meta "cheaply" if we don't have it
-      // Or we rely on what was set during selection.
-      // If this is initial load, we might want to fetch.
-      // For now, let's try to search specifically for this URI to get the image
-      const fetchPlaylistMeta = async () => {
-        try {
-          const results = await FunctionsService.searchSpotify(playlistId, 'playlist');
-          const match = results.find((r) => r.uri === playlistId) || results[0];
-          if (match) {
-            setPlaylistMeta({ imageUrl: match.imageUrl, owner: match.owner || match.name });
+  const shouldFetchPlaylist =
+    !!playlistId && playlistId.startsWith('spotify:playlist:') && !playlistName;
 
-            // Also sync name if missing, utilizing getValues to avoid dependency loop
-            const currentName = getValues('name');
-            if (!currentName) setValue('name', match.name);
-          }
-        } catch {
-          // Silent failure for meta fetch
-        }
-      };
-      fetchPlaylistMeta();
+  const { data: fetchedPlaylist } = useQuery({
+    queryKey: ['spotify', 'playlist', playlistId],
+    queryFn: async () => {
+      if (!playlistId) return null;
+      const results = await FunctionsService.searchSpotify(playlistId, 'playlist');
+      return results && results.length > 0 ? results[0] : null;
+    },
+    enabled: shouldFetchPlaylist,
+    staleTime: 1000 * 60 * 30 // 30 mins
+  });
+
+  // Sync effect for playlist name (one-way sync from cache to form if form is empty)
+  useEffect(() => {
+    if (fetchedPlaylist && !getValues('name')) {
+      setValue('name', fetchedPlaylist.name);
     }
-  }, [playlistId, getValues, setValue]);
+  }, [fetchedPlaylist, getValues, setValue]);
+
+  const displayPlaylistMeta = {
+    imageUrl: playlistMeta?.imageUrl || fetchedPlaylist?.imageUrl,
+    owner: playlistMeta?.owner || fetchedPlaylist?.owner || fetchedPlaylist?.name // fallback
+  };
 
   interface InputGroupProps {
     label: string;
@@ -450,9 +422,9 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
                   borderRadius: '8px'
                 }}
               >
-                {playlistMeta?.imageUrl ? (
+                {displayPlaylistMeta.imageUrl ? (
                   <img
-                    src={playlistMeta.imageUrl}
+                    src={displayPlaylistMeta.imageUrl}
                     alt="Cover"
                     style={{
                       width: '64px',
@@ -483,7 +455,9 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
                     {playlistName || playlistId}
                   </h4>
                   <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                    {playlistMeta?.owner ? `by ${playlistMeta.owner}` : 'Custom Playlist'}
+                    {displayPlaylistMeta.owner
+                      ? `by ${displayPlaylistMeta.owner}`
+                      : 'Custom Playlist'}
                   </p>
                 </div>
 

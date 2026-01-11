@@ -25,51 +25,56 @@ const { SlotManager } = require('../../functions/src/core/slot-manager.ts');
 dotenv.config({ path: resolve(__dirname, '../../.env') });
 
 async function main() {
-    console.log("🚀 Starting DRY RUN Check (Firestore Mode)...");
+  console.log('🚀 Starting DRY RUN Check (Firestore Mode)...');
 
-    // 1. Initialize Services
-    const spotifyService = SpotifyService.getInstance();
-    const aiService = new AiService();
-    const trackCleaner = new TrackCleaner();
-    const slotManager = new SlotManager();
-    const orchestrator = new PlaylistOrchestrator(spotifyService, aiService, trackCleaner, slotManager);
+  // 1. Initialize Services
+  const spotifyService = SpotifyService.getInstance();
+  const aiService = new AiService();
+  const trackCleaner = new TrackCleaner();
+  const slotManager = new SlotManager();
+  const orchestrator = new PlaylistOrchestrator(
+    spotifyService,
+    aiService,
+    trackCleaner,
+    slotManager
+  );
 
-    // 2. Initialize Firebase Admin (for Config)
-    if (!getApps().length) {
-        initializeApp();
-    }
-    const db = getFirestore();
+  // 2. Initialize Firebase Admin (for Config)
+  if (!getApps().length) {
+    initializeApp();
+  }
+  const db = getFirestore();
 
-    // 3. Fetch Config from Firestore
-    // We'll grab the first enabled playlist to test against
-    console.log("Fetching enabled playlists from Firestore...");
-    const snapshot = await db.collection('playlists').where('enabled', '==', true).limit(1).get();
+  // 3. Fetch Config from Firestore
+  // We'll grab the first enabled playlist to test against
+  console.log('Fetching enabled playlists from Firestore...');
+  const snapshot = await db.collection('playlists').where('enabled', '==', true).limit(1).get();
 
-    if (snapshot.empty) {
-        console.error("❌ No enabled playlists found in Firestore to test.");
-        process.exit(1);
-    }
+  if (snapshot.empty) {
+    console.error('❌ No enabled playlists found in Firestore to test.');
+    process.exit(1);
+  }
 
-    const doc = snapshot.docs[0];
-    const rawConfig = doc.data() as PlaylistConfig;
-    console.log(`Testing against playlist: ${rawConfig.name} (${rawConfig.id})`);
+  const doc = snapshot.docs[0];
+  const rawConfig = doc.data() as PlaylistConfig;
+  console.log(`Testing against playlist: ${rawConfig.name} (${rawConfig.id})`);
 
-    // 4. Force Dry Run
-    const testConfig: PlaylistConfig = {
-        ...rawConfig,
-        dryRun: true, // <--- CRITICAL OVERRIDE
-    };
+  // 4. Force Dry Run
+  const testConfig: PlaylistConfig = {
+    ...rawConfig,
+    dryRun: true // <--- CRITICAL OVERRIDE
+  };
 
-    const runId = `dry-run-${Date.now()}`;
-    console.log(`Run ID: ${runId}`);
+  const runId = `dry-run-${Date.now()}`;
+  console.log(`Run ID: ${runId}`);
 
-    try {
-        await orchestrator.curatePlaylist(testConfig, runId);
-        console.log("✅ Dry Run Completed successfully. Check logs for 'DRY RUN' tags.");
-    } catch (error) {
-        console.error("❌ Dry Run Failed:", error);
-        process.exit(1);
-    }
+  try {
+    await orchestrator.curatePlaylist(testConfig, runId);
+    console.log("✅ Dry Run Completed successfully. Check logs for 'DRY RUN' tags.");
+  } catch (error) {
+    console.error('❌ Dry Run Failed:', error);
+    process.exit(1);
+  }
 }
 
 main().catch(console.error);

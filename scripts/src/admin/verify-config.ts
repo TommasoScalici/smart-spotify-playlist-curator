@@ -4,7 +4,6 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 
-
 // Handling __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +13,7 @@ dotenv.config({ path: path.resolve(__dirname, '../../../functions/.env') });
 
 // Initialize Admin SDK
 if (!getApps().length) {
-    initializeApp();
+  initializeApp();
 }
 
 const db = getFirestore();
@@ -24,30 +23,30 @@ const db = getFirestore();
 // Actually, let's verify roughly that it has the right fields.
 
 async function verifyConfig() {
-    console.log("🔍 Verifying Firestore Configs...");
+  console.log('🔍 Verifying Firestore Configs...');
 
-    const snapshot = await db.collection('playlists').get();
+  const snapshot = await db.collection('playlists').get();
 
-    if (snapshot.empty) {
-        console.error("❌ No playlists found in Firestore!");
-        process.exit(1);
+  if (snapshot.empty) {
+    console.error('❌ No playlists found in Firestore!');
+    process.exit(1);
+  }
+
+  console.log(`Found ${snapshot.size} documents.`);
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    console.log(`\n📄 [${doc.id}] ${data.name}`);
+    console.log(`   - Enabled: ${data.enabled}`);
+    console.log(`   - ID: ${data.id}`);
+    console.log(`   - Model: ${data.aiGeneration?.model}`);
+
+    if (!data.id || !data.name || typeof data.enabled !== 'boolean') {
+      console.error('   ❌ INVALID SCHEMA DETECTED');
+    } else {
+      console.log('   ✅ Structural check passed');
     }
-
-    console.log(`Found ${snapshot.size} documents.`);
-
-    for (const doc of snapshot.docs) {
-        const data = doc.data();
-        console.log(`\n📄 [${doc.id}] ${data.name}`);
-        console.log(`   - Enabled: ${data.enabled}`);
-        console.log(`   - ID: ${data.id}`);
-        console.log(`   - Model: ${data.aiGeneration?.model}`);
-
-        if (!data.id || !data.name || typeof data.enabled !== 'boolean') {
-            console.error("   ❌ INVALID SCHEMA DETECTED");
-        } else {
-            console.log("   ✅ Structural check passed");
-        }
-    }
+  }
 }
 
 verifyConfig().catch(console.error);

@@ -4,35 +4,37 @@ A powerful automation system that curates Spotify playlists using **Google Gemin
 
 ## 🚀 Key Features
 
--   **🤖 AI-Powered Curation**: Uses Gemini 2.5 Flash to generate context-aware track suggestions (Pop, Rock, specific moods, etc.).
--   **🎧 Sonic Consistency**: filters tracks using real-time audio analysis (Instrumentalness, Energy) to ensure vibes match mathematically.
--   **⚡ High Efficiency**: Implements "Overfetch" strategies to minimize API calls and retry loops.
--   **🛡️ Dry-Run Mode**: Simulate playlist updates without modifying your actual Spotify library. Great for testing prompts!
--   **📊 Robust Observability**: Structured JSON logging via `firebase-functions/logger` and Execution Correlation IDs for easy debugging in GCP.
--   **🔄 Smart Slot Management**: Intelligently mixes Mandatory "VIP" tracks with AI suggestions while preserving order logic.
--   **🔁 CI/CD**: Automated GitHub Actions pipeline for Linting, Building, and Testing on every push.
+- **🤖 AI-Powered Curation**: Uses Gemini 2.5 Flash to generate context-aware track suggestions (Pop, Rock, specific moods, etc.).
+- **🎧 Sonic Consistency**: filters tracks using real-time audio analysis (Instrumentalness, Energy) to ensure vibes match mathematically.
+- **⚡ High Efficiency**: Implements "Overfetch" strategies to minimize API calls and retry loops.
+- **🛡️ Dry-Run Mode**: Simulate playlist updates without modifying your actual Spotify library. Great for testing prompts!
+- **📊 Robust Observability**: Structured JSON logging via `firebase-functions/logger` and Execution Correlation IDs for easy debugging in GCP.
+- **🔄 Smart Slot Management**: Intelligently mixes Mandatory "VIP" tracks with AI suggestions while preserving order logic.
+- **🔁 CI/CD**: Automated GitHub Actions pipeline for Linting, Building, and Testing on every push.
 
 ## 🛠️ Prerequisites
 
--   **Node.js v24** (Required)
--   **Firebase CLI**: `npm install -g firebase-tools`
--   **Spotify Developer Account**: Create an app [here](https://developer.spotify.com/dashboard/applications).
--   **Google AI Studio Key**: Get an API key for Gemini [here](https://aistudio.google.com/).
+- **Node.js v24** (Required)
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **Spotify Developer Account**: Create an app [here](https://developer.spotify.com/dashboard/applications).
+- **Google AI Studio Key**: Get an API key for Gemini [here](https://aistudio.google.com/).
 
 ## 📦 Installation
 
 1.  **Clone the repository**:
+
     ```bash
     git clone <repo-url>
     cd smart-spotify-playlist-curator
     ```
 
 2.  **Install dependencies**:
+
     ```bash
     # Install backend dependencies
     cd functions
     npm ci
-    
+
     # Install script dependencies
     cd ../scripts
     npm ci
@@ -41,22 +43,26 @@ A powerful automation system that curates Spotify playlists using **Google Gemin
 ## ⚙️ Configuration
 
 ### 1. Environment Variables
+
 You need `.env` files in both `functions/` (for deployment/tests) and `scripts/` (for local tools).
 
 **Copy the example:**
+
 ```bash
 cp functions/.env.example functions/.env
 cp scripts/.env.example scripts/.env
 ```
 
 **Fill in the values:**
--   `SPOTIFY_CLIENT_ID`: From Spotify Dashboard.
--   `SPOTIFY_CLIENT_SECRET`: From Spotify Dashboard.
--   `SPOTIFY_REFRESH_TOKEN`: Generated via the auth script (see below).
--   `GOOGLE_AI_API_KEY`: From Google AI Studio.
--   `GOOGLE_APPLICATION_CREDENTIALS`: Absolute path to your Firebase Admin Service Account JSON (required for local scripts).
+
+- `SPOTIFY_CLIENT_ID`: From Spotify Dashboard.
+- `SPOTIFY_CLIENT_SECRET`: From Spotify Dashboard.
+- `SPOTIFY_REFRESH_TOKEN`: Generated via the auth script (see below).
+- `GOOGLE_AI_API_KEY`: From Google AI Studio.
+- `GOOGLE_APPLICATION_CREDENTIALS`: Absolute path to your Firebase Admin Service Account JSON (required for local scripts).
 
 ### 2. Firestore Database
+
 This project uses **Firestore** to store playlist configuration dynamically.
 
 1.  **Create Database**: Go to Firebase Console -> Build -> Firestore Database -> Create Database (Start in Production Mode).
@@ -66,45 +72,58 @@ This project uses **Firestore** to store playlist configuration dynamically.
     cd scripts
     npm run seed-config
     ```
-    *Note: The local JSON file is now only used for seeding. Runtime changes should be made directly in Firestore.*
+    _Note: The local JSON file is now only used for seeding. Runtime changes should be made directly in Firestore._
 
 ### 3. Verification
+
 Verify your config is correctly stored and readable:
+
 ```bash
 cd scripts
 npm run dry-run-check
 ```
-*This script now fetches live configuration from Firestore to simulate a run.*
+
+_This script now fetches live configuration from Firestore to simulate a run._
 
 ## 🏃 Usage
 
 ### 1. Generate Spotify Tokens
+
 First time setup? Run the auth script to get your Refresh Token.
+
 ```bash
 cd scripts
 npm run get-refresh-token
 ```
+
 Follow the URL, login, and paste the Refresh Token into your `.env` files.
 
 ### 2. Local Verification (Dry Run)
+
 Verify the entire system end-to-end without touching real playlists.
+
 ```bash
 cd scripts
 npm run dry-run-check
 ```
-*Check the logs for "DRY RUN: Would remove..." messages.*
+
+_Check the logs for "DRY RUN: Would remove..." messages._
 
 ### 3. Running Tests
+
 Run the Unit and Integration test suite.
+
 ```bash
 cd functions
 npm test
 ```
 
 ### 4. Deploying (Production)
+
 For production security, we use **Cloud Secret Manager** instead of `.env` files.
 
 1.  **Set Secrets**:
+
     ```bash
     firebase functions:secrets:set SPOTIFY_CLIENT_ID
     firebase functions:secrets:set SPOTIFY_CLIENT_SECRET
@@ -120,16 +139,17 @@ For production security, we use **Cloud Secret Manager** instead of `.env` files
 
 ## 🏗️ Project Structure
 
--   **`functions/`**: The core application.
-    -   `src/core/`: Logic for Orchestration, Slot Management, Cleaning.
-    -   `src/services/`: Integrations with Spotify and Gemini AI.
-    -   `src/types/`: TypeScript definitions.
--   **`scripts/`**: Local utility tools.
-    -   `src/auth/`: Token generation.
-    -   `src/dry-run-check.ts`: End-to-end verification script.
--   **`web-app/`**: **Command Center UI** (React + Vite).
-    -   dashboard for editing playlist configs and triggering runs.
--   **`.github/workflows/`**: CI/CD configurations.
+- **`functions/`**: The core application.
+  - `src/core/`: Logic for Orchestration, Slot Management, Cleaning.
+  - `src/services/`: Integrations with Spotify and Gemini AI.
+  - `src/types/`: TypeScript definitions.
+- **`scripts/`**: Local utility tools.
+  - `src/auth/`: Token generation.
+  - `src/dry-run-check.ts`: End-to-end verification script.
+- **`web-app/`**: **Command Center UI** (React + Vite).
+  - dashboard for editing playlist configs and triggering runs.
+- **`.github/workflows/`**: CI/CD configurations.
 
 ## 📄 License
+
 [MIT](LICENSE.md)

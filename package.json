@@ -2,10 +2,20 @@
   "name": "smart-spotify-playlist-curator",
   "version": "1.0.0",
   "description": "A powerful automation system that curates Spotify playlists using **Google Gemini 2.5 Flash** for intelligent song recommendations and **Firebase Cloud Functions** for serverless orchestration.",
+  "workspaces": [
+    "shared",
+    "web-app",
+    "functions"
+  ],
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "prepare": "husky"
+    "prepare": "husky",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:fix": "npm run lint --workspaces --if-present -- --fix",
+    "format": "prettier --write .",
+    "build": "npm run build --workspaces --if-present",
+    "fix": "npm run lint:fix && npm run format"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx,json,md}": [

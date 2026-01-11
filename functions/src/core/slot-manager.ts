@@ -1,4 +1,4 @@
-import { MandatoryTrack } from "../types";
+import { MandatoryTrack } from '../types';
 
 export class SlotManager {
   /**
@@ -13,7 +13,7 @@ export class SlotManager {
     mandatoryTracks: MandatoryTrack[],
     survivorTracks: { uri: string; artist: string }[],
     newAiTracks: { uri: string; artist: string }[],
-    totalSlots: number,
+    totalSlots: number
   ): string[] {
     // 1. Grid Initialization
     const playlist: (string | null)[] = new Array(totalSlots).fill(null);
@@ -40,12 +40,10 @@ export class SlotManager {
 
         let placed = false;
         const rangeSlots = [];
-        for (let i = start; i <= end; i++)
-          if (playlist[i] === null) rangeSlots.push(i);
+        for (let i = start; i <= end; i++) if (playlist[i] === null) rangeSlots.push(i);
 
         if (rangeSlots.length > 0) {
-          const chosen =
-            rangeSlots[Math.floor(Math.random() * rangeSlots.length)];
+          const chosen = rangeSlots[Math.floor(Math.random() * rangeSlots.length)];
           playlist[chosen] = meta.uri;
           placed = true;
         } else {
@@ -83,9 +81,7 @@ export class SlotManager {
     // 5. Phase D: Smart Shuffle & Fill Remaining
     const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
     // Pool = Survivors + Remaining AI (minus mandatory)
-    const pool = [...survivorTracks, ...newAiTracksPool].filter(
-      (t) => !mandatoryUris.has(t.uri),
-    );
+    const pool = [...survivorTracks, ...newAiTracksPool].filter((t) => !mandatoryUris.has(t.uri));
 
     // Group by Artist for Weighted Selection
     const artistBuckets: {
@@ -109,9 +105,7 @@ export class SlotManager {
         if (i > 0 && playlist[i - 1]) {
           const prevUri = playlist[i - 1];
           // Check pool
-          const poolMatch = [...survivorTracks, ...newAiTracks].find(
-            (t) => t.uri === prevUri,
-          );
+          const poolMatch = [...survivorTracks, ...newAiTracks].find((t) => t.uri === prevUri);
           if (poolMatch) prevArtist = poolMatch.artist;
           // If prevUri was a VIP not in our pool, we might miss the artist, but this covers most dynamic cases.
         }

@@ -1,9 +1,9 @@
-import { db } from "../config/firebase";
-import { PlaylistConfig } from "../types";
-import { PlaylistConfigSchema } from "../config/config";
-import * as logger from "firebase-functions/logger";
+import { db } from '../config/firebase';
+import { PlaylistConfig } from '../types';
+import { PlaylistConfigSchema } from '../config/config';
+import * as logger from 'firebase-functions/logger';
 
-const PLAYLISTS_COLLECTION = "playlists";
+const PLAYLISTS_COLLECTION = 'playlists';
 
 export class ConfigService {
   /**
@@ -12,13 +12,10 @@ export class ConfigService {
    */
   async getEnabledPlaylists(): Promise<PlaylistConfig[]> {
     try {
-      const snapshot = await db
-        .collection(PLAYLISTS_COLLECTION)
-        .where("enabled", "==", true)
-        .get();
+      const snapshot = await db.collection(PLAYLISTS_COLLECTION).where('enabled', '==', true).get();
 
       if (snapshot.empty) {
-        logger.info("No enabled playlists found in Firestore.");
+        logger.info('No enabled playlists found in Firestore.');
         return [];
       }
 
@@ -31,17 +28,14 @@ export class ConfigService {
         if (parseResult.success) {
           validConfigs.push(parseResult.data as PlaylistConfig);
         } else {
-          logger.error(
-            `Invalid configuration for playlist ${doc.id}:`,
-            parseResult.error,
-          );
+          logger.error(`Invalid configuration for playlist ${doc.id}:`, parseResult.error);
         }
       }
 
       return validConfigs;
     } catch (error) {
-      logger.error("Error fetching playlists from Firestore:", error);
-      throw new Error("Failed to load configuration from database.");
+      logger.error('Error fetching playlists from Firestore:', error);
+      throw new Error('Failed to load configuration from database.');
     }
   }
 
@@ -56,7 +50,7 @@ export class ConfigService {
       // Let's assume we use query for now to be safe on doc ID format.
       const snapshot = await db
         .collection(PLAYLISTS_COLLECTION)
-        .where("id", "==", playlistId)
+        .where('id', '==', playlistId)
         .limit(1)
         .get();
 
@@ -68,10 +62,7 @@ export class ConfigService {
       if (parseResult.success) {
         return parseResult.data as PlaylistConfig;
       } else {
-        logger.error(
-          `Invalid configuration for playlist ${playlistId}:`,
-          parseResult.error,
-        );
+        logger.error(`Invalid configuration for playlist ${playlistId}:`, parseResult.error);
         throw new Error(`Invalid configuration stored for ${playlistId}`);
       }
     } catch (error) {

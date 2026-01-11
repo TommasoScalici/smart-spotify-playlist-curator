@@ -1,43 +1,50 @@
-import { SpotifyService } from "../../src/services/spotify-service";
-import SpotifyWebApi from "spotify-web-api-node";
+import { SpotifyService } from '../../src/services/spotify-service';
 
 // Auto-mock the library (class)
-jest.mock("spotify-web-api-node");
+vi.mock('spotify-web-api-node');
 
 // Mock config
-jest.mock("../../src/config/env", () => ({
+vi.mock('../../src/config/env', () => ({
   config: {
-    SPOTIFY_CLIENT_ID: "test",
-    SPOTIFY_CLIENT_SECRET: "test",
-    SPOTIFY_REFRESH_TOKEN: "test",
-  },
+    SPOTIFY_CLIENT_ID: 'test',
+    SPOTIFY_CLIENT_SECRET: 'test',
+    SPOTIFY_REFRESH_TOKEN: 'test'
+  }
 }));
 
-describe("SpotifyService Retry Logic", () => {
+describe('SpotifyService Retry Logic', () => {
   let service: SpotifyService;
-  let mockSpotifyApi: jest.Mocked<SpotifyWebApi>;
+  let mockSpotifyApi: {
+    refreshAccessToken: ReturnType<typeof vi.fn>;
+    getPlaylistTracks: ReturnType<typeof vi.fn>;
+    setAccessToken: ReturnType<typeof vi.fn>;
+  };
 
   beforeEach(() => {
     // Reset singleton
-    (
-      SpotifyService as unknown as { instance: SpotifyService | undefined }
-    ).instance = undefined;
-    jest.clearAllMocks();
+    (SpotifyService as unknown as { instance: SpotifyService | undefined }).instance = undefined;
+    vi.clearAllMocks();
 
     service = SpotifyService.getInstance();
 
     // Access the private spotifyApi instance which is now a mock
     mockSpotifyApi = (
-      service as unknown as { spotifyApi: jest.Mocked<SpotifyWebApi> }
+      service as unknown as {
+        spotifyApi: {
+          refreshAccessToken: ReturnType<typeof vi.fn>;
+          getPlaylistTracks: ReturnType<typeof vi.fn>;
+          setAccessToken: ReturnType<typeof vi.fn>;
+        };
+      }
     ).spotifyApi;
 
     // Mock delay helper to avoid timer issues
-    jest
-      .spyOn(service as unknown as { delay: () => Promise<void> }, "delay")
-      .mockResolvedValue(undefined);
+    vi.spyOn(service as unknown as { delay: () => Promise<void> }, 'delay').mockResolvedValue(
+      undefined
+    );
   });
 
-  it("should retry on 429 Rate Limit", async () => {
+  it('should retry on 429 Rate Limit', async () => {
     // Setup success for token check (if needed)
     // Since we mock the instance methods, we need to ensure refreshAccessToken returns something valid if called
     // or ensureAccessToken logic passes.
@@ -45,28 +52,28 @@ describe("SpotifyService Retry Logic", () => {
     // So ensureAccessToken calls refreshAccessToken.
 
     (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
-      body: { access_token: "valid-token", expires_in: 3600 },
+      body: { access_token: 'valid-token', expires_in: 3600 }
     });
 
     // Mock getPlaylistTracks to fail once with 429, then succeed
     (mockSpotifyApi.getPlaylistTracks as jest.Mock)
       .mockRejectedValueOnce({
         statusCode: 429,
-        headers: { "retry-after": 1 },
+        headers: { 'retry-after': 1 }
       })
       .mockResolvedValueOnce({
-        body: { items: [] },
+        body: { items: [] }
       });
 
-    const result = await service.getPlaylistTracks("test-playlist");
+    const result = await service.getPlaylistTracks('test-playlist');
 
     expect(result).toEqual([]);
     expect(mockSpotifyApi.getPlaylistTracks).toHaveBeenCalledTimes(2);
   });
 
-  it("should refresh token and retry on 401 Unauthorized", async () => {
+  it('should refresh token and retry on 401 Unauthorized', async () => {
     (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
-      body: { access_token: "initial-token", expires_in: 3600 },
+      body: { access_token: 'initial-token', expires_in: 3600 }
     });
 
     // getPlaylistTracks -> 401 -> refresh -> retry -> success
@@ -74,7 +81,7 @@ describe("SpotifyService Retry Logic", () => {
       .mockRejectedValueOnce({ statusCode: 401 })
       .mockResolvedValueOnce({ body: { items: [] } });
 
-    await service.getPlaylistTracks("test-playlist");
+    await service.getPlaylistTracks('test-playlist');
 
     // Should call refresh twice (once at start, once on 401)
     expect(mockSpotifyApi.refreshAccessToken).toHaveBeenCalledTimes(2);
@@ -83,17 +90,17 @@ describe("SpotifyService Retry Logic", () => {
     expect(mockSpotifyApi.getPlaylistTracks).toHaveBeenCalledTimes(2);
   });
 
-  it("should fail after max retries", async () => {
+  it('should fail after max retries', async () => {
     (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
-      body: { access_token: "valid-token", expires_in: 3600 },
+      body: { access_token: 'valid-token', expires_in: 3600 }
     });
 
     (mockSpotifyApi.getPlaylistTracks as jest.Mock).mockRejectedValue({
       statusCode: 429,
-      headers: { "retry-after": 1 },
+      headers: { 'retry-after': 1 }
     });
 
-    const promise = service.getPlaylistTracks("test-playlist");
+    const promise = service.getPlaylistTracks('test-playlist');
 
     await expect(promise).rejects.toMatchObject({ statusCode: 429 });
 

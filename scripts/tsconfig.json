@@ -1,19 +1,13 @@
 {
-    "compilerOptions": {
-        "target": "esnext",
-        "module": "nodenext",
-        "moduleResolution": "nodenext",
-        "strict": true,
-        "esModuleInterop": true,
-        "skipLibCheck": true,
-        "forceConsistentCasingInFileNames": true,
-        "types": [
-            "node",
-            "express",
-            "spotify-web-api-node"
-        ]
-    },
-    "include": [
-        "src/**/*"
-    ]
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "types": ["node", "express", "spotify-web-api-node"]
+  },
+  "include": ["src/**/*"]
 }
