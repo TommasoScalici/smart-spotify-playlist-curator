@@ -10,7 +10,8 @@ async function main() {
       prompt: 'Suggest 3 upbeat pop songs from the 80s',
       isInstrumentalOnly: false,
       model: 'gemini-2.5-flash',
-      temperature: 0.7
+      temperature: 0.7,
+      overfetchRatio: 1.5
     };
 
     console.log('Sending request to Gemini 1.5 Flash...');

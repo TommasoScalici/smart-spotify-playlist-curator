@@ -13,19 +13,20 @@ vi.mock('../../src/core/slot-manager');
 
 describe('PlaylistOrchestrator', () => {
   let orchestrator: PlaylistOrchestrator;
-  let mockSpotifyService: ReturnType<typeof vi.fn> & {
+  let mockSpotifyService: {
     getPlaylistTracks: ReturnType<typeof vi.fn>;
     getPlaylistMetadata: ReturnType<typeof vi.fn>;
     searchTrack: ReturnType<typeof vi.fn>;
     getTracks: ReturnType<typeof vi.fn>;
+    performSmartUpdate: ReturnType<typeof vi.fn>;
   };
-  let mockAiService: ReturnType<typeof vi.fn> & {
+  let mockAiService: {
     generateSuggestions: ReturnType<typeof vi.fn>;
   };
-  let mockTrackCleaner: ReturnType<typeof vi.fn> & {
+  let mockTrackCleaner: {
     processCurrentTracks: ReturnType<typeof vi.fn>;
   };
-  let mockSlotManager: ReturnType<typeof vi.fn> & {
+  let mockSlotManager: {
     arrangePlaylist: ReturnType<typeof vi.fn>;
   };
 
@@ -41,20 +42,22 @@ describe('PlaylistOrchestrator', () => {
   } as unknown as PlaylistConfig;
 
   beforeEach(() => {
-    mockSpotifyService =
-      new (SpotifyService as unknown as new () => SpotifyService)() as unknown as {
-        getPlaylistTracks: ReturnType<typeof vi.fn>;
-        getPlaylistMetadata: ReturnType<typeof vi.fn>;
-        searchTrack: ReturnType<typeof vi.fn>;
-        getTracks: ReturnType<typeof vi.fn>;
-      };
-    mockAiService = new AiService() as unknown as {
-      generateSuggestions: ReturnType<typeof vi.fn>;
+    mockSpotifyService = {
+      getPlaylistTracks: vi.fn(),
+      getPlaylistMetadata: vi.fn(),
+      searchTrack: vi.fn(),
+      getTracks: vi.fn(),
+      performSmartUpdate: vi.fn()
     };
-    mockTrackCleaner = new TrackCleaner() as unknown as {
-      processCurrentTracks: ReturnType<typeof vi.fn>;
+    mockAiService = {
+      generateSuggestions: vi.fn()
     };
-    mockSlotManager = new SlotManager() as unknown as { arrangePlaylist: ReturnType<typeof vi.fn> };
+    mockTrackCleaner = {
+      processCurrentTracks: vi.fn()
+    };
+    mockSlotManager = {
+      arrangePlaylist: vi.fn()
+    };
 
     orchestrator = new PlaylistOrchestrator(
       mockSpotifyService as unknown as SpotifyService,

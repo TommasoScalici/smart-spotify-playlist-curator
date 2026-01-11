@@ -51,12 +51,12 @@ describe('SpotifyService Retry Logic', () => {
     // Initially token is expired (epoch 0).
     // So ensureAccessToken calls refreshAccessToken.
 
-    (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
+    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       body: { access_token: 'valid-token', expires_in: 3600 }
     });
 
     // Mock getPlaylistTracks to fail once with 429, then succeed
-    (mockSpotifyApi.getPlaylistTracks as jest.Mock)
+    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>)
       .mockRejectedValueOnce({
         statusCode: 429,
         headers: { 'retry-after': 1 }
@@ -72,12 +72,12 @@ describe('SpotifyService Retry Logic', () => {
   });
 
   it('should refresh token and retry on 401 Unauthorized', async () => {
-    (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
+    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       body: { access_token: 'initial-token', expires_in: 3600 }
     });
 
     // getPlaylistTracks -> 401 -> refresh -> retry -> success
-    (mockSpotifyApi.getPlaylistTracks as jest.Mock)
+    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>)
       .mockRejectedValueOnce({ statusCode: 401 })
       .mockResolvedValueOnce({ body: { items: [] } });
 
@@ -91,11 +91,11 @@ describe('SpotifyService Retry Logic', () => {
   });
 
   it('should fail after max retries', async () => {
-    (mockSpotifyApi.refreshAccessToken as jest.Mock).mockResolvedValue({
+    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
       body: { access_token: 'valid-token', expires_in: 3600 }
     });
 
-    (mockSpotifyApi.getPlaylistTracks as jest.Mock).mockRejectedValue({
+    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>).mockRejectedValue({
       statusCode: 429,
       headers: { 'retry-after': 1 }
     });

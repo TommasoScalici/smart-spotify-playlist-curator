@@ -69,7 +69,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
     mockSpotifyApi.refreshAccessToken.mockResolvedValue({
       body: { access_token: 'new-token', expires_in: 3600 }
     } as any);
-    mockSpotifyApi.setAccessToken.mockReturnValue();
+    mockSpotifyApi.setAccessToken.mockReturnValue(undefined);
     mockSpotifyApi.getPlaylist.mockResolvedValue({
       body: { snapshot_id: 'snap1' }
     } as any);

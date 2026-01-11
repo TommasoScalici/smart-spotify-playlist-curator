@@ -15,6 +15,7 @@
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
     "build": "npm run build --workspaces --if-present",
+    "type-check": "tsc -b",
     "fix": "npm run lint:fix && npm run format"
   },
   "lint-staged": {
@@ -25,7 +26,7 @@
       "npm run lint --prefix web-app"
     ],
     "functions/**/*.{ts,js}": [
-      "npm run lint --prefix functions"
+      "npm run lint --prefix functions --"
     ]
   },
   "repository": {

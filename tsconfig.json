@@ -1,0 +1,17 @@
+{
+  "files": [],
+  "references": [
+    {
+      "path": "./shared"
+    },
+    {
+      "path": "./functions"
+    },
+    {
+      "path": "./web-app"
+    },
+    {
+      "path": "./scripts"
+    }
+  ]
+}
