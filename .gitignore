@@ -34,3 +34,11 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# TypeScript Build Info
+*.tsbuildinfo
+
+# Generated JS in source (keep config files)
+functions/src/**/*.js
+scripts/src/**/*.js
+shared/src/**/*.js
