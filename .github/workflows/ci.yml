@@ -3,51 +3,44 @@ name: CI
 on: [push, pull_request]
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./functions
 
+  build-and-test-functions:
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: functions/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint Functions
+        run: npm run lint --workspace=functions
 
-      - name: Build
-        run: npm run build
+      - name: Build Functions
+        run: npm run build --workspace=functions
 
-      - name: Test
-        run: npm test
+      - name: Test Functions
+        run: npm test --workspace=functions
 
   web-app-build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./web-app
-
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: 'npm'
-          cache-dependency-path: web-app/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint Web App
+        run: npm run lint --workspace=web-app
 
-      - name: Build
-        run: npm run build
+      - name: Build Web App
+        run: npm run build --workspace=web-app
