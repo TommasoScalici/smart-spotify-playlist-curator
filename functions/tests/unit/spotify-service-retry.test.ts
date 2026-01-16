@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { SpotifyService } from '../../src/services/spotify-service';
 
 // Auto-mock the library (class)

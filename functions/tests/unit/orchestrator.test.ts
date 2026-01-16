@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SpotifyService } from '../../src/services/spotify-service';
 import { AiService } from '../../src/services/ai-service';

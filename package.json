@@ -5,11 +5,12 @@
   "workspaces": [
     "shared",
     "web-app",
-    "functions"
+    "functions",
+    "scripts"
   ],
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
     "prepare": "husky",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",

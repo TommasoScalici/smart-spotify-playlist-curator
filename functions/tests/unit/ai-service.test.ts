@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AiService } from '../../src/services/ai-service';
 import { AiGenerationConfig } from '../../src/types';
 

@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConfigService } from '../../src/services/config-service';
 import { db } from '../../src/config/firebase';
 import * as logger from 'firebase-functions/logger';

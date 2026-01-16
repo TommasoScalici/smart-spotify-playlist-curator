@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeAll } from 'vitest';
 import { SpotifyService } from '../../src/services/spotify-service';
 
 describe('Spotify Integration: Search', () => {

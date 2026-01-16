@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { SpotifyService } from '../../src/services/spotify-service';
 import SpotifyWebApi from 'spotify-web-api-node';

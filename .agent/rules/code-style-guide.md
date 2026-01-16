@@ -10,7 +10,7 @@ This file is optimized for AI context. Follow these rules strictly when modifyin
 
 - **Goal**: Automate Spotify playlist curation with "Human-like curation, Machine-like efficiency."
 - **Model**: Use Gemini 2.5 Flash for intelligence; local logic for deterministic tasks.
-- **Identity**: Linked to a single Google Identity controlling multiple Spotify accounts.
+- **Identity**: Multi-Tenant SaaS. Users authenticate via Google and link their Spotify accounts.
 
 ## 🛠 Technology Stack (Strict)
 
@@ -20,16 +20,17 @@ This file is optimized for AI context. Follow these rules strictly when modifyin
 - **Frontend**: React `v19` + Vite
 - **Database**: Firestore (Configuration, State, Cache)
 - **Validation**: `zod` (REQUIRED for all data boundaries)
-- **Testing**: `jest`/`ts-jest` (Backend), `vitest` (Frontend)
+- **Testing**: `vitest` (Monorepo-wide Standard)
 - **Bleeding Edge**: Use ESNext and latest options available in tsconfig, always install packages using @latest
 
 ## 🏛 Architecture & Patterns
 
-### Directory Structure
+### Directory Structure (Monorepo)
 
-- `/functions/src/core`: Business Logic (Clean, Fill, Sort).
-- `/functions/src/services`: External APIs (Spotify, AI).
-- `/web-app`: Command Center UI (React).
+- `/functions`: Backend Business Logic (Firebase Cloud Functions).
+- `/web-app`: Command Center UI (React + Vite).
+- `/shared`: Shared Types, Constants, and Utility Schemas (npm workspace).
+- `/scripts`: Maintenance and AI Verification scripts.
 
 ### Critical Design Patterns
 
@@ -57,11 +58,18 @@ This file is optimized for AI context. Follow these rules strictly when modifyin
 
 ### Testing Requirements
 
-- **Unit Tests**: Required for logic (Cleaners, Slot Managers) in `tests/unit`.
-- **Integration Tests**: Required for Services in `tests/integration` (mock network calls).
+- **Framework**: `vitest` is the standard for ALL workspaces (`functions`, `web-app`, `shared`).
+- **Workspace Config**: Use `vitest.workspace.ts` at the root.
+- **Backend Tests**:
+  - **Unit**: Required for logic (Cleaners, Slot Managers) in `tests/unit`.
+  - **Integration**: Required for Services in `tests/integration` (mock network calls).
+- **Frontend Tests**:
+  - Smoke tests for critical flows (`tests/smoke`).
+  - Strict Environment Separation: Use `// @vitest-environment jsdom` for React components.
 - **Run Before Commit**: `npm test` checks are mandatory.
 
 ## 🔄 Workflow
 
 - **Linting**: Respect `.prettierrc` and `eslint` flat config. Code MUST pass `npm run lint`.
-- **Pre-commit**: `husky` ensures formatting and linting pass before commit.
+- **Pre-commit**: `husky` ensures formatting (`lint-staged`) and type safety (`npm run type-check`) pass before commit.
+- **CI/CD**: Granular jobs (`build-shared`, `test-functions`, `test-webapp`) run in parallel on GitHub Actions.

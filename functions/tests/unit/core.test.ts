@@ -1,3 +1,4 @@
+import { describe, it, expect } from 'vitest';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
 import { PlaylistConfig, MandatoryTrack } from '../../src/types';
