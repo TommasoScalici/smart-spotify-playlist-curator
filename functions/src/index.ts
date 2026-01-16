@@ -183,3 +183,4 @@ export const searchSpotify = onCall(
     }
   }
 );
+export { exchangeSpotifyToken } from './controllers/auth-controller';

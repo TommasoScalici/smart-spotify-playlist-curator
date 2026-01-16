@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
-  const { signInWithGoogle, user } = useAuth();
+  const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
@@ -14,7 +14,7 @@ export default function Login() {
 
   const handleLogin = async () => {
     try {
-      await signInWithGoogle();
+      await signIn();
       navigate('/');
     } catch {
       setError('Failed to log in. Please try again.');

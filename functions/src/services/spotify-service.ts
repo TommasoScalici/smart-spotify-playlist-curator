@@ -23,11 +23,12 @@ export class SpotifyService {
   private spotifyApi: SpotifyWebApi;
   private tokenExpirationEpoch: number = 0;
 
-  private constructor() {
+  // Make constructor public to allow per-user instantiation
+  public constructor(userRefreshToken?: string) {
     this.spotifyApi = new SpotifyWebApi({
       clientId: config.SPOTIFY_CLIENT_ID,
       clientSecret: config.SPOTIFY_CLIENT_SECRET,
-      refreshToken: config.SPOTIFY_REFRESH_TOKEN
+      refreshToken: userRefreshToken || config.SPOTIFY_REFRESH_TOKEN
     });
   }
 
@@ -36,6 +37,13 @@ export class SpotifyService {
       SpotifyService.instance = new SpotifyService();
     }
     return SpotifyService.instance;
+  }
+
+  /**
+   * Creates a new service instance for a specific user.
+   */
+  public static createForUser(refreshToken: string): SpotifyService {
+    return new SpotifyService(refreshToken);
   }
 
   /**
@@ -90,6 +98,26 @@ export class SpotifyService {
         return this.executeWithRetry(operation, retries - 1);
       }
 
+      throw error;
+    }
+  }
+
+  /**
+   * Exchanges an authorization code for an Access Token and Refresh Token.
+   */
+  public async exchangeCode(
+    code: string,
+    redirectUri: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    try {
+      this.spotifyApi.setRedirectURI(redirectUri);
+      const data = await this.spotifyApi.authorizationCodeGrant(code);
+      return {
+        accessToken: data.body['access_token'],
+        refreshToken: data.body['refresh_token']
+      };
+    } catch (error) {
+      logger.error('Failed to exchange Spotify code:', error);
       throw error;
     }
   }

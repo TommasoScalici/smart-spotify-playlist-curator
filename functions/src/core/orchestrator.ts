@@ -27,20 +27,67 @@ export class PlaylistOrchestrator {
     // Sanitize ID (handle spotify:playlist: prefix)
     const playlistId = config.id.replace('spotify:playlist:', '');
 
-    // 1. Fetch Current State & Metadata
+    // 1. Determine Spotify Identity (User vs Global)
+    let spotifyService = this.spotifyService; // Default to global
+    let usingUserToken = false;
+
+    if (config.ownerId) {
+      try {
+        const secretDoc = await db.doc(`users/${config.ownerId}/secrets/spotify`).get();
+        if (secretDoc.exists) {
+          const refreshToken = secretDoc.data()?.refreshToken;
+          if (refreshToken) {
+            spotifyService = SpotifyService.createForUser(refreshToken);
+            usingUserToken = true;
+          }
+        }
+      } catch (e) {
+        logger.warn(
+          `Failed to fetch credentials for user ${config.ownerId}. Falling back to global bot.`,
+          e
+        );
+      }
+    }
+
+    if (!usingUserToken) {
+      logger.warn(
+        `Using GLOBAL Spotify credentials for playlist ${config.name} (Owner: ${config.ownerId || 'N/A'}).`
+      );
+    }
+
+    // 2. Fetch Current State & Metadata
     const [currentTracks, metadata] = await Promise.all([
-      this.spotifyService.getPlaylistTracks(playlistId),
-      this.spotifyService.getPlaylistMetadata(playlistId)
+      spotifyService.getPlaylistTracks(playlistId),
+      spotifyService.getPlaylistMetadata(playlistId)
     ]);
 
     // Update metadata in Firestore (background, don't await blocking)
-    db.collection('playlists')
-      .doc(config.id)
+    // IMPORTANT: If we are 'usingUserToken', we might have permissions to update metadata on Spotify too if needed.
+    // For now, we update Firestore visual cache.
+    db.collection('playlists') // This is legacy global collection for cache?
+      // Wait, ConfigService is updated to use collectionGroup.
+      // BUT here we write to `playlists/docId`.
+      // If the doc moved to `users/{uid}/playlists/{docId}`, this write will FAIL or create a new doc in the OLD config.
+      // WE MUST FIX THIS WRITE to write to the correct location.
+      // Since we accept `config` object, does it know its path? No.
+      // But we know `config.ownerId` and `config.id`.
+      // IF `config.ownerId` exists, we should write to `users/{ownerId}/playlists/{id}`.
+      // ELSE write to `playlists/{id}` (Legacy).
+
+      .doc(config.id); // <--- THIS IS WRONG for multi-tenant.
+    // FIXING WRITE LOCATION:
+
+    let docRef;
+    if (config.ownerId) {
+      docRef = db.doc(`users/${config.ownerId}/playlists/${config.id}`);
+    } else {
+      docRef = db.collection('playlists').doc(config.id);
+    }
+
+    docRef
       .update({
         imageUrl: metadata.imageUrl || '', // clear if empty
         owner: metadata.owner
-        // Optional: Update name/desc if we want to sync from Spotify?
-        // No, Config is source of truth for name/desc usually, but owner/image come from Spotify.
       })
       .catch((err) => logger.error('Failed to update playlist metadata in Firestore', err));
 
@@ -144,7 +191,7 @@ export class PlaylistOrchestrator {
         // Search tracks on Spotify
         const aiTrackUris: string[] = [];
         for (const suggestion of suggestions) {
-          const trackInfo = await this.spotifyService.searchTrack(
+          const trackInfo = await spotifyService.searchTrack(
             `${suggestion.artist} ${suggestion.track}`
           );
           if (trackInfo) {
@@ -162,7 +209,7 @@ export class PlaylistOrchestrator {
         }
 
         if (aiTrackUris.length > 0) {
-          const aiTracksInfo = await this.spotifyService.getTracks(aiTrackUris);
+          const aiTracksInfo = await spotifyService.getTracks(aiTrackUris);
 
           // FILTER: Enforce Artist Limit (Max 2)
           aiTracksInfo.forEach((t) => {
@@ -214,7 +261,7 @@ export class PlaylistOrchestrator {
     // Determine all tracks that need to be added (AI tracks + missing VIPs)
     const tracksToAdd = finalTrackList.filter((uri) => !survivorUris.includes(uri));
 
-    await this.spotifyService.performSmartUpdate(
+    await spotifyService.performSmartUpdate(
       playlistId,
       tracksToRemove,
       tracksToAdd,

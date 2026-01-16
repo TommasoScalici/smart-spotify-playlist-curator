@@ -5,6 +5,8 @@ import { PlaylistCard } from '../components/PlaylistCard';
 import { RunButton } from '../components/RunButton';
 import { Loader2, Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
+import { useSpotifyAuth } from '../hooks/useSpotifyAuth';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
@@ -12,16 +14,29 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    loadPlaylists();
-  }, []);
+  const { user } = useAuth();
+  const [isSpotifyLinked, setIsSpotifyLinked] = useState(false);
+  const { login } = useSpotifyAuth();
 
-  const loadPlaylists = async () => {
+  useEffect(() => {
+    if (user) {
+      checkLinkStatus(user.uid);
+      loadPlaylists(user.uid);
+    }
+  }, [user]);
+
+  const checkLinkStatus = async (uid: string) => {
+    const linked = await FirestoreService.checkSpotifyConnection(uid);
+    setIsSpotifyLinked(linked);
+  };
+
+  const loadPlaylists = async (uid: string) => {
     try {
       setLoading(true);
-      const data = await FirestoreService.getAllPlaylists();
+      const data = await FirestoreService.getUserPlaylists(uid);
       setPlaylists(data);
-    } catch {
+    } catch (e) {
+      console.error(e);
       setError('Failed to load playlists.');
     } finally {
       setLoading(false);
@@ -57,6 +72,25 @@ export default function Dashboard() {
       </div>
 
       {error && <div className="error-message">{error}</div>}
+
+      {!loading && !isSpotifyLinked && (
+        <div
+          className="glass-panel"
+          style={{ marginBottom: '24px', textAlign: 'center', borderColor: '#1db954' }}
+        >
+          <h3>Link your Spotify Account</h3>
+          <p className="text-secondary" style={{ marginBottom: '16px' }}>
+            To start curating, you need to connect your Spotify account.
+          </p>
+          <button
+            className="btn-primary"
+            style={{ background: '#1db954', border: 'none' }}
+            onClick={login}
+          >
+            Link Spotify
+          </button>
+        </div>
+      )}
 
       {loading ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '60px' }}>

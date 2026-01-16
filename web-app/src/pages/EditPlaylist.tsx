@@ -4,30 +4,29 @@ import { FirestoreService } from '../services/firestore-service';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { ConfigEditor } from '../components/ConfigEditor';
 import { Loader2, ArrowLeft } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
 
 export default function EditPlaylist() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [config, setConfig] = useState<PlaylistConfig | undefined>(undefined);
   const [isNew, setIsNew] = useState(false);
 
   const loadConfig = useCallback(
-    async (docId: string) => {
+    async (docId: string, uid: string) => {
       try {
         setLoading(true);
-        const playlist = await FirestoreService.getPlaylistById(docId);
+        const playlist = await FirestoreService.getUserPlaylistById(uid, docId);
         if (playlist) {
           setConfig(playlist);
         } else {
-          // setError('Playlist not found'); // Original code had alert and navigate
           alert('Playlist not found!');
           navigate('/');
         }
       } catch {
-        // setError('Failed to load playlist configuration.'); // Original code had alert
         alert('Error loading playlist');
-        // Silent error
       } finally {
         setLoading(false);
       }
@@ -36,17 +35,20 @@ export default function EditPlaylist() {
   );
 
   useEffect(() => {
+    if (!user) return;
+
     if (id === 'new') {
       setIsNew(true);
       setLoading(false);
     } else if (id) {
-      loadConfig(id);
+      loadConfig(id, user.uid);
     }
-  }, [id, loadConfig]);
+  }, [id, user, loadConfig]);
 
   const handleSave = async (data: PlaylistConfig) => {
+    if (!user) return;
     try {
-      await FirestoreService.savePlaylist(data, isNew ? undefined : id);
+      await FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id);
       navigate('/');
     } catch {
       alert('Failed to save playlist.');

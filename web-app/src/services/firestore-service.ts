@@ -2,25 +2,24 @@ import { collection, getDocs, getDoc, doc, setDoc, query, where } from 'firebase
 import { db } from './firebase';
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 
-const COLLECTION_NAME = 'playlists';
-
 export const FirestoreService = {
   /**
    * Fetch all playlists from Firestore.
    * Returns an array of PlaylistConfig objects with their Firestore Document ID attached.
    */
-  async getAllPlaylists(): Promise<(PlaylistConfig & { _docId: string })[]> {
-    const querySnapshot = await getDocs(collection(db, COLLECTION_NAME));
+  /**
+   * Fetch all playlists for a specific user.
+   */
+  async getUserPlaylists(uid: string): Promise<(PlaylistConfig & { _docId: string })[]> {
+    const playlistsRef = collection(db, 'users', uid, 'playlists');
+    const querySnapshot = await getDocs(playlistsRef);
     const playlists: (PlaylistConfig & { _docId: string })[] = [];
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      // Validate with Zod, but allow passing even if slightly mismatched (log warning?)
       const parseResult = PlaylistConfigSchema.safeParse(data);
       if (parseResult.success) {
         playlists.push({ ...parseResult.data, _docId: doc.id });
-      } else {
-        // skipping invalid doc
       }
     });
 
@@ -28,37 +27,35 @@ export const FirestoreService = {
   },
 
   /**
-   * Create or Update a playlist configuration.
-   * Uses the Spotify Playlist URI as a unique identifier logic if possible,
-   * but primarily relies on the Firestore Document ID (_docId) if provided.
+   * Create or Update a playlist configuration for a user.
    */
-  async savePlaylist(config: PlaylistConfig, docId?: string): Promise<void> {
-    // Validate before saving
+  async saveUserPlaylist(uid: string, config: PlaylistConfig, docId?: string): Promise<void> {
     const validatedData = PlaylistConfigSchema.parse(config);
-
     let targetDocRef;
+
     if (docId) {
-      targetDocRef = doc(db, COLLECTION_NAME, docId);
+      targetDocRef = doc(db, 'users', uid, 'playlists', docId);
     } else {
-      // If no docId, check if one exists with the same playlist.id
-      const q = query(collection(db, COLLECTION_NAME), where('id', '==', config.id));
+      const playlistsRef = collection(db, 'users', uid, 'playlists');
+      // optional: check for dupes by config.id?
+      const q = query(playlistsRef, where('id', '==', config.id));
       const snap = await getDocs(q);
+
       if (!snap.empty) {
-        targetDocRef = doc(db, COLLECTION_NAME, snap.docs[0].id);
+        targetDocRef = doc(playlistsRef, snap.docs[0].id);
       } else {
-        // Create new random ID doc
-        targetDocRef = doc(collection(db, COLLECTION_NAME));
+        targetDocRef = doc(playlistsRef);
       }
     }
 
-    await setDoc(targetDocRef, validatedData, { merge: true });
+    await setDoc(targetDocRef, { ...validatedData, ownerId: uid }, { merge: true });
   },
 
   /**
-   * Fetch a single playlist by its Firestore Document ID.
+   * Fetch a single playlist by its ID for a user.
    */
-  async getPlaylistById(docId: string): Promise<PlaylistConfig | null> {
-    const docRef = doc(db, COLLECTION_NAME, docId);
+  async getUserPlaylistById(uid: string, docId: string): Promise<PlaylistConfig | null> {
+    const docRef = doc(db, 'users', uid, 'playlists', docId);
     const snapshot = await getDoc(docRef);
 
     if (snapshot.exists()) {
@@ -67,8 +64,24 @@ export const FirestoreService = {
       if (parseResult.success) {
         return parseResult.data as PlaylistConfig;
       }
-      // Invalid data
     }
     return null;
+  },
+
+  /**
+   * Check if user has linked Spotify account.
+   */
+  async checkSpotifyConnection(uid: string): Promise<boolean> {
+    try {
+      // We check for existence of the 'spotify' secret doc.
+      // Important: Security Rules must allow READ access to 'users/{uid}/secrets/spotify'
+      // BUT ONLY if we are that user.
+      const docRef = doc(db, 'users', uid, 'secrets', 'spotify');
+      const snapshot = await getDoc(docRef);
+      return snapshot.exists();
+    } catch (e) {
+      console.error('Error checking connection', e);
+      return false;
+    }
   }
 };

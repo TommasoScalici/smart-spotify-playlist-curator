@@ -36,7 +36,6 @@ async function main() {
 
     // Log expected VIPs
     const vipUris = config.mandatoryTracks.map((m) => m.uri);
-    // console.log("Expected VIP Tracks:", vipUris.length);
 
     const tracks = await spotifyService.getPlaylistTracks(playlistId);
 

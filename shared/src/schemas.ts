@@ -46,7 +46,8 @@ export const PlaylistConfigSchema = z.object({
   name: z.string().min(3, { message: 'Name is too short' }),
   enabled: z.boolean().default(true),
   imageUrl: z.string().url().optional(),
-  owner: z.string().optional(),
+  ownerId: z.string().min(1, { message: 'Owner ID is required' }), // Added for Multi-Tenancy
+  owner: z.string().optional(), // Legacy field, consider removing later if redundant
   dryRun: z.boolean().optional(),
   mandate: z.enum(['exact', 'flexible']).optional(),
   settings: PlaylistSettingsSchema,
@@ -54,6 +55,20 @@ export const PlaylistConfigSchema = z.object({
   aiGeneration: AiGenerationConfigSchema,
   curationRules: CurationRulesSchema
 });
+
+// --- User Schema ---
+
+export const UserSchema = z.object({
+  uid: z.string(),
+  email: z.string().email(),
+  displayName: z.string().optional(),
+  photoURL: z.string().url().optional(),
+  createdAt: z.string().datetime(), // ISO 8601
+  lastLoginAt: z.string().datetime(), // ISO 8601
+  theme: z.enum(['light', 'dark', 'system']).default('system')
+});
+
+export type UserProfile = z.infer<typeof UserSchema>;
 
 // Infer TS types from Zod schemas
 export type PlaylistConfig = z.infer<typeof PlaylistConfigSchema>;

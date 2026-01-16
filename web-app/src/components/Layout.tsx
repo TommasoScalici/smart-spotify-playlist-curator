@@ -2,7 +2,7 @@ import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export const Layout = () => {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuth();
 
   return (
     <div className="layout">
@@ -27,7 +27,7 @@ export const Layout = () => {
                   <span className="user-name">{user.displayName?.split(' ')[0]}</span>
                 </div>
 
-                <button onClick={logout} className="btn-logout">
+                <button onClick={signOut} className="btn-logout">
                   Logout
                 </button>
               </div>

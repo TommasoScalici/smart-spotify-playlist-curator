@@ -12,7 +12,11 @@ export class ConfigService {
    */
   async getEnabledPlaylists(): Promise<PlaylistConfig[]> {
     try {
-      const snapshot = await db.collection(PLAYLISTS_COLLECTION).where('enabled', '==', true).get();
+      // Use Collection Group query to search across all users' 'playlists' subcollections
+      const snapshot = await db
+        .collectionGroup(PLAYLISTS_COLLECTION)
+        .where('enabled', '==', true)
+        .get();
 
       if (snapshot.empty) {
         logger.info('No enabled playlists found in Firestore.');
@@ -44,12 +48,9 @@ export class ConfigService {
    */
   async getPlaylistConfig(playlistId: string): Promise<PlaylistConfig | null> {
     try {
-      // Document IDs should probably map to the spotify playlist ID for easy lookup,
-      // or we query by the 'id' field if we use generic auto-ids.
-      // Design decision: Use Spotify URI (cleaned) or just query the field.
-      // Let's assume we use query for now to be safe on doc ID format.
+      // Use Collection Group to find the playlist anywhere
       const snapshot = await db
-        .collection(PLAYLISTS_COLLECTION)
+        .collectionGroup(PLAYLISTS_COLLECTION)
         .where('id', '==', playlistId)
         .limit(1)
         .get();

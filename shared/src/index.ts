@@ -13,5 +13,8 @@ export type {
   AiGenerationConfig,
   CurationRules,
   PlaylistSettings,
-  PositionRange
+  PositionRange,
+  UserProfile
 } from './schemas';
+
+export { UserSchema } from './schemas';

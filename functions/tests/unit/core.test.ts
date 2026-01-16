@@ -8,6 +8,7 @@ describe('Core Logic', () => {
   const mockConfig: PlaylistConfig = {
     id: 'test-playlist',
     name: 'Test Playlist Logic',
+    ownerId: 'test-user',
     enabled: true,
     settings: {
       targetTotalTracks: 10,

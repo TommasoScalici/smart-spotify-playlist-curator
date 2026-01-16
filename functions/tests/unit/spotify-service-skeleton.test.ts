@@ -47,9 +47,6 @@ describe('SpotifyService - Skeleton Strategy', () => {
     // @ts-expect-error - Clearing private instance for testing
     SpotifyService.instance = undefined;
 
-    // console.log("SpotifyWebApi type:", typeof SpotifyWebApi);
-    // console.log("SpotifyWebApi prototype:", SpotifyWebApi.prototype);
-
     const MockSpotifyWebApi = vi.fn();
     mockSpotifyApi = {
       refreshAccessToken: vi.fn(),

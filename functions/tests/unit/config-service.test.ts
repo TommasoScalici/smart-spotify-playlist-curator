@@ -8,7 +8,8 @@ import { PlaylistConfig } from '../../src/types';
 // Mock dependencies
 vi.mock('../../src/config/firebase', () => ({
   db: {
-    collection: vi.fn()
+    collection: vi.fn(),
+    collectionGroup: vi.fn()
   }
 }));
 
@@ -23,6 +24,7 @@ describe('ConfigService', () => {
   const mockConfig: PlaylistConfig = {
     id: 'spotify:playlist:49NveLmBkE159Zt6g0Novv', // Valid 22-char ID
     name: 'Test Playlist',
+    ownerId: 'test-user',
     enabled: true,
     dryRun: false, // Defaulted by Zod
     settings: { targetTotalTracks: 10 },
@@ -30,7 +32,8 @@ describe('ConfigService', () => {
       prompt: 'Test prompt',
       model: 'gemini-2.5-flash',
       temperature: 0.7,
-      overfetchRatio: 2.0
+      overfetchRatio: 2.0,
+      isInstrumentalOnly: false
     },
     curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
     mandatoryTracks: []
@@ -45,9 +48,8 @@ describe('ConfigService', () => {
     mockWhere = vi.fn();
     mockLimit = vi.fn();
 
-    (db.collection as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
-      where: mockWhere,
-      doc: vi.fn() // Not used in reads
+    (db.collectionGroup as unknown as ReturnType<typeof vi.fn>).mockReturnValue({
+      where: mockWhere
     });
 
     // Default chain behavior for query
@@ -70,7 +72,7 @@ describe('ConfigService', () => {
 
     const result = await service.getEnabledPlaylists();
 
-    expect(db.collection).toHaveBeenCalledWith('playlists');
+    expect(db.collectionGroup).toHaveBeenCalledWith('playlists');
     expect(mockWhere).toHaveBeenCalledWith('enabled', '==', true);
     expect(result).toHaveLength(1);
     expect(result[0]).toEqual(mockConfig);

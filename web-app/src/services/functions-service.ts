@@ -32,6 +32,9 @@ export const FunctionsService = {
   /**
    * Search Spotify for tracks or playlists via Cloud Function Proxy.
    */
+  /**
+   * Search Spotify for tracks or playlists via Cloud Function Proxy.
+   */
   async searchSpotify(query: string, type: 'track' | 'playlist'): Promise<SpotifySearchResult[]> {
     const search = httpsCallable<
       { query: string; type: string; limit: number },
@@ -39,5 +42,17 @@ export const FunctionsService = {
     >(functions, 'searchSpotify');
     const result = await search({ query, type, limit: 10 });
     return result.data.results;
+  },
+
+  /**
+   * Links a Spotify Account by exchanging the Auth Code.
+   */
+  async linkSpotifyAccount(code: string, redirectUri: string): Promise<{ success: boolean }> {
+    const exchange = httpsCallable<{ code: string; redirectUri: string }, { success: boolean }>(
+      functions,
+      'exchangeSpotifyToken'
+    );
+    const result = await exchange({ code, redirectUri });
+    return result.data;
   }
 };

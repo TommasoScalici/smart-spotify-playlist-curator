@@ -1,9 +1,10 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthProvider';
+import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Layout } from './components/Layout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
+import SpotifyCallback from './pages/SpotifyCallback';
 import './App.css';
 
 import EditPlaylist from './pages/EditPlaylist';
@@ -23,6 +24,7 @@ function App() {
             }
           >
             <Route path="/" element={<Dashboard />} />
+            <Route path="/callback" element={<SpotifyCallback />} />
             <Route path="/playlist/:id" element={<EditPlaylist />} />
           </Route>
 
