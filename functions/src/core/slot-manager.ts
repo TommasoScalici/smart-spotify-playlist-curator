@@ -35,9 +35,8 @@ export class SlotManager {
       if (min !== max) {
         const start = Math.max(0, min - 1);
         const end = Math.min(totalSlots - 1, max - 1);
-        // Simple logic: Try random slot in range, else nearest neighbor
-        // (Compressed version of previous logic for brevity, keeping core robust)
-
+        // Try to place in a random valid slot within range.
+        // If full, expand search outward (nearest neighbor).
         let placed = false;
         const rangeSlots = [];
         for (let i = start; i <= end; i++) if (playlist[i] === null) rangeSlots.push(i);
@@ -47,7 +46,6 @@ export class SlotManager {
           playlist[chosen] = meta.uri;
           placed = true;
         } else {
-          // Nearest neighbor search
           let offset = 1;
           while (!placed) {
             const left = start - offset;

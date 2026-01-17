@@ -11,11 +11,12 @@
   "main": "index.js",
   "scripts": {
     "test": "vitest run",
+    "build": "npm run build --workspaces --if-present",
+    "deploy": "tsx scripts/src/admin/build.ts && firebase deploy",
     "prepare": "husky",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
-    "build": "npm run build --workspaces --if-present",
     "type-check": "tsc -b",
     "fix": "npm run lint:fix && npm run format"
   },

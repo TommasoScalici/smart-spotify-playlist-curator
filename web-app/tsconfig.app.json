@@ -12,7 +12,11 @@
     "moduleDetection": "force",
     "noEmit": true,
     "jsx": "react-jsx",
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }

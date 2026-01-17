@@ -5,11 +5,10 @@
   },
   "functions": [
     {
-      "source": "functions",
+      "source": "functions/dist",
       "codebase": "default",
       "disallowLegacyRuntimeConfig": true,
-      "ignore": ["node_modules", ".git", "firebase-debug.*.log", "*.local", ".env"],
-      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+      "ignore": ["node_modules", ".git", "firebase-debug.*.log", "*.local", ".env"]
     }
   ],
   "hosting": {

@@ -12,7 +12,6 @@ service-account.json
 
 # Build
 dist/
-lib/
 build/
 
 # Logs

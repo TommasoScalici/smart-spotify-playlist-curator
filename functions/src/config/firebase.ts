@@ -1,8 +1,8 @@
-import * as admin from 'firebase-admin';
+import { initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Check if app is already initialized to avoid "default app already defined" error
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
+// Initialize Firebase Admin SDK once
+const app = initializeApp();
+const db = getFirestore(app);
 
-export const db = admin.firestore();
+export { app, db };

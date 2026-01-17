@@ -9,7 +9,8 @@ export default defineConfig({
   envDir: '../',
   resolve: {
     alias: {
-      '@smart-spotify-curator/shared': path.resolve(__dirname, '../shared/src/index.ts')
+      '@smart-spotify-curator/shared': path.resolve(__dirname, '../shared/src/index.ts'),
+      '@': path.resolve(__dirname, './src')
     }
   },
   build: {

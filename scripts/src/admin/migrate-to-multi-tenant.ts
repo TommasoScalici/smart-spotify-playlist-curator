@@ -1,4 +1,3 @@
-import * as admin from 'firebase-admin';
 import * as dotenv from 'dotenv';
 import { z } from 'zod';
 
@@ -6,7 +5,7 @@ import { z } from 'zod';
 dotenv.config();
 
 // Initialize Firebase Admin
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
+import { initializeApp, getApps } from 'firebase-admin/app';
 import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 if (!getApps().length) {

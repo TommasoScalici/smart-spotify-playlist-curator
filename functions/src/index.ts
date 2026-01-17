@@ -4,7 +4,6 @@ import * as logger from 'firebase-functions/logger';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
 import { existsSync } from 'fs';
-
 // Load environment variables from root .env for local development
 const envPath = resolve(__dirname, '../../.env');
 if (existsSync(envPath)) {

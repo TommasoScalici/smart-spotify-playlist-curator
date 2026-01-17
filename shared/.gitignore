@@ -1,0 +1,11 @@
+# Dependencies
+node_modules/
+
+# Build
+dist/
+lib/
+tsbuildinfo
+
+# Env
+.env
+.env.*

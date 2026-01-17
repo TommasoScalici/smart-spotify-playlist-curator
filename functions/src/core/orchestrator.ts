@@ -64,18 +64,7 @@ export class PlaylistOrchestrator {
     // Update metadata in Firestore (background, don't await blocking)
     // IMPORTANT: If we are 'usingUserToken', we might have permissions to update metadata on Spotify too if needed.
     // For now, we update Firestore visual cache.
-    db.collection('playlists') // This is legacy global collection for cache?
-      // Wait, ConfigService is updated to use collectionGroup.
-      // BUT here we write to `playlists/docId`.
-      // If the doc moved to `users/{uid}/playlists/{docId}`, this write will FAIL or create a new doc in the OLD config.
-      // WE MUST FIX THIS WRITE to write to the correct location.
-      // Since we accept `config` object, does it know its path? No.
-      // But we know `config.ownerId` and `config.id`.
-      // IF `config.ownerId` exists, we should write to `users/{ownerId}/playlists/{id}`.
-      // ELSE write to `playlists/{id}` (Legacy).
-
-      .doc(config.id); // <--- THIS IS WRONG for multi-tenant.
-    // FIXING WRITE LOCATION:
+    // For now, we update Firestore visual cache.
 
     let docRef;
     if (config.ownerId) {

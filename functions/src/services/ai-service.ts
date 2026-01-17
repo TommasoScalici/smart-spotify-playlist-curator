@@ -56,9 +56,8 @@ export class AiService {
       const response = result.response;
       const text = response.text();
 
-      const duration = Date.now() - requestStart;
       logger.info('AI Response received', {
-        durationMs: duration,
+        durationMs: Date.now() - requestStart,
         candidateCount: response.candidates?.length
       });
 

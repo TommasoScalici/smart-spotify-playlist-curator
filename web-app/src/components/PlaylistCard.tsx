@@ -2,6 +2,10 @@ import { useNavigate } from 'react-router-dom';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Edit2, Music } from 'lucide-react';
 import { RunButton } from './RunButton';
+import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
 
 interface PlaylistCardProps {
   config: PlaylistConfig & { _docId: string };
@@ -11,127 +15,57 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   const navigate = useNavigate();
 
   return (
-    <div
-      className="glass-panel status-card"
-      style={{ height: 'auto', minHeight: '220px', alignItems: 'flex-start', textAlign: 'left' }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          width: '100%',
-          marginBottom: '16px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          {config.imageUrl ? (
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                flexShrink: 0
-              }}
-            >
-              <img
-                src={config.imageUrl}
-                alt={config.name}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            </div>
-          ) : (
-            <div
-              style={{
-                width: '64px',
-                height: '64px',
-                borderRadius: '8px',
-                background: 'rgba(29, 185, 84, 0.1)',
-                color: '#1DB954',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}
-            >
-              <Music size={32} />
-            </div>
+    <Card className="flex flex-col h-full min-h-[220px] hover:border-primary/50 transition-colors">
+      <CardHeader className="flex-row gap-4 space-y-0 pb-4">
+        {/* Cover Image */}
+        {config.imageUrl ? (
+          <div className="h-16 w-16 rounded-md overflow-hidden shrink-0 shadow-md">
+            <img src={config.imageUrl} alt={config.name} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="h-16 w-16 rounded-md bg-primary/10 flex items-center justify-center shrink-0">
+            <Music className="h-8 w-8 text-primary" />
+          </div>
+        )}
+
+        {/* Title & Owner */}
+        <div className="flex-1 min-w-0">
+          <h3 className="text-lg font-semibold leading-tight truncate" title={config.name}>
+            {config.name}
+          </h3>
+          {config.owner && (
+            <p className="text-xs text-muted-foreground mt-1 truncate">by {config.owner}</p>
           )}
-          <div>
-            <h3 style={{ margin: 0, fontSize: '1.2rem', lineHeight: '1.2' }}>{config.name}</h3>
-            {config.owner && (
-              <div
-                style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: '4px' }}
-              >
-                by {config.owner}
-              </div>
-            )}
-            <span
-              style={{
-                fontSize: '0.75rem',
-                color: config.enabled ? '#1DB954' : 'var(--text-secondary)',
-                background: config.enabled ? 'rgba(29, 185, 84, 0.1)' : 'rgba(255, 255, 255, 0.05)',
-                padding: '2px 8px',
-                borderRadius: '99px',
-                marginTop: '6px',
-                display: 'inline-block',
-                fontWeight: 500
-              }}
+          <div className="mt-2">
+            <Badge
+              variant={config.enabled ? 'default' : 'secondary'}
+              className={cn('text-[10px] px-2 h-5', !config.enabled && 'opacity-50')}
             >
               {config.enabled ? 'Active' : 'Disabled'}
-            </span>
+            </Badge>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      <p
-        style={{
-          color: 'var(--text-secondary)',
-          fontSize: '0.9rem',
-          marginBottom: '24px',
-          lineHeight: '1.5',
-          display: '-webkit-box',
-          WebkitLineClamp: 2,
-          WebkitBoxOrient: 'vertical',
-          overflow: 'hidden'
-        }}
-      >
-        {config.settings.description || 'No description provided.'}
-      </p>
+      <CardContent className="flex-1 pb-4">
+        <p className="text-sm text-muted-foreground line-clamp-2">
+          {config.settings.description || 'No description provided.'}
+        </p>
+      </CardContent>
 
-      <div
-        style={{
-          marginTop: 'auto',
-          width: '100%',
-          display: 'flex',
-          gap: '12px',
-          borderTop: '1px solid var(--border-subtle)',
-          paddingTop: '16px'
-        }}
-      >
-        <button
+      <CardFooter className="pt-4 border-t gap-3">
+        <Button
+          variant="outline"
+          className="flex-1 gap-2"
           onClick={() => navigate(`/playlist/${config._docId}`)}
-          style={{
-            flex: 1,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '8px',
-            background: 'var(--bg-surface-elevated)',
-            color: 'var(--text-primary)',
-            padding: '10px',
-            borderRadius: '8px',
-            fontSize: '0.9rem'
-          }}
-          className="hover-btn"
         >
-          <Edit2 size={16} />
+          <Edit2 className="h-4 w-4" />
           Edit
-        </button>
-
-        <RunButton playlistId={config.id} iconOnly={true} />
-      </div>
-    </div>
+        </Button>
+        <div className="shrink-0">
+          <RunButton playlistId={config.id} iconOnly={true} />
+        </div>
+      </CardFooter>
+    </Card>
   );
 };

@@ -353,48 +353,15 @@ export class SpotifyService {
   }
 
   /**
-   * Performs a surgical update to the playlist:
-   * 1. Removes specified tracks.
-   * 2. Appends new tracks.
-   * 3. Reorders tracks to match the target order ONE BY ONE to preserve timestamps.
-   * WARNING: This is slow due to rate limiting (500ms delay per move).
-   */
-  /**
-   * Performs a Hybrid Smart Update (Skeleton Strategy):
-   * 1. Removes all non-VIP tracks.
-   * 2. Reorders remaining VIP tracks to match target relative order (preserving timestamp).
+   * Performs a Hybrid Smart Update:
+   * 1. Removes non-VIP tracks that are not in the target list.
+   * 2. Reorders remaining VIP tracks to match target relative order.
    * 3. Inserts new/non-VIP tracks in contiguous blocks.
    */
   public async performSmartUpdate(
     playlistId: string,
-    _tracksToRemove: string[], // Legacy param, kept for signature but logic calculates diff internally if needed, or we trust caller.
-    // Actually, for Skeleton Strategy, we just need to know which are VIPs.
-    // We will calculate removals based on "Current - VIPs".
-    // But wait, the caller 'Orchestrator' has already determined 'tracksToRemove'.
-    // If we want to strictly follow Skeleton Strategy, we should remove *everything that is not a kept VIP*.
-    // The 'tracksToRemove' passed by orchestrator is 'current - kept'.
-    // So 'tracksToRemove' IS the list of non-VIPs + expired VIPs?
-    // Orchestrator calculates 'tracksToRemove' as anything not in 'finalTrackList' + expired.
-    // Let's refine: We need to remove anything currently in the playlist that is NOT a VIP we intend to keep.
-    // The Orchestrator passes 'targetOrderedUris' which is the final desired state.
-    // It also passes 'tracksToRemove' and 'tracksToAdd'.
-    //
-    // Hybrid Strategy Implementation:
-    // 1. Bulk Remove 'tracksToRemove' (This should clear the way).
-    // 2. Identify remaining tracks (These should be the VIPs we kept).
-    // 3. Reorder these remaining tracks to match their relative order in 'targetOrderedUris'.
-    // 4. Iterate 'targetOrderedUris' and insert the 'tracksToAdd' (and any other non-VIPs?) in blocks.
-    //
-    // Wait, 'tracksToAdd' are just the NEW ones. What about "kept non-VIPs"?
-    // If we keep a non-VIP, we preserve its timestamp.
-    // But the user said: "Apply new logic exclusively to non-VIP tracks... fast removal / add (added_at resets)."
-    // This implies we SHOULD remove kept non-VIPs and re-add them to be fast?
-    // "Standard Tracks: Bulk remove / add (fast, added_at resets)."
-    // YES. We should remove ALL non-VIPs, even if they were "kept" by logic, to facilitate block insertion.
-    // So we need to calculate a SUPERSET of removals: All Current - All VIPs.
-    //
-    // So we need 'vipUris' passed in.
-    _tracksToAdd: string[], // Legacy param, we can derive from target - vips.
+    _tracksToRemove: string[],
+    _tracksToAdd: string[],
     targetOrderedUris: string[],
     dryRun: boolean = false,
     vipUris: string[] = []

@@ -6,7 +6,8 @@
     "outDir": "lib",
     "sourceMap": true,
     "target": "ESNext",
-    "types": ["node", "vitest/globals"]
+    "types": ["node", "vitest/globals"],
+    "noEmit": true
   },
   "compileOnSave": true,
   "include": ["src", "tests"]

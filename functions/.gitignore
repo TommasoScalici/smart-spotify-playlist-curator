@@ -1,11 +1,14 @@
-# Compiled JavaScript files
-lib/**/*.js
-lib/**/*.js.map
+# Build Output
+lib/
+dist/
 
-# TypeScript v1 declaration files
-typings/
-
-# Node.js dependency directory
+# Dependencies
 node_modules/
-*.local
+
+# Env
 .env
+.env.*.local
+*.local
+
+# Logs
+*.log
