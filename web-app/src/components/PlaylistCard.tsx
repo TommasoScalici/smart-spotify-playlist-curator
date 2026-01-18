@@ -161,25 +161,36 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
 
       <CardFooter className="relative z-10 p-5 pt-2 mt-auto flex gap-3">
         <Button
-          variant="ghost"
+          variant="outline"
           size="default"
-          className="flex-1 gap-2 text-muted-foreground hover:text-foreground hover:bg-white/5 h-10 min-h-[44px]"
+          className="flex-1 group/btn gap-2 border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 min-h-[44px]"
           onClick={(e) => {
             e.stopPropagation();
             navigate(`/playlist/${config._docId}`);
           }}
         >
-          <Edit2 className="h-4 w-4" />
+          <Edit2 className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
           Config
         </Button>
 
         <div className="flex-1">
-          <RunButton
-            playlistId={config.id}
-            className="w-full bg-gradient-to-r from-primary/90 to-primary hovered:from-primary hovered:to-primary/90 shadow-lg shadow-primary/20 border-0 h-10 min-h-[44px]"
-          />
+          <RunButton playlistId={config.id} className="w-full h-10 min-h-[44px]" />
         </div>
       </CardFooter>
     </Card>
   );
 };
+
+export const PlaylistCardSkeleton = () => (
+  <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm h-full">
+    <div className="h-40 w-full bg-muted animate-pulse" />
+    <CardContent className="p-4 space-y-3">
+      <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
+      <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+      <div className="flex justify-between pt-2">
+        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+      </div>
+    </CardContent>
+  </Card>
+);

@@ -6,6 +6,7 @@ import { ConfigEditor } from '../components/ConfigEditor';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 export default function EditPlaylist() {
   const { id } = useParams();
@@ -70,29 +71,28 @@ export default function EditPlaylist() {
   }
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '24px' }}>
-        <button
+    <div className="container max-w-4xl mx-auto py-8 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="flex flex-col gap-2 mb-8 select-none">
+        <Button
+          variant="ghost"
           onClick={() => navigate('/')}
-          style={{
-            background: 'transparent',
-            color: 'var(--text-secondary)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            border: 'none',
-            cursor: 'pointer',
-            marginBottom: '12px'
-          }}
+          className="w-fit pl-0 hover:bg-transparent hover:text-primary -ml-4 text-muted-foreground transition-colors"
         >
-          <ArrowLeft size={18} /> Back to Dashboard
-        </button>
-        <h1 style={{ fontSize: '2rem' }}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
+        </Button>
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
           {isNew ? 'Create New Playlist' : `Edit ${config?.name || 'Playlist'}`}
         </h1>
+        <p className="text-muted-foreground">
+          {isNew
+            ? 'Configure your new automation rules.'
+            : 'Update your playlist settings and logic.'}
+        </p>
       </div>
 
-      <ConfigEditor initialConfig={config} onSubmit={handleSave} />
+      <div className="relative">
+        <ConfigEditor initialConfig={config} onSubmit={handleSave} />
+      </div>
     </div>
   );
 }

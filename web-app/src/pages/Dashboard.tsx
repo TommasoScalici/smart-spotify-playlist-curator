@@ -1,124 +1,145 @@
 import { useEffect, useState } from 'react';
 import { FirestoreService } from '../services/firestore-service';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { PlaylistCard } from '../components/PlaylistCard';
+import { PlaylistCard, PlaylistCardSkeleton } from '../components/PlaylistCard';
 import { RunButton } from '../components/RunButton';
-import { Loader2, Plus, Music } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { useSpotifyAuth } from '../hooks/useSpotifyAuth';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
+import { OnboardingHero } from '@/components/OnboardingHero';
+import { cn } from '@/lib/utils';
+import { TutorialDialog } from '@/components/TutorialDialog';
+import { ActivityFeed } from '@/components/ActivityFeed';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [tutorialDismissed, setTutorialDismissed] = useState(false);
   const navigate = useNavigate();
 
   const { user } = useAuth();
-  const [isSpotifyLinked, setIsSpotifyLinked] = useState(false);
-  const { login } = useSpotifyAuth();
+  const { data: isSpotifyLinked, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
 
   useEffect(() => {
     if (user) {
-      checkLinkStatus(user.uid);
+      const loadPlaylists = async (uid: string) => {
+        try {
+          setLoading(true);
+          const data = await FirestoreService.getUserPlaylists(uid);
+          setPlaylists(data);
+        } catch (e) {
+          console.error(e);
+          setError('Failed to load playlists.');
+        } finally {
+          setLoading(false);
+        }
+      };
+
       loadPlaylists(user.uid);
     }
   }, [user]);
 
-  const checkLinkStatus = async (uid: string) => {
-    const linked = await FirestoreService.checkSpotifyConnection(uid);
-    setIsSpotifyLinked(linked);
-  };
-
-  const loadPlaylists = async (uid: string) => {
-    try {
-      setLoading(true);
-      const data = await FirestoreService.getUserPlaylists(uid);
-      setPlaylists(data);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to load playlists.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background text-foreground animate-in fade-in duration-500">
-      <div className="container mx-auto p-4 md:p-6 max-w-7xl">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-4 mb-8">
+    <div
+      className={cn(
+        'container mx-auto w-full',
+        !checkingLink && !isSpotifyLinked
+          ? 'flex-1 flex flex-col items-center justify-center p-4'
+          : 'p-4 md:p-6 max-w-7xl space-y-8'
+      )}
+    >
+      {/* Header */}
+      {(checkingLink || isSpotifyLinked) && (
+        <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+            <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+              Dashboard
+            </h1>
             <p className="text-muted-foreground mt-1">
               Manage your automation rules and monitor curator activity.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            <Button
-              variant="outline"
-              onClick={() => navigate('/playlist/new')}
-              className="gap-2 shadow-sm hover:shadow-md hover:scale-105 transition-all text-primary border-primary/20 hover:bg-primary/5 w-full sm:w-auto min-h-[44px]"
-            >
-              <Plus className="h-4 w-4" /> New Playlist
-            </Button>
-            <div className="w-full sm:w-auto">
-              <RunButton className="w-full sm:w-auto min-h-[44px]" />
+            {/* Action Buttons are shown only when fully linked */}
+            {!checkingLink && isSpotifyLinked && (
+              <>
+                <Button
+                  onClick={() => navigate('/playlist/new')}
+                  className="group gap-2 shadow-lg shadow-secondary/10 hover:shadow-secondary/20 hover:scale-105 transition-all bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 backdrop-blur-sm w-full sm:w-auto min-h-[44px]"
+                >
+                  <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />{' '}
+                  New Playlist
+                </Button>
+                <div className="w-full sm:w-auto">
+                  <RunButton className="w-full sm:w-auto min-h-[44px] shadow-lg shadow-tertiary/10" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {error && (
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20">
+          {error}
+        </div>
+      )}
+
+      {/* Spotify Link CTA */}
+      {!loading && !isSpotifyLinked && <OnboardingHero />}
+
+      {/* Content Area */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <PlaylistCardSkeleton />
+          <PlaylistCardSkeleton />
+          <PlaylistCardSkeleton />
+        </div>
+      ) : playlists.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+          {/* Playlist Grid */}
+          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
+            {playlists.map((playlist) => (
+              <PlaylistCard key={playlist._docId} config={playlist} />
+            ))}
+          </div>
+
+          {/* Side Panel: Activity Feed */}
+          <div className="lg:col-span-1">
+            <div className="sticky top-24">
+              <ActivityFeed />
             </div>
           </div>
         </div>
-
-        {error && (
-          <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20">
-            {error}
+      ) : (
+        !error && (
+          <div className="text-center py-20 animate-in fade-in zoom-in duration-500">
+            <h3 className="text-2xl font-bold mb-4">No Playlists Configured</h3>
+            <p className="text-muted-foreground mb-8 text-lg">
+              Create your first automated playlist to get started.
+            </p>
+            <Button
+              size="lg"
+              onClick={() => navigate('/playlist/new')}
+              className="shadow-lg hover:shadow-primary/20"
+            >
+              <Plus className="mr-2 h-5 w-5" /> Create New Playlist
+            </Button>
           </div>
-        )}
-
-        {/* Spotify Link CTA */}
-        {!loading && !isSpotifyLinked && (
-          <Card className="mb-8 border-primary/20 bg-primary/5">
-            <CardContent className="flex flex-col items-center justify-center py-10 text-center">
-              <h3 className="text-xl font-semibold mb-2">Link your Spotify Account</h3>
-              <p className="text-muted-foreground mb-6 max-w-md">
-                To start curating, you need to connect your Spotify account. We need permissions to
-                read your playlists and modify them.
-              </p>
-              <Button onClick={login} className="bg-[#1DB954] hover:bg-[#1ed760] text-white">
-                Connect Spotify
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <Loader2 className="h-10 w-10 animate-spin text-primary" />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {playlists.length === 0 ? (
-              <Card className="col-span-full border-dashed">
-                <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-                  <div className="h-16 w-16 bg-muted rounded-full flex items-center justify-center mb-4">
-                    <Music className="h-8 w-8 text-muted-foreground/50" />
-                  </div>
-                  <h3 className="text-lg font-semibold mb-2">No Playlists Found</h3>
-                  <p className="text-muted-foreground mb-6 max-w-sm">
-                    You haven't created any playlist configurations yet.
-                  </p>
-                  <Button onClick={() => navigate('/playlist/new')} className="shadow-md">
-                    Create Your First Playlist
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              playlists.map((playlist) => <PlaylistCard key={playlist._docId} config={playlist} />)
-            )}
-          </div>
-        )}
-      </div>
+        )
+      )}
+      {/* Tutorial Dialog for New Users */}
+      <TutorialDialog
+        open={
+          !loading && !!isSpotifyLinked && playlists.length === 0 && !error && !tutorialDismissed
+        }
+        onOpenChange={(open) => {
+          if (!open) setTutorialDismissed(true);
+        }}
+      />
     </div>
   );
 }

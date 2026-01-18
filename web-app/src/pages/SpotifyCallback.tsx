@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FunctionsService } from '../services/functions-service';
 import { useAuth } from '../contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function SpotifyCallback() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
 
   const code = searchParams.get('code');
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>(() => {
@@ -34,19 +36,23 @@ export default function SpotifyCallback() {
       try {
         const redirectUri = window.location.origin + '/callback';
         await FunctionsService.linkSpotifyAccount(code, redirectUri);
+        // Invalidate connection status to force re-fetch in Layout/Dashboard
+        queryClient.invalidateQueries({ queryKey: ['spotifyConnection'] });
+
         setStatus('success');
         setTimeout(() => navigate('/'), 1500);
       } catch (error) {
         console.error('Linking failed', error);
         setStatus('error');
         setErrorMsg('Failed to link account. Please try again.');
+        // Still invalidate to be safe? No, if it failed, it failed.
       }
     };
 
     if (status === 'processing') {
       linkAccount();
     }
-  }, [code, user, navigate, status]);
+  }, [code, user, navigate, status, queryClient]);
 
   return (
     <div className="login-wrapper">

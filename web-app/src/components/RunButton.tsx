@@ -76,17 +76,17 @@ export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunB
       variant={playlistId ? 'default' : 'outline'}
       size={playlistId ? 'sm' : 'default'} // Override this in parent if needed via className
       className={cn(
-        'gap-2 transition-all font-semibold relative overflow-hidden group',
+        'gap-2 transition-all font-semibold relative overflow-hidden group border active:scale-95 hover:scale-105 backdrop-blur-sm',
         playlistId
-          ? 'rounded-md'
-          : 'border-primary/20 hover:bg-primary/10 text-primary shadow-sm hover:shadow-md',
-        className // Allow parent to override width/height
+          ? 'bg-tertiary text-tertiary-foreground border-transparent hover:bg-tertiary/90 shadow-lg shadow-tertiary/20'
+          : 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20 hover:border-tertiary/40 shadow-[0_0_15px_rgba(var(--tertiary),0.15)] hover:shadow-[0_0_25px_rgba(var(--tertiary),0.3)]',
+        className
       )}
     >
       {loading ? (
         <Loader2 className="animate-spin h-4 w-4" />
       ) : (
-        <Zap className="h-4 w-4 fill-current" />
+        <Zap className="h-4 w-4 transition-all group-hover:fill-current group-hover:scale-110 duration-300" />
       )}
       <span>{playlistId ? 'Run' : 'Run Active Rules'}</span>
     </Button>

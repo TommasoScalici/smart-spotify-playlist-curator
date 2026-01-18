@@ -1,4 +1,13 @@
-import { collection, getDocs, getDoc, doc, setDoc, query, where } from 'firebase/firestore';
+import {
+  collection,
+  getDocs,
+  getDoc,
+  deleteDoc,
+  doc,
+  setDoc,
+  query,
+  where
+} from 'firebase/firestore';
 import { db } from './firebase';
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 
@@ -83,5 +92,13 @@ export const FirestoreService = {
       console.error('Error checking connection', e);
       return false;
     }
+  },
+
+  /**
+   * Unlinks Spotify account by deleting the credentials.
+   */
+  async unlinkSpotifyAccount(uid: string): Promise<void> {
+    const docRef = doc(db, 'users', uid, 'secrets', 'spotify');
+    await deleteDoc(docRef);
   }
 };
