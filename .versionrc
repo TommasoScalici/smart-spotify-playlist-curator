@@ -1,0 +1,11 @@
+{
+  "packageFiles": [
+    "package.json"
+  ],
+  "bumpFiles": [
+    "package.json",
+    "functions/package.json",
+    "web-app/package.json",
+    "shared/package.json"
+  ]
+}

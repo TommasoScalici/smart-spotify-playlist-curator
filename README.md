@@ -1,9 +1,9 @@
 # Smart Spotify Playlist Curator
 
-> **Status**: v2.0.0 (Stable) | **License**: MIT
+> **Status**: v2.0.0 (Private Beta) | **License**: MIT
 > **Stack**: React 19, Node 24, Firebase Gen 2, Gemini 2.5 Flash
 
-A powerful, **multi-tenant automation system** that curates Spotify playlists using **Google Gemini 2.5 Flash** for intelligent song recommendations and **Firebase Cloud Functions** for serverless orchestration.
+A powerful **Private Playlist Utility** that curates Spotify playlists for you and your friends using **Google Gemini 2.5 Flash**. Designed as a self-hosted tool for small groups (up to 25 users).
 
 ---
 
@@ -27,6 +27,14 @@ A powerful, **multi-tenant automation system** that curates Spotify playlists us
 - **Music Studio UI**: built with **React 19**, **Tailwind CSS**, and **shadcn/ui**.
 - **Real-Time Feedback**: Optimistic UI updates for a snappy feel.
 - **Security**: OAuth 2.0 Identity Linking (Spotify) + Firebase Authentication.
+
+### 👥 Onboarding Friends
+
+Since this is a private tool using the Spotify API in Development Mode:
+
+1.  Go to your [Spotify Developer Dashboard](https://developer.spotify.com/dashboard).
+2.  Add your friends' Spotify Email Addresses to the **Users and Access** whitelist.
+3.  They can now log in to your deployed Web App and link their accounts!
 
 ---
 

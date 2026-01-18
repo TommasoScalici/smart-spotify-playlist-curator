@@ -2,11 +2,28 @@ import { GenerativeModel, GoogleGenerativeAI } from '@google/generative-ai';
 import { config } from '../config/env';
 import { AiGenerationConfig } from '../types';
 import * as logger from 'firebase-functions/logger';
+import { z } from 'zod';
 
 export interface AiSuggestion {
   artist: string;
   track: string;
 }
+
+// Global Quality Constraints to reduce hallucinations and bad suggestions
+const QUALITY_CONSTRAINTS = [
+  'Do NOT suggest live versions, remixes, or acoustic versions unless explicitly asked.',
+  'Do NOT suggest intro/outro tracks, commentary, or spoken word tracks.',
+  'Do NOT suggest songs that are under 1 minute long.',
+  'Ensure the track and artist names match Spotify metadata exactly.'
+];
+
+// Validation Schema for AI Response
+const AiResponseSchema = z.array(
+  z.object({
+    artist: z.string().min(1),
+    track: z.string().min(1)
+  })
+);
 
 export class AiService {
   private genAI: GoogleGenerativeAI;
@@ -44,12 +61,18 @@ export class AiService {
       prompt += `\nFor this generation, please bias your selection towards style/vibe of these artists: ${referenceArtists.join(', ')}.`;
     }
 
+    // Apply Global Quality Constraints
+    prompt += `\n\nGlobal Constraints (STRICT):`;
+    QUALITY_CONSTRAINTS.forEach((constraint) => {
+      prompt += `\n- ${constraint}`;
+    });
+
     if (excludedTracks.length > 0) {
       // Only send a subset to avoid token limits, e.g. last 50
-      prompt += `\nConstraint: Do NOT suggest these specific songs: ${JSON.stringify(excludedTracks.slice(0, 50))}`;
+      prompt += `\n\nSpecific Exclusions (Do NOT suggest these): ${JSON.stringify(excludedTracks.slice(0, 50))}`;
     }
 
-    prompt += `\nReturn ONLY a valid JSON array of objects with 'artist' and 'track' fields.`;
+    prompt += `\n\nOutput Format: Return ONLY a valid JSON array of objects with 'artist' and 'track' fields.`;
 
     try {
       const result = await this.model.generateContent(prompt);
@@ -70,22 +93,19 @@ export class AiService {
 
       let suggestions: AiSuggestion[];
       try {
-        suggestions = JSON.parse(cleanText);
+        const parsed = JSON.parse(cleanText);
+        // Strict Schema Validation
+        suggestions = AiResponseSchema.parse(parsed);
       } catch (parseError) {
-        logger.error('Failed to parse AI response as JSON', {
+        logger.error('Failed to parse or validate AI response', {
           rawText: text,
           cleanText,
           error: parseError
         });
-        throw new Error('AI response was not valid JSON.');
+        throw new Error('AI response was not valid JSON matching the schema.');
       }
 
-      // Basic validation
-      if (!Array.isArray(suggestions)) {
-        throw new Error('AI did not return an array');
-      }
-
-      logger.info('AI suggestions parsed successfully', {
+      logger.info('AI suggestions parsed & validated successfully', {
         count: suggestions.length
       });
 

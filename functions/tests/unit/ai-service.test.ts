@@ -88,7 +88,8 @@ describe('AiService', () => {
 
     // Verify prompt construction logic indirectly via mock call arg
     const callArg = mockGenerateContent.mock.calls[0][0];
-    expect(callArg).toContain('Constraint: Do NOT suggest these specific songs');
+    expect(callArg).toContain('Specific Exclusions (Do NOT suggest these):');
+    expect(callArg).toContain('Global Constraints (STRICT):');
   });
 
   it('should include reference artists in prompt', async () => {

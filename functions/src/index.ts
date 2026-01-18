@@ -26,7 +26,7 @@ import { db } from './config/firebase';
 import { onCall } from 'firebase-functions/v2/https';
 
 // Shared logic for both onRequest (Cron/HTTP) and onCall (Web App)
-async function runOrchestrator(playlistId?: string) {
+export async function runOrchestrator(playlistId?: string) {
   const configService = new ConfigService();
   let configs: PlaylistConfig[] = [];
 
