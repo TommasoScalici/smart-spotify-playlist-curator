@@ -9,6 +9,8 @@ import './App.css';
 
 import EditPlaylist from './pages/EditPlaylist';
 
+import { Toaster } from './components/ui/sonner';
+
 function App() {
   return (
     <AuthProvider>
@@ -31,6 +33,7 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </BrowserRouter>
+      <Toaster />
     </AuthProvider>
   );
 }

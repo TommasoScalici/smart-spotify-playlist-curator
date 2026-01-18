@@ -45,7 +45,7 @@ export const PlaylistConfigSchema = z.object({
     .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
   name: z.string().min(3, { message: 'Name is too short' }),
   enabled: z.boolean().default(true),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.url().optional(),
   ownerId: z.string().min(1, { message: 'Owner ID is required' }), // Added for Multi-Tenancy
   owner: z.string().optional(), // Legacy field, consider removing later if redundant
   dryRun: z.boolean().optional(),
@@ -60,11 +60,11 @@ export const PlaylistConfigSchema = z.object({
 
 export const UserSchema = z.object({
   uid: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   displayName: z.string().optional(),
-  photoURL: z.string().url().optional(),
-  createdAt: z.string().datetime(), // ISO 8601
-  lastLoginAt: z.string().datetime(), // ISO 8601
+  photoURL: z.url().optional(),
+  createdAt: z.string().datetime(),
+  lastLoginAt: z.string().datetime(),
   theme: z.enum(['light', 'dark', 'system']).default('system')
 });
 

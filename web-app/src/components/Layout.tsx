@@ -1,11 +1,12 @@
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { ModeToggle } from './mode-toggle';
 
 export const Layout = () => {
   const { user, signOut } = useAuth();
 
   return (
-    <div className="layout">
+    <div className="layout min-h-screen bg-background text-foreground font-sans antialiased">
       <header className="layout-header">
         <div className="layout-header__content">
           <div className="brand-logo">
@@ -27,9 +28,12 @@ export const Layout = () => {
                   <span className="user-name">{user.displayName?.split(' ')[0]}</span>
                 </div>
 
-                <button onClick={signOut} className="btn-logout">
-                  Logout
-                </button>
+                <div className="flex items-center gap-2">
+                  <ModeToggle />
+                  <button onClick={signOut} className="btn-logout">
+                    Logout
+                  </button>
+                </div>
               </div>
             )}
           </nav>

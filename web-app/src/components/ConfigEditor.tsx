@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { Save, Loader2 } from 'lucide-react';
-import { useForm, Resolver } from 'react-hook-form';
+import { useForm, Resolver, useWatch } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
 import { FunctionsService } from '../services/functions-service';
 import { useEffect } from 'react';
@@ -36,9 +36,9 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
   };
 
   // --- Playlist Meta Sync Logic ---
-  // eslint-disable-next-line react-hooks/incompatible-library
-  const playlistId = watch('id');
-  const playlistName = watch('name');
+
+  const playlistId = useWatch({ control, name: 'id' });
+  const playlistName = useWatch({ control, name: 'name' });
 
   // Fetch playlist meta if we have ID but no name (e.g. initial load logic if name missing)
   const shouldFetchPlaylist =

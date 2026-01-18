@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 import { SpotifyService } from '../../src/services/spotify-service';
 import SpotifyWebApi from 'spotify-web-api-node';
 
-// Mock SpotifyWebApi
 // Mock SpotifyWebApi
 vi.mock('spotify-web-api-node', () => {
   return {
@@ -56,21 +55,21 @@ describe('SpotifyService - Skeleton Strategy', () => {
       removeTracksFromPlaylist: vi.fn(),
       reorderTracksInPlaylist: vi.fn(),
       addTracksToPlaylist: vi.fn()
-    } as any;
+    };
 
     (MockSpotifyWebApi as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSpotifyApi);
     vi.mocked(SpotifyWebApi).mockImplementation(function () {
-      return mockSpotifyApi as any;
+      return mockSpotifyApi as unknown;
     });
 
     // Default Mocks
     mockSpotifyApi.refreshAccessToken.mockResolvedValue({
       body: { access_token: 'new-token', expires_in: 3600 }
-    } as any);
+    } as unknown);
     mockSpotifyApi.setAccessToken.mockReturnValue(undefined);
     mockSpotifyApi.getPlaylist.mockResolvedValue({
       body: { snapshot_id: 'snap1' }
-    } as any);
+    } as unknown);
 
     spotifyService = SpotifyService.getInstance();
   });
@@ -140,7 +139,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
 
     mockSpotifyApi.getPlaylistTracks.mockResolvedValue({
       body: { items: currentTracks }
-    } as any);
+    } as unknown);
 
     // Target Order: [A(vip), X, Y, D(vip), Z]
     // X, Y, Z are new. B, C, E are removed.
@@ -154,11 +153,13 @@ describe('SpotifyService - Skeleton Strategy', () => {
 
     mockSpotifyApi.removeTracksFromPlaylist.mockResolvedValue({
       body: { snapshot_id: 'snap2' }
-    } as any);
+    } as unknown);
     mockSpotifyApi.reorderTracksInPlaylist.mockResolvedValue({
       body: { snapshot_id: 'snap3' }
-    } as any);
-    mockSpotifyApi.addTracksToPlaylist.mockResolvedValue({ body: { snapshot_id: 'snap4' } } as any);
+    } as unknown);
+    mockSpotifyApi.addTracksToPlaylist.mockResolvedValue({
+      body: { snapshot_id: 'snap4' }
+    } as unknown);
 
     // Execute
     await spotifyService.performSmartUpdate(
@@ -240,13 +241,13 @@ describe('SpotifyService - Skeleton Strategy', () => {
 
     mockSpotifyApi.getPlaylistTracks.mockResolvedValue({
       body: { items: currentTracks }
-    } as any);
+    } as unknown);
 
     const targetOrderedUris = ['spotify:track:A', 'spotify:track:D'];
 
     mockSpotifyApi.reorderTracksInPlaylist.mockResolvedValue({
       body: { snapshot_id: 'snap2' }
-    } as any);
+    } as unknown);
 
     await spotifyService.performSmartUpdate(playlistId, [], [], targetOrderedUris, false, vipUris);
 

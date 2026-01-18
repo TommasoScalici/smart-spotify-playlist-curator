@@ -5,6 +5,7 @@ import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { ConfigEditor } from '../components/ConfigEditor';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { toast } from 'sonner';
 
 export default function EditPlaylist() {
   const { id } = useParams();
@@ -47,12 +48,17 @@ export default function EditPlaylist() {
 
   const handleSave = async (data: PlaylistConfig) => {
     if (!user) return;
-    try {
-      await FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id);
-      navigate('/');
-    } catch {
-      alert('Failed to save playlist.');
-    }
+
+    toast.promise(FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id), {
+      loading: 'Saving configuration...',
+      success: () => {
+        // Navigate after a short delay or immediately? Standard is fine.
+        // We will navigate immediately but the toast will persist due to Toaster being at root.
+        navigate('/');
+        return 'Playlist saved successfully! 💾';
+      },
+      error: 'Failed to save playlist. Please try again.'
+    });
   };
 
   if (loading) {

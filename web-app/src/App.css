@@ -30,10 +30,11 @@
   box-sizing: border-box;
 }
 
+/* Body handled by index.css / Tailwind */
 body {
   margin: 0;
-  background-color: var(--bg-deep);
-  color: var(--text-primary);
+  /* background-color: var(--bg-deep); Handled by theme-provider */
+  /* color: var(--text-primary); Handled by theme-provider */
   font-family:
     'Inter',
     -apple-system,

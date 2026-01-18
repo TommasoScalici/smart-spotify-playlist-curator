@@ -1,11 +1,15 @@
 import { useState } from 'react';
-import { Play, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { Zap, Loader2 } from 'lucide-react';
 import { FunctionsService } from '../services/functions-service';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '@/lib/utils';
 
 interface RunButtonProps {
   playlistId?: string;
   iconOnly?: boolean;
-  className?: string; // Allow custom styling
+  className?: string;
 }
 
 export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunButtonProps) => {
@@ -17,59 +21,74 @@ export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunB
 
     const confirmMsg = playlistId
       ? 'Run curation for this playlist?'
-      : 'Run global curation for ALL playlists?';
+      : 'Run curation for ALL active playlists?';
 
     if (!window.confirm(confirmMsg)) return;
 
     setLoading(true);
-    try {
-      await FunctionsService.triggerCuration(playlistId);
-      alert('Curation triggered successfully!');
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      // Error handled by parent or silence
-      // console.error(error); // Removed for strict linting
-      alert(`Failed to trigger curation: ${message}`);
-    } finally {
-      setLoading(false);
-    }
+    toast.promise(FunctionsService.triggerCuration(playlistId), {
+      loading: 'Triggering curation...',
+      success: 'Curation triggered successfully! Check your Spotify shortly.',
+      error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`,
+      finally: () => setLoading(false)
+    });
   };
+
+  const buttonContent = loading ? (
+    <Loader2 className="animate-spin text-primary" size={iconOnly ? 20 : 18} />
+  ) : (
+    <Zap className={cn('fill-current', iconOnly ? 'h-5 w-5' : 'h-4 w-4')} />
+  );
 
   if (iconOnly) {
     return (
-      <button
-        onClick={handleRun}
-        disabled={loading}
-        className={`hover-btn ${className}`}
-        style={{
-          background: 'rgba(29, 185, 84, 0.1)',
-          color: '#1DB954',
-          padding: '10px',
-          borderRadius: '8px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          cursor: loading ? 'not-allowed' : 'pointer',
-          border: '1px solid rgba(29, 185, 84, 0.2)',
-          transition: 'all 0.2s',
-          ...(loading ? { opacity: 0.7 } : {})
-        }}
-        title="Trigger Curation"
-      >
-        {loading ? <Loader2 className="animate-spin" size={20} /> : <Play size={20} />}
-      </button>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleRun}
+              disabled={loading}
+              className={cn(
+                'rounded-full border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary hover:scale-105 transition-all duration-200 shadow-sm',
+                className
+              )}
+            >
+              {buttonContent}
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Run Curation</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
   return (
-    <button
-      className={`btn-primary ${className}`}
-      onClick={handleRun}
-      disabled={loading}
-      style={{ display: 'flex', gap: '8px', alignItems: 'center', opacity: loading ? 0.7 : 1 }}
+    <Button
+      onClick={(e) => {
+        handleRun(e); // Pass the event object
+        e.stopPropagation();
+      }}
+      disabled={loading} // Use 'loading' state
+      variant={playlistId ? 'default' : 'outline'}
+      size={playlistId ? 'sm' : 'default'} // Override this in parent if needed via className
+      className={cn(
+        'gap-2 transition-all font-semibold relative overflow-hidden group',
+        playlistId
+          ? 'rounded-md'
+          : 'border-primary/20 hover:bg-primary/10 text-primary shadow-sm hover:shadow-md',
+        className // Allow parent to override width/height
+      )}
     >
-      {loading ? <Loader2 className="animate-spin" size={18} /> : <Play size={18} />}
-      <span>{playlistId ? 'Run' : 'Run All'}</span>
-    </button>
+      {loading ? (
+        <Loader2 className="animate-spin h-4 w-4" />
+      ) : (
+        <Zap className="h-4 w-4 fill-current" />
+      )}
+      <span>{playlistId ? 'Run' : 'Run Active Rules'}</span>
+    </Button>
   );
 };

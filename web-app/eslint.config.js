@@ -16,7 +16,7 @@ export default [
     }
   },
   {
-    files: ['src/components/ui/*.tsx', 'src/contexts/*.tsx'],
+    files: ['src/components/ui/*.tsx', 'src/contexts/*.tsx', '**/theme-provider.tsx'],
     rules: {
       'react-refresh/only-export-components': 'off'
     }

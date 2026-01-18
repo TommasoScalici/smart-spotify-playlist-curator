@@ -61,16 +61,20 @@ export class SpotifyService {
 
     try {
       return await operation();
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (retries <= 0) throw error;
 
       // Handle 429 Too Many Requests
-      if (error.statusCode === 429) {
+      const err = error as {
+        statusCode?: number;
+        headers?: Record<string, string>;
+        code?: string;
+        cause?: unknown;
+      };
+
+      if (err.statusCode === 429) {
         const retryAfter =
-          error.headers && error.headers['retry-after']
-            ? parseInt(error.headers['retry-after'])
-            : 1;
+          err.headers && err.headers['retry-after'] ? parseInt(err.headers['retry-after']) : 1;
         logger.warn(`Rate limit hit. Waiting ${retryAfter} seconds...`, {
           retryAfter
         });
@@ -79,7 +83,7 @@ export class SpotifyService {
       }
 
       // Handle 401 Unauthorized (Expired Token)
-      if (error.statusCode === 401) {
+      if (err.statusCode === 401) {
         logger.warn('Got 401, refreshing token and retrying...');
         this.tokenExpirationEpoch = 0; // Force refresh
         await this.ensureAccessToken();
@@ -90,10 +94,13 @@ export class SpotifyService {
       // Node.js error codes are typically strings in error.code
       const networkErrors = ['ETIMEDOUT', 'ECONNRESET', 'ENOTFOUND', 'EPIPE'];
       if (
-        networkErrors.includes(error.code) ||
-        (error.cause && networkErrors.includes((error.cause as { code?: string }).code as string))
+        (err.code && networkErrors.includes(err.code)) ||
+        (err.cause &&
+          typeof err.cause === 'object' &&
+          'code' in err.cause &&
+          networkErrors.includes((err.cause as { code: string }).code))
       ) {
-        logger.warn(`Network error (${error.code || 'unknown'}). Retrying in 2s...`, { error });
+        logger.warn(`Network error (${err.code || 'unknown'}). Retrying in 2s...`, { error });
         await this.delay(2000); // 2s wait for network glitches
         return this.executeWithRetry(operation, retries - 1);
       }
