@@ -1,6 +1,5 @@
 import { db } from '../config/firebase';
-import { PlaylistConfig } from '../types';
-import { PlaylistConfigSchema } from '../config/config';
+import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
 const PLAYLISTS_COLLECTION = 'playlists';

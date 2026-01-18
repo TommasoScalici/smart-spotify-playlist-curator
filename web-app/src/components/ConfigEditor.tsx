@@ -79,7 +79,7 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
 
         {/* Right Column: AI Config */}
         <div className="space-y-6">
-          <AiSettings register={register} errors={errors} />
+          <AiSettings register={register} errors={errors} watch={watch} />
         </div>
       </div>
 

@@ -9,7 +9,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
 import { OnboardingHero } from '@/components/OnboardingHero';
-import { cn } from '@/lib/utils';
 import { TutorialDialog } from '@/components/TutorialDialog';
 import { ActivityFeed } from '@/components/ActivityFeed';
 
@@ -21,10 +20,11 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   const { user } = useAuth();
-  const { data: isSpotifyLinked, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
+  const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
+  const isSpotifyLinked = data?.isLinked;
 
   useEffect(() => {
-    if (user) {
+    if (user && isSpotifyLinked) {
       const loadPlaylists = async (uid: string) => {
         try {
           setLoading(true);
@@ -39,66 +39,71 @@ export default function Dashboard() {
       };
 
       loadPlaylists(user.uid);
+    } else if (!checkingLink && !isSpotifyLinked) {
+      setLoading(false);
     }
-  }, [user]);
+  }, [user, isSpotifyLinked, checkingLink]);
 
-  return (
-    <div
-      className={cn(
-        'container mx-auto w-full',
-        !checkingLink && !isSpotifyLinked
-          ? 'flex-1 flex flex-col items-center justify-center p-4'
-          : 'p-4 md:p-6 max-w-7xl space-y-8'
-      )}
-    >
-      {/* Header */}
-      {(checkingLink || isSpotifyLinked) && (
-        <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-4">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
-              Dashboard
-            </h1>
-            <p className="text-muted-foreground mt-1">
-              Manage your automation rules and monitor curator activity.
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-            {/* Action Buttons are shown only when fully linked */}
-            {!checkingLink && isSpotifyLinked && (
-              <>
-                <Button
-                  onClick={() => navigate('/playlist/new')}
-                  className="group gap-2 shadow-lg shadow-secondary/10 hover:shadow-secondary/20 hover:scale-105 transition-all bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 backdrop-blur-sm w-full sm:w-auto min-h-[44px]"
-                >
-                  <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" />{' '}
-                  New Playlist
-                </Button>
-                <div className="w-full sm:w-auto">
-                  <RunButton className="w-full sm:w-auto min-h-[44px] shadow-lg shadow-tertiary/10" />
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      )}
-
-      {error && (
-        <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20">
-          {error}
-        </div>
-      )}
-
-      {/* Spotify Link CTA */}
-      {!loading && !isSpotifyLinked && <OnboardingHero />}
-
-      {/* Content Area */}
-      {loading ? (
+  // Loading state (initial check)
+  if (checkingLink || (loading && isSpotifyLinked)) {
+    return (
+      <div className="container mx-auto p-4 md:p-6 max-w-7xl animate-pulse">
+        <div className="h-10 w-48 bg-muted rounded mb-2" />
+        <div className="h-4 w-96 bg-muted rounded mb-8" />
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <PlaylistCardSkeleton />
           <PlaylistCardSkeleton />
           <PlaylistCardSkeleton />
         </div>
-      ) : playlists.length > 0 ? (
+      </div>
+    );
+  }
+
+  // Not Connected State: Show Onboarding Hero exclusively
+  if (!isSpotifyLinked) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center p-4">
+        <OnboardingHero />
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4 md:p-6 max-w-7xl space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row justify-between md:items-end gap-6 md:gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+            Dashboard
+          </h1>
+          <p className="text-muted-foreground mt-1">
+            Manage your automation rules and monitor curator activity.
+          </p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <Button
+            onClick={() => navigate('/playlist/new')}
+            className="group gap-2 shadow-lg shadow-secondary/10 hover:shadow-secondary/20 hover:scale-105 transition-all bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 backdrop-blur-sm w-full sm:w-auto min-h-[44px]"
+          >
+            <Plus className="h-4 w-4 transition-transform group-hover:rotate-90 duration-300" /> New
+            Playlist
+          </Button>
+          <div className="w-full sm:w-auto">
+            <RunButton className="w-full sm:w-auto min-h-[44px] shadow-lg shadow-tertiary/10" />
+          </div>
+        </div>
+      </div>
+
+      {
+        error && (
+          <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20">
+            {error}
+          </div>
+        ) /* ... hide error and content properly ... */
+      }
+
+      {/* Content Area */}
+      {playlists.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
           {/* Playlist Grid */}
           <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
@@ -133,9 +138,7 @@ export default function Dashboard() {
       )}
       {/* Tutorial Dialog for New Users */}
       <TutorialDialog
-        open={
-          !loading && !!isSpotifyLinked && playlists.length === 0 && !error && !tutorialDismissed
-        }
+        open={playlists.length === 0 && !error && !tutorialDismissed}
         onOpenChange={(open) => {
           if (!open) setTutorialDismissed(true);
         }}

@@ -2,14 +2,15 @@ import { SpotifyService } from '../services/spotify-service';
 import { AiService } from '../services/ai-service';
 import { TrackCleaner } from './track-cleaner';
 import { SlotManager } from './slot-manager';
-import { PlaylistConfig, TrackWithMeta } from '../types';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { TrackWithMeta } from './types-internal';
 import * as logger from 'firebase-functions/logger';
 import { db } from '../config/firebase';
 import { FirestoreLogger } from '../services/firestore-logger';
+import { PromptGenerator } from '../services/prompt-generator';
 
 export class PlaylistOrchestrator {
   constructor(
-    private spotifyService: SpotifyService,
     private aiService: AiService,
     private trackCleaner: TrackCleaner,
     private slotManager: SlotManager,
@@ -38,9 +39,8 @@ export class PlaylistOrchestrator {
     // Sanitize ID (handle spotify:playlist: prefix)
     const playlistId = config.id.replace('spotify:playlist:', '');
 
-    // 1. Determine Spotify Identity (User vs Global)
-    let spotifyService = this.spotifyService; // Default to global
-    let usingUserToken = false;
+    // 1. Determine Spotify Identity - MUST use user token (no global fallback)
+    let spotifyService: SpotifyService | null = null;
 
     if (config.ownerId) {
       try {
@@ -49,20 +49,17 @@ export class PlaylistOrchestrator {
           const refreshToken = secretDoc.data()?.refreshToken;
           if (refreshToken) {
             spotifyService = SpotifyService.createForUser(refreshToken);
-            usingUserToken = true;
           }
         }
       } catch (e) {
-        logger.warn(
-          `Failed to fetch credentials for user ${config.ownerId}. Falling back to global bot.`,
-          e
-        );
+        logger.error(`Failed to fetch Spotify credentials for user ${config.ownerId}`, e);
       }
     }
 
-    if (!usingUserToken) {
-      logger.warn(
-        `Using GLOBAL Spotify credentials for playlist ${config.name} (Owner: ${config.ownerId || 'N/A'}).`
+    // SECURITY: Fail fast if no user token available (no global fallback)
+    if (!spotifyService) {
+      throw new Error(
+        `Cannot curate "${config.name}": Owner has not linked their Spotify account.`
       );
     }
 
@@ -182,8 +179,16 @@ export class PlaylistOrchestrator {
           ...newAiStatus.map((t) => t.uri)
         ];
 
+        // Generate prompt from playlist metadata
+        const generatedPrompt = PromptGenerator.generatePrompt(
+          config.name,
+          config.settings.description,
+          config.aiGeneration.isInstrumentalOnly
+        );
+
         const suggestions = await this.aiService.generateSuggestions(
           config.aiGeneration,
+          generatedPrompt,
           requestCount,
           semanticExclusionList
         );

@@ -20,13 +20,13 @@ import { PlaylistOrchestrator } from './core/orchestrator';
 import { TrackCleaner } from './core/track-cleaner';
 import { SlotManager } from './core/slot-manager';
 import { FirestoreLogger } from './services/firestore-logger';
-import { PlaylistConfig } from './types';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { db } from './config/firebase';
 
-import { onCall } from 'firebase-functions/v2/https';
+import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
 // Shared logic for both onRequest (Cron/HTTP) and onCall (Web App)
-export async function runOrchestrator(playlistId?: string) {
+export async function runOrchestrator(playlistId?: string, callerUid?: string) {
   const configService = new ConfigService();
   let configs: PlaylistConfig[] = [];
 
@@ -40,6 +40,10 @@ export async function runOrchestrator(playlistId?: string) {
       configs = [config];
     } else {
       configs = await configService.getEnabledPlaylists();
+      // SECURITY: If called by a user, only process THEIR playlists
+      if (callerUid) {
+        configs = configs.filter((c) => c.ownerId === callerUid);
+      }
       if (configs.length === 0) {
         logger.info('No enabled playlists found to update.');
         return { message: 'No enabled playlists found.', results: [] };
@@ -78,19 +82,15 @@ export async function runOrchestrator(playlistId?: string) {
         throw new Error(`Owner ${playlistConfig.ownerId} has a missing refresh token.`);
       }
 
-      // 4. Instantiate Service for this specific user
-      const userSpotifyService = SpotifyService.createForUser(refreshToken);
-
-      // 5. Create Orchestrator (User Context)
+      // 4. Create Orchestrator (handles Spotify auth internally)
       const orchestrator = new PlaylistOrchestrator(
-        userSpotifyService,
         aiService,
         trackCleaner,
         slotManager,
         firestoreLogger
       );
 
-      // 6. Execute
+      // 5. Execute
       await orchestrator.curatePlaylist(playlistConfig);
       results.push({ name: playlistConfig.name, status: 'success' });
     } catch (error) {
@@ -171,20 +171,31 @@ export const triggerCuration = onCall(
   async (request) => {
     // Ensure the user is authenticated
     if (!request.auth) {
-      throw new // https.HttpsError defined in firebase-functions/v2/https
-      Error('The function must be called while authenticated.'); // Simplified error for now, ideally use HttpsError
+      throw new HttpsError('unauthenticated', 'Authentication required.');
     }
 
+    const uid = request.auth.uid;
     const { playlistId } = request.data || {};
 
-    logger.info(`Received triggerCuration from user ${request.auth.uid}`, { playlistId });
+    logger.info(`Received triggerCuration from user ${uid}`, { playlistId });
+
+    // SECURITY: If specific playlist requested, verify ownership
+    if (playlistId) {
+      const configService = new ConfigService();
+      const config = await configService.getPlaylistConfig(playlistId);
+      if (!config) {
+        throw new HttpsError('not-found', 'Playlist not found.');
+      }
+      if (config.ownerId !== uid) {
+        throw new HttpsError('permission-denied', 'You do not own this playlist.');
+      }
+    }
 
     try {
-      return await runOrchestrator(playlistId);
+      return await runOrchestrator(playlistId, uid);
     } catch (e) {
       logger.error('Orchestrator execution failed', e);
-      // In v2 onCall, throwing an error sends it back to client
-      throw new Error((e as Error).message);
+      throw new HttpsError('internal', (e as Error).message);
     }
   }
 );
@@ -202,22 +213,17 @@ export const searchSpotify = onCall(
   },
   async (request) => {
     if (!request.auth) {
-      throw new Error('Authentication required.');
+      throw new HttpsError('unauthenticated', 'Authentication required.');
     }
 
+    const uid = request.auth.uid;
     const { query, type, limit } = request.data;
     if (!query || !type) {
-      throw new Error('Missing query or type.');
+      throw new HttpsError('invalid-argument', 'Missing query or type.');
     }
 
     // Validate type
     const validTypes = ['track', 'playlist', 'artist'];
-    // types defined in SpotifyService.search are array
-    // Here we might receive a specific type string from frontend or array?
-    // Let's assume frontend sends a single type string for simplicity in the UI component initially (Track Search vs Playlist Search),
-    // or array if we want mixed results.
-    // Let's support array or single string.
-
     let searchTypes: ('track' | 'playlist' | 'artist')[] = [];
     if (Array.isArray(type)) {
       searchTypes = type;
@@ -225,17 +231,48 @@ export const searchSpotify = onCall(
       if (validTypes.includes(type)) {
         searchTypes = [type];
       } else {
-        throw new Error('Invalid type.');
+        throw new HttpsError('invalid-argument', 'Invalid type.');
       }
     }
 
-    const spotifyService = SpotifyService.getInstance();
+    // Fetch user's Spotify token
+    const userSecretSnap = await db.doc(`users/${uid}/secrets/spotify`).get();
+    if (!userSecretSnap.exists) {
+      throw new HttpsError('failed-precondition', 'Please link your Spotify account first.');
+    }
+
+    const refreshToken = userSecretSnap.data()?.refreshToken;
+    if (!refreshToken) {
+      throw new HttpsError('failed-precondition', 'Spotify refresh token missing.');
+    }
+
+    // Create user-specific service
+    const spotifyService = SpotifyService.createForUser(refreshToken);
+
     try {
       const results = await spotifyService.search(query, searchTypes, limit || 20);
+
+      // FILTER: For playlists, only return user-owned ones
+      if (searchTypes.includes('playlist')) {
+        // Get user's Spotify profile to check ownership
+        const userProfile = await spotifyService.getMe();
+        const userId = userProfile.id;
+
+        const filteredResults = results.filter((result) => {
+          if (result.type === 'playlist') {
+            // Only include playlists owned by this user
+            return result.ownerId === userId;
+          }
+          return true; // Keep tracks and artists as-is
+        });
+
+        return { results: filteredResults };
+      }
+
       return { results };
     } catch (e) {
       logger.error('Search failed', e);
-      throw new Error((e as Error).message);
+      throw new HttpsError('internal', (e as Error).message);
     }
   }
 );

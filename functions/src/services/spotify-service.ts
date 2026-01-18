@@ -13,7 +13,8 @@ export interface SearchResult {
   uri: string;
   name: string;
   artist?: string; // For tracks
-  owner?: string; // For playlists
+  owner?: string; // For playlists (display name)
+  ownerId?: string; // For playlist ownership checking
   imageUrl?: string;
   type: 'track' | 'playlist' | 'artist';
 }
@@ -289,6 +290,7 @@ export class SpotifyService {
             uri: p.uri,
             name: p.name,
             owner: p.owner.display_name,
+            ownerId: p.owner.id,
             imageUrl: p.images[0]?.url,
             type: 'playlist'
           });

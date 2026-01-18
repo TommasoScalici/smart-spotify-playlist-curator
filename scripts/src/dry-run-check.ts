@@ -6,7 +6,7 @@ import { dirname, resolve } from 'path';
 import * as dotenv from 'dotenv';
 
 // Import Types (ESM compatible for types)
-import type { PlaylistConfig } from '../../functions/src/types/index.js';
+import type { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

@@ -1,21 +1,4 @@
-import {
-  PlaylistConfig,
-  MandatoryTrack,
-  AiGenerationConfig,
-  CurationRules,
-  PlaylistSettings,
-  PositionRange
-} from '@smart-spotify-curator/shared';
-
-export type {
-  PlaylistConfig,
-  MandatoryTrack,
-  AiGenerationConfig,
-  CurationRules,
-  PlaylistSettings,
-  PositionRange
-};
-
+// Internal types used only within functions (not in shared schema)
 export interface TrackWithMeta {
   uri: string;
   name: string; // Added for semantic exclusion

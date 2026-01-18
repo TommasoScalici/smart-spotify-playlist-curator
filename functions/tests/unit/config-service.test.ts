@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ConfigService } from '../../src/services/config-service';
 import { db } from '../../src/config/firebase';
 import * as logger from 'firebase-functions/logger';
-import { PlaylistConfig } from '../../src/types';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 // Mock dependencies
 // Mock dependencies
@@ -29,7 +29,6 @@ describe('ConfigService', () => {
     dryRun: false, // Defaulted by Zod
     settings: { targetTotalTracks: 10 },
     aiGeneration: {
-      prompt: 'Test prompt',
       model: 'gemini-2.5-flash',
       temperature: 0.7,
       overfetchRatio: 2.0,

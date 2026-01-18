@@ -4,7 +4,7 @@ import { createRequire } from 'module';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import * as dotenv from 'dotenv';
-import type { PlaylistConfig } from '../../functions/src/types/index.js';
+import type { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

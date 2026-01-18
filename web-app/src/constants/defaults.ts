@@ -9,8 +9,7 @@ export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
     referenceArtists: []
   },
   aiGeneration: {
-    prompt: '',
-    model: 'gemini-1.5-flash',
+    model: 'gemini-2.5-flash',
     temperature: 0.7,
     overfetchRatio: 2.0
   },

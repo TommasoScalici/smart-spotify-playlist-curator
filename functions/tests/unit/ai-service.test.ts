@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { AiService } from '../../src/services/ai-service';
-import { AiGenerationConfig } from '../../src/types';
+import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 
 // Mock dependencies
 const mockGenerateContent = vi.fn();
@@ -40,12 +40,13 @@ describe('AiService', () => {
   });
 
   const mockPromptConfig: AiGenerationConfig = {
-    prompt: 'Upbeat Pop',
     model: 'gemini-2.5-flash',
     temperature: 0.7,
     overfetchRatio: 2.0,
     isInstrumentalOnly: false
   };
+
+  const mockPrompt = 'Upbeat Pop';
 
   it('should generate suggestions successfully', async () => {
     // Mock Successful response
@@ -59,7 +60,7 @@ describe('AiService', () => {
       }
     });
 
-    const result = await aiService.generateSuggestions(mockPromptConfig, 2);
+    const result = await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 2);
 
     expect(result).toHaveLength(2);
     expect(result[0].artist).toBe('Artist A');
@@ -75,7 +76,7 @@ describe('AiService', () => {
     });
 
     // Should throw error now (Robustness)
-    await expect(aiService.generateSuggestions(mockPromptConfig, 2)).rejects.toThrow();
+    await expect(aiService.generateSuggestions(mockPromptConfig, mockPrompt, 2)).rejects.toThrow();
   });
 
   it('should include negative constraints in prompt', async () => {
@@ -84,7 +85,7 @@ describe('AiService', () => {
     });
 
     const excluded = ['Excluded - Track'];
-    await aiService.generateSuggestions(mockPromptConfig, 5, excluded);
+    await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 5, excluded);
 
     // Verify prompt construction logic indirectly via mock call arg
     const callArg = mockGenerateContent.mock.calls[0][0];
@@ -98,7 +99,7 @@ describe('AiService', () => {
     });
 
     const referenceArtists = ['Artist 1', 'Artist 2'];
-    await aiService.generateSuggestions(mockPromptConfig, 5, [], referenceArtists);
+    await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 5, [], referenceArtists);
 
     const callArg = mockGenerateContent.mock.calls[0][0];
     expect(callArg).toContain('please bias your selection towards style/vibe of these artists');

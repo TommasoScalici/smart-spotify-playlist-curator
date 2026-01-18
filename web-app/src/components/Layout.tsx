@@ -64,7 +64,6 @@ export const Layout = () => {
             {user && (
               <div className="user-profile flex items-center gap-4">
                 {/* Spotify Status Badge */}
-                {/* Spotify Status Badge */}
                 {!checkingLink && (
                   <Badge
                     variant="outline"
@@ -74,7 +73,7 @@ export const Layout = () => {
                         ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 ring-1 ring-destructive/20 animate-pulse'
                         : isSpotifyLinked
                           ? 'bg-[#1DB954]/10 text-[#1DB954] hover:bg-[#1DB954]/20 ring-1 ring-[#1DB954]/20'
-                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                          : 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 ring-1 ring-destructive/50'
                     )}
                   >
                     {data?.authError ? (
@@ -83,25 +82,28 @@ export const Layout = () => {
                         <span className="font-semibold">Reconnect Required</span>
                       </Link>
                     ) : isSpotifyLinked ? (
-                      <>
+                      <div className="flex items-center gap-2">
                         {data?.profile?.avatarUrl ? (
                           <img
                             src={data.profile.avatarUrl}
                             alt="Spotify"
-                            className="h-5 w-5 rounded-full"
+                            className="h-5 w-5 rounded-full ring-1 ring-[#1DB954]/30"
                           />
                         ) : (
                           <CheckCircle2 className="h-4 w-4" />
                         )}
-                        <span className="font-semibold">
-                          {data?.profile?.displayName || 'Connected'}
+                        <span className="font-semibold text-xs transition-all">
+                          Connected to Spotify as:{' '}
+                          <span className="text-white">
+                            {data?.profile?.displayName || 'Unknown User'}
+                          </span>
                         </span>
-                      </>
+                      </div>
                     ) : (
-                      <>
-                        <XCircle className="h-4 w-4" />
-                        <span>Not Connected</span>
-                      </>
+                      <div className="flex items-center gap-2">
+                        <Unlink className="h-4 w-4" />
+                        <span className="font-bold text-xs">Not Spotify Connected</span>
+                      </div>
                     )}
                   </Badge>
                 )}
@@ -158,7 +160,12 @@ export const Layout = () => {
         </div>
       </header>
 
-      <main className="main-content animate-fade-in flex-1 flex flex-col">
+      <main
+        className={cn(
+          'main-content animate-fade-in flex-1 flex flex-col',
+          !isSpotifyLinked && !checkingLink && 'py-0 max-w-none'
+        )}
+      >
         <Outlet />
       </main>
     </div>

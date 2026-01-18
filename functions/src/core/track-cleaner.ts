@@ -1,5 +1,5 @@
-import { PlaylistConfig } from '../types';
-import { ProcessingResult, TrackWithMeta } from '../types/core-types';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { ProcessingResult, TrackWithMeta } from './types-internal';
 
 export class TrackCleaner {
   /**

@@ -1,4 +1,4 @@
-import { MandatoryTrack } from '../types';
+import { MandatoryTrack } from '@smart-spotify-curator/shared';
 
 export class SlotManager {
   /**

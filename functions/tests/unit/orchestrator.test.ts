@@ -5,7 +5,7 @@ import { AiService } from '../../src/services/ai-service';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
 import { FirestoreLogger } from '../../src/services/firestore-logger';
-import { PlaylistConfig } from '../../src/types';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 // Mock dependencies
 vi.mock('../../src/services/spotify-service');
@@ -13,6 +13,20 @@ vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/track-cleaner');
 vi.mock('../../src/core/slot-manager');
 vi.mock('../../src/services/firestore-logger');
+vi.mock('../../src/config/firebase', () => ({
+  db: {
+    doc: vi.fn(() => ({
+      get: vi.fn().mockResolvedValue({
+        exists: true,
+        data: () => ({ refreshToken: 'mock-refresh-token' })
+      }),
+      update: vi.fn().mockResolvedValue(undefined)
+    })),
+    collection: vi.fn(() => ({
+      doc: vi.fn()
+    }))
+  }
+}));
 
 describe('PlaylistOrchestrator', () => {
   let orchestrator: PlaylistOrchestrator;
@@ -42,8 +56,9 @@ describe('PlaylistOrchestrator', () => {
     id: 'test-playlist',
     name: 'Test Playlist',
     enabled: true,
+    ownerId: 'test-user-123', // Required for security: orchestrator fetches user's Spotify token
     settings: { targetTotalTracks: 50 },
-    aiGeneration: { prompt: 'test', overfetchRatio: 2.0 },
+    aiGeneration: { overfetchRatio: 2.0 },
     curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
     mandatoryTracks: []
   } as unknown as PlaylistConfig;
@@ -70,8 +85,12 @@ describe('PlaylistOrchestrator', () => {
       pruneOldLogs: vi.fn()
     };
 
+    // Mock SpotifyService.createForUser to return our mock service
+    vi.mocked(SpotifyService.createForUser).mockReturnValue(
+      mockSpotifyService as unknown as SpotifyService
+    );
+
     orchestrator = new PlaylistOrchestrator(
-      mockSpotifyService as unknown as SpotifyService,
       mockAiService as unknown as AiService,
       mockTrackCleaner as unknown as TrackCleaner,
       mockSlotManager as unknown as SlotManager,
@@ -118,9 +137,10 @@ describe('PlaylistOrchestrator', () => {
 
     expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object),
-      105,
-      expect.any(Array)
+      expect.any(Object), // config
+      expect.any(String), // generated prompt
+      105, // count
+      expect.any(Array) // excludedTracks
     );
   });
 
@@ -148,9 +168,10 @@ describe('PlaylistOrchestrator', () => {
 
     expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object),
-      45,
-      expect.any(Array)
+      expect.any(Object), // config
+      expect.any(String), // generated prompt
+      45, // count
+      expect.any(Array) // excludedTracks
     );
   });
 
@@ -182,9 +203,10 @@ describe('PlaylistOrchestrator', () => {
     );
 
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object),
-      35,
-      expect.any(Array)
+      expect.any(Object), // config
+      expect.any(String), // generated prompt
+      35, // count
+      expect.any(Array) // excludedTracks
     );
   });
 });

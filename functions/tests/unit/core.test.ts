@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
-import { PlaylistConfig, MandatoryTrack } from '../../src/types';
+import { PlaylistConfig, MandatoryTrack } from '@smart-spotify-curator/shared';
 
 describe('Core Logic', () => {
   // --- MOCK DATA SETUP ---
@@ -15,7 +15,6 @@ describe('Core Logic', () => {
       description: 'Unit Test'
     },
     aiGeneration: {
-      prompt: 'Test Prompt',
       model: 'gemini-2.5-flash',
       temperature: 0.7,
       overfetchRatio: 2.0,
@@ -39,7 +38,7 @@ describe('Core Logic', () => {
     ]
   };
 
-  const vipUris = mockConfig.mandatoryTracks.map((t) => t.uri);
+  const vipUris = mockConfig.mandatoryTracks.map((t: MandatoryTrack) => t.uri);
   const today = new Date();
   const fortyDaysAgo = new Date();
   fortyDaysAgo.setDate(today.getDate() - 40);

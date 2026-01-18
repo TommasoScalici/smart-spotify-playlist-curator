@@ -35,12 +35,4 @@ export class FirestoreLogger {
       logger.error('Failed to write activity log to Firestore:', error);
     }
   }
-
-  /**
-   * Prunes old logs to keep the collection size manageable.
-   * Can be run periodically or probabilistically.
-   */
-  async pruneOldLogs(_ownerId: string, _keepCount = 50): Promise<void> {
-    // TODO: Implement pruning if needed
-  }
 }

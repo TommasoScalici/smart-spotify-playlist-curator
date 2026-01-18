@@ -18,8 +18,7 @@ export const MandatoryTrackSchema = z.object({
 });
 
 export const AiGenerationConfigSchema = z.object({
-  model: z.string().default('gemini-1.5-flash'), // Defaulting to latest efficient model
-  prompt: z.string().min(10, { message: 'Prompt must be at least 10 characters' }),
+  model: z.string().default('gemini-2.5-flash'),
   temperature: z.number().min(0).max(1).default(0.7),
   overfetchRatio: z.number().min(1).max(5).default(2.0),
   isInstrumentalOnly: z.boolean().default(false).optional()

@@ -6,17 +6,17 @@ async function main() {
   try {
     const aiService = new AiService();
 
+    const prompt = 'Suggest 3 upbeat pop songs from the 80s';
     const promptConfig = {
-      prompt: 'Suggest 3 upbeat pop songs from the 80s',
       isInstrumentalOnly: false,
       model: 'gemini-2.5-flash',
       temperature: 0.7,
       overfetchRatio: 1.5
     };
 
-    console.log('Sending request to Gemini 1.5 Flash...');
+    console.log('Sending request to Gemini AI...');
     const start = Date.now();
-    const suggestions = await aiService.generateSuggestions(promptConfig, 3);
+    const suggestions = await aiService.generateSuggestions(promptConfig, prompt, 3);
     const duration = Date.now() - start;
 
     console.log(`Response received in ${duration}ms`);
