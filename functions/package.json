@@ -1,6 +1,6 @@
 {
   "name": "smart-spotify-playlist-curator",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Firebase Cloud Functions for Smart Spotify Playlist Curator, powering AI-driven playlist generation and management.",
   "scripts": {
     "lint": "eslint .",
@@ -32,7 +32,6 @@
     "@eslint/js": "^9.39.2",
     "@opentelemetry/api": "^1.9.0",
     "@types/node": "^25.0.6",
-    "@types/open": "^6.1.0",
     "@types/spotify-web-api-node": "^5.0.11",
     "@vitest/coverage-v8": "^4.0.16",
     "eslint": "^9.39.2",
