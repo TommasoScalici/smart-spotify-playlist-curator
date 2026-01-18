@@ -1,155 +1,138 @@
 # Smart Spotify Playlist Curator
 
-A powerful automation system that curates Spotify playlists using **Google Gemini 2.5 Flash** for intelligent song recommendations and **Firebase Cloud Functions** for serverless orchestration.
+> **Status**: v2.0.0 (Stable) | **License**: MIT
+> **Stack**: React 19, Node 24, Firebase Gen 2, Gemini 2.5 Flash
+
+A powerful, **multi-tenant automation system** that curates Spotify playlists using **Google Gemini 2.5 Flash** for intelligent song recommendations and **Firebase Cloud Functions** for serverless orchestration.
+
+---
 
 ## 🚀 Key Features
 
-- **🤖 AI-Powered Curation**: Uses Gemini 2.5 Flash to generate context-aware track suggestions (Pop, Rock, specific moods, etc.).
-- **🎧 Sonic Consistency**: filters tracks using real-time audio analysis (Instrumentalness, Energy) to ensure vibes match mathematically.
-- **⚡ High Efficiency**: Implements "Overfetch" strategies to minimize API calls and retry loops.
-- **🛡️ Dry-Run Mode**: Simulate playlist updates without modifying your actual Spotify library. Great for testing prompts!
-- **📊 Robust Observability**: Structured JSON logging via `firebase-functions/logger` and Execution Correlation IDs for easy debugging in GCP.
-- **🔄 Smart Slot Management**: Intelligently mixes Mandatory "VIP" tracks with AI suggestions while preserving order logic.
-- **🔁 CI/CD**: Automated GitHub Actions pipeline for Linting, Building, and Testing on every push.
+### 🧠 AI-Powered Curation
 
-## 🛠️ Prerequisites
+- **Context-Aware Recommendations**: Uses Gemini 2.5 Flash to generate tracks based on "Vibe", "Genre", or complex prompts (e.g., "Songs for a rainy cyberpunk drive").
+- **Sonic Consistency**: Filters tracks using Spotify's audio features (Energy, Valence, Danceability) to ensure mathematical vibe matching.
+- **Smart Slot Management**: Intelligently mixes "VIP" (Mandatory) tracks with AI suggestions while preserving the user's preferred order.
 
-- **Node.js v24** (Required)
+### 🛡️ Enterprise-Grade Reliability
+
+- **Orchestrator Pattern**: Decoupled architecture where HTTP triggers only initiate workflows; Orchestrators handle the complex logic.
+- **Dry-Run Mode**: Simulate playlist updates without touching your actual library.
+- **Rate-Limit Handling**: Robust retry logic with exponential backoff for Spotify API `429` errors.
+- **Observability**: Structured JSON logging via `firebase-functions/logger` with correlation IDs.
+
+### 🎨 Premium User Experience
+
+- **Music Studio UI**: built with **React 19**, **Tailwind CSS**, and **shadcn/ui**.
+- **Real-Time Feedback**: Optimistic UI updates for a snappy feel.
+- **Security**: OAuth 2.0 Identity Linking (Spotify) + Firebase Authentication.
+
+---
+
+## 🛠 Tech Stack
+
+- **Runtime**: Node.js `v24` (LTS)
+- **Language**: TypeScript `v5.9` (Strict Mode)
+- **Frontend**: React `v19` + Vite `v6`
+- **Backend**: Firebase Cloud Functions (Gen 2)
+- **Database**: Cloud Firestore (NoSQL)
+- **Validation**: Zod `v4` (Contract-first design)
+- **Testing**: Vitest (Monorepo-wide)
+
+---
+
+## 📦 Project Structure (Monorepo)
+
+| Workspace        | Description                                                        |
+| :--------------- | :----------------------------------------------------------------- |
+| **`functions/`** | Backend Business Logic. Triggers, Schedulers, and API Integration. |
+| **`web-app/`**   | React Frontend. The "Command Center" for users.                    |
+| **`shared/`**    | Shared Types and Zod Schemas. Single source of truth.              |
+| **`scripts/`**   | Maintenance and Automation scripts (Seeding, Tokens).              |
+
+---
+
+## ⚙️ Usage & Configuration
+
+### 1. Prerequisites
+
+- **Node.js v24**
 - **Firebase CLI**: `npm install -g firebase-tools`
-- **Spotify Developer Account**: Create an app [here](https://developer.spotify.com/dashboard/applications).
-- **Google AI Studio Key**: Get an API key for Gemini [here](https://aistudio.google.com/).
+- **Spotify Developer App**: [Create Here](https://developer.spotify.com/dashboard).
+- **Google AI Studio Key**: [Get Key](https://aistudio.google.com/).
 
-## 📦 Installation
-
-1.  **Clone the repository**:
-
-    ```bash
-    git clone <repo-url>
-    cd smart-spotify-playlist-curator
-    ```
-
-2.  **Install dependencies**:
-
-    ```bash
-    # Install backend dependencies
-    cd functions
-    npm ci
-
-    # Install script dependencies
-    cd ../scripts
-    npm ci
-    ```
-
-## ⚙️ Configuration
-
-### 1. Environment Variables
-
-You need `.env` files in both `functions/` (for deployment/tests) and `scripts/` (for local tools).
-
-**Copy the example:**
+### 2. Installation
 
 ```bash
-cp functions/.env.example functions/.env
-cp scripts/.env.example scripts/.env
+# Clone the repository
+git clone https://github.com/TommasoScalici/smart-spotify-playlist-curator.git
+cd smart-spotify-playlist-curator
+
+# Install dependencies (Root level)
+npm install
 ```
 
-**Fill in the values:**
+### 3. Application Setup
 
-- `SPOTIFY_CLIENT_ID`: From Spotify Dashboard.
-- `SPOTIFY_CLIENT_SECRET`: From Spotify Dashboard.
-- `SPOTIFY_REFRESH_TOKEN`: Generated via the auth script (see below).
-- `GOOGLE_AI_API_KEY`: From Google AI Studio.
-- `GOOGLE_APPLICATION_CREDENTIALS`: Absolute path to your Firebase Admin Service Account JSON (required for local scripts).
+You need **Firestore** enabled in your Firebase Project.
 
-### 2. Firestore Database
+1.  **Configure Environment**:
+    - **Development**: Copy `.env.example` to `.env` in `functions/` and `web-app/`.
+    - **Production**: Use Google Cloud Secret Manager.
 
-This project uses **Firestore** to store playlist configuration dynamically.
+2.  **Generate Spotify Refresh Token** (for local scripts):
 
-1.  **Create Database**: Go to Firebase Console -> Build -> Firestore Database -> Create Database (Start in Production Mode).
-2.  **Define Playlists**: You can define your initial playlists in `functions/src/config/playlists-config.json`.
-3.  **Seed Database**: Upload this config to Firestore using the seeding script.
     ```bash
     cd scripts
-    npm run seed-config
+    npm run get-refresh-token
     ```
-    _Note: The local JSON file is now only used for seeding. Runtime changes should be made directly in Firestore._
 
-### 3. Verification
-
-Verify your config is correctly stored and readable:
-
-```bash
-cd scripts
-npm run dry-run-check
-```
-
-_This script now fetches live configuration from Firestore to simulate a run._
-
-## 🏃 Usage
-
-### 1. Generate Spotify Tokens
-
-First time setup? Run the auth script to get your Refresh Token.
-
-```bash
-cd scripts
-npm run get-refresh-token
-```
-
-Follow the URL, login, and paste the Refresh Token into your `.env` files.
-
-### 2. Local Verification (Dry Run)
-
-Verify the entire system end-to-end without touching real playlists.
-
-```bash
-cd scripts
-npm run dry-run-check
-```
-
-_Check the logs for "DRY RUN: Would remove..." messages._
-
-### 3. Running Tests
-
-Run the Unit and Integration test suite.
-
-```bash
-cd functions
-npm test
-```
-
-### 4. Deploying (Production)
-
-For production security, we use **Cloud Secret Manager** instead of `.env` files.
-
-1.  **Set Secrets**:
+3.  **Run Locally (Frontend)**:
 
     ```bash
-    firebase functions:secrets:set SPOTIFY_CLIENT_ID
-    firebase functions:secrets:set SPOTIFY_CLIENT_SECRET
-    firebase functions:secrets:set SPOTIFY_REFRESH_TOKEN
-    firebase functions:secrets:set GOOGLE_AI_API_KEY
+    cd web-app
+    npm run dev
     ```
 
-2.  **Deploy**:
+4.  **Run Backend Tests**:
     ```bash
     cd functions
-    npm run deploy
+    npm test
     ```
 
-## 🏗️ Project Structure
+---
 
-- **`functions/`**: The core application.
-  - `src/core/`: Logic for Orchestration, Slot Management, Cleaning.
-  - `src/services/`: Integrations with Spotify and Gemini AI.
-  - `src/types/`: TypeScript definitions.
-- **`scripts/`**: Local utility tools.
-  - `src/auth/`: Token generation.
-  - `src/dry-run-check.ts`: End-to-end verification script.
-- **`web-app/`**: **Command Center UI** (React + Vite).
-  - dashboard for editing playlist configs and triggering runs.
-- **`.github/workflows/`**: CI/CD configurations.
+## 🚀 Deployment
+
+We use **GitHub Actions** for CI/CD, but you can deploy manually:
+
+```bash
+# Deploy Backend (Functions + Security Rules)
+npm run deploy
+
+# Deploy Frontend (Hosting)
+cd web-app
+npm run build
+firebase deploy --only hosting
+```
+
+---
+
+## 🤝 Contributing
+
+**Zero `any` Policy**: We enforce strict TypeScript rules.
+
+1.  Fork the repo.
+2.  Create your feature branch (`git checkout -b feature/amazing-feature`).
+3.  Commit your changes (`git commit -m 'feat: add amazing feature'`).
+    - _Note: We use Conventional Commits._
+4.  Run tests (`npm test`).
+5.  Push to the branch.
+6.  Open a Pull Request.
+
+---
 
 ## 📄 License
 
-[MIT](LICENSE.md)
+Distributed under the MIT License. See `LICENSE.md` for more information.

@@ -18,7 +18,8 @@
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
     "type-check": "tsc -b",
-    "fix": "npm run lint:fix && npm run format"
+    "fix": "npm run lint:fix && npm run format",
+    "release": "standard-version"
   },
   "lint-staged": {
     "**/*.{js,ts,tsx,json,md}": [
@@ -52,6 +53,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.7.4",
+    "standard-version": "^9.5.0",
     "typescript-eslint": "^8.53.0"
   }
 }
