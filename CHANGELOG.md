@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.2.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.1.0...v1.2.0) (2026-01-18)
+
+### Features
+
+- phase 2 complete - onboarding & activity feed ([f1f5cf7](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/f1f5cf7c6397769609836d5a8e742ca0ca167548))
+
 ## 1.1.0 (2026-01-18)
 
 ### Features
