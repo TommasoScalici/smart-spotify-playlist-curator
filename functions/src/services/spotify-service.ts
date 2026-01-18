@@ -130,6 +130,16 @@ export class SpotifyService {
   }
 
   /**
+   * Fetches the current user's profile.
+   */
+  public async getMe(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.getMe();
+      return response.body;
+    });
+  }
+
+  /**
    * Ensures a valid access token exists. Refreshes if expired or missing.
    */
   private async ensureAccessToken(): Promise<void> {

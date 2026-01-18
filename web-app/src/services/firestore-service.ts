@@ -80,25 +80,61 @@ export const FirestoreService = {
   /**
    * Check if user has linked Spotify account.
    */
-  async checkSpotifyConnection(uid: string): Promise<boolean> {
+  /**
+   * Check if user has linked Spotify account, and if it's valid.
+   */
+  async checkSpotifyConnection(uid: string): Promise<{ isLinked: boolean; authError?: string }> {
     try {
-      // We check for existence of the 'spotify' secret doc.
-      // Important: Security Rules must allow READ access to 'users/{uid}/secrets/spotify'
-      // BUT ONLY if we are that user.
       const docRef = doc(db, 'users', uid, 'secrets', 'spotify');
       const snapshot = await getDoc(docRef);
-      return snapshot.exists();
+
+      if (!snapshot.exists()) {
+        return { isLinked: false };
+      }
+
+      const data = snapshot.data();
+      if (data?.status === 'invalid') {
+        return { isLinked: true, authError: data.error || 'Authentication failed' };
+      }
+
+      return { isLinked: true };
     } catch (e) {
       console.error('Error checking connection', e);
-      return false;
+      return { isLinked: false };
     }
   },
 
   /**
-   * Unlinks Spotify account by deleting the credentials.
+   * Unlinks Spotify account by deleting the credentials and clearing profile info.
    */
   async unlinkSpotifyAccount(uid: string): Promise<void> {
-    const docRef = doc(db, 'users', uid, 'secrets', 'spotify');
-    await deleteDoc(docRef);
+    const secretRef = doc(db, 'users', uid, 'secrets', 'spotify');
+    const userRef = doc(db, 'users', uid);
+
+    await Promise.all([
+      deleteDoc(secretRef),
+      setDoc(userRef, { spotifyProfile: null }, { merge: true }) // Clear profile
+    ]);
+  },
+
+  /**
+   * Fetches the public Spotify Profile info stored on the user document.
+   */
+  async getSpotifyProfile(uid: string): Promise<SpotifyProfile | null> {
+    const userRef = doc(db, 'users', uid);
+    const snapshot = await getDoc(userRef);
+    if (snapshot.exists()) {
+      return snapshot.data().spotifyProfile as SpotifyProfile | null;
+    }
+    return null;
   }
 };
+
+export interface SpotifyProfile {
+  id: string;
+  displayName: string;
+  email: string;
+  avatarUrl: string | null;
+  product: string;
+  linkedAt: string;
+}

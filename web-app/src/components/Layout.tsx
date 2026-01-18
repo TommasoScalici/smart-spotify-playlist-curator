@@ -21,7 +21,8 @@ import { toast } from 'sonner';
 
 export const Layout = () => {
   const { user, signOut } = useAuth();
-  const { data: isSpotifyLinked, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
+  const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
+  const isSpotifyLinked = data?.isLinked;
   const queryClient = useQueryClient();
 
   const handleUnlink = async () => {
@@ -63,22 +64,45 @@ export const Layout = () => {
             {user && (
               <div className="user-profile flex items-center gap-4">
                 {/* Spotify Status Badge */}
+                {/* Spotify Status Badge */}
                 {!checkingLink && (
                   <Badge
                     variant="outline"
                     className={cn(
-                      'gap-1.5 transition-all border-0',
-                      isSpotifyLinked
-                        ? 'bg-[#1DB954] hover:bg-[#1DB954]/90 text-white shadow-[0_0_10px_rgba(29,185,84,0.4)]'
-                        : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                      'gap-2 transition-all border-0 pl-1 pr-3 py-1 cursor-default',
+                      data?.authError
+                        ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 ring-1 ring-destructive/20 animate-pulse'
+                        : isSpotifyLinked
+                          ? 'bg-[#1DB954]/10 text-[#1DB954] hover:bg-[#1DB954]/20 ring-1 ring-[#1DB954]/20'
+                          : 'bg-muted text-muted-foreground hover:bg-muted/80'
                     )}
                   >
-                    {isSpotifyLinked ? (
-                      <CheckCircle2 className="h-3 w-3" />
+                    {data?.authError ? (
+                      <Link to="/callback" className="flex items-center gap-2 hover:underline">
+                        <XCircle className="h-4 w-4" />
+                        <span className="font-semibold">Reconnect Required</span>
+                      </Link>
+                    ) : isSpotifyLinked ? (
+                      <>
+                        {data?.profile?.avatarUrl ? (
+                          <img
+                            src={data.profile.avatarUrl}
+                            alt="Spotify"
+                            className="h-5 w-5 rounded-full"
+                          />
+                        ) : (
+                          <CheckCircle2 className="h-4 w-4" />
+                        )}
+                        <span className="font-semibold">
+                          {data?.profile?.displayName || 'Connected'}
+                        </span>
+                      </>
                     ) : (
-                      <XCircle className="h-3 w-3" />
+                      <>
+                        <XCircle className="h-4 w-4" />
+                        <span>Not Connected</span>
+                      </>
                     )}
-                    {isSpotifyLinked ? 'Spotify Connected' : 'Spotify Not Connected'}
                   </Badge>
                 )}
 

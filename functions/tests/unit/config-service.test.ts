@@ -66,7 +66,13 @@ describe('ConfigService', () => {
   it('should fetch enabled playlists successfully', async () => {
     const mockSnapshot = {
       empty: false,
-      docs: [{ id: 'doc1', data: () => mockConfig }]
+      docs: [
+        {
+          id: 'doc1',
+          data: () => mockConfig,
+          ref: { parent: { parent: { id: 'test-user' } } }
+        }
+      ]
     };
     mockGet.mockResolvedValue(mockSnapshot);
 
@@ -95,7 +101,13 @@ describe('ConfigService', () => {
     const invalidConfig = { ...mockConfig, enabled: 'not-a-boolean' }; // Invalid type
     const mockSnapshot = {
       empty: false,
-      docs: [{ id: 'doc1', data: () => invalidConfig }]
+      docs: [
+        {
+          id: 'doc1',
+          data: () => invalidConfig,
+          ref: { parent: { parent: { id: 'test-user' } } }
+        }
+      ]
     };
     mockGet.mockResolvedValue(mockSnapshot);
 

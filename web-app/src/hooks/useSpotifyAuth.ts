@@ -4,9 +4,9 @@ const SCOPES = ['playlist-read-private', 'playlist-modify-public', 'playlist-mod
 export const useSpotifyAuth = () => {
   const login = () => {
     // Determine Redirect URI based on environment
-    // For Dev: http://localhost:5173/callback
-    // For Prod: https://<your-app>.web.app/callback
-    const redirectUri = window.location.origin + '/callback';
+    // Use explicit VITE_ env var if set, otherwise fallback to window origin
+    const redirectUri =
+      import.meta.env.VITE_SPOTIFY_REDIRECT_URI || window.location.origin + '/callback';
 
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,

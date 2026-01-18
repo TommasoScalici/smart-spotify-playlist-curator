@@ -49,10 +49,32 @@ export const exchangeSpotifyToken = functions.https.onCall(
       // 4. Securely Store Refresh Token
       await db.collection('users').doc(uid).collection('secrets').doc('spotify').set({
         refreshToken,
-        updatedAt: new Date().toISOString()
+        updatedAt: new Date().toISOString() // Fixed: Using proper method call
       });
 
-      // 5. Return Success
+      // 5. Fetch & Store Public Profile Info (for UI Badge)
+      // Use the *new* tokens to fetch user profile immediately
+      const userClient = SpotifyService.createForUser(refreshToken);
+      const me = await userClient.getMe(); // We need to check if this exists in SpotifyService
+
+      await db
+        .collection('users')
+        .doc(uid)
+        .set(
+          {
+            spotifyProfile: {
+              id: me.id,
+              displayName: me.display_name,
+              email: me.email,
+              avatarUrl: me.images?.[0]?.url ?? null,
+              product: me.product, // 'premium' or 'free' - useful for debugging
+              linkedAt: new Date().toISOString()
+            }
+          },
+          { merge: true }
+        );
+
+      // 6. Return Success
       return { success: true };
     } catch (error) {
       logger.error('Error linking Spotify account:', error);

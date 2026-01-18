@@ -27,7 +27,23 @@ export class ConfigService {
 
       for (const doc of snapshot.docs) {
         const data = doc.data();
-        const parseResult = PlaylistConfigSchema.safeParse(data);
+
+        // CRITICAL: Extract ownerId from the document path (users/{uid}/playlists/{playlistId})
+        // doc.ref.parent is 'playlists' collection
+        // doc.ref.parent.parent is 'users/{uid}' document
+        const ownerId = doc.ref.parent.parent?.id;
+
+        if (!ownerId) {
+          logger.warn(
+            `Skipping playlist ${doc.id} because it has no parent user (orphan document).`
+          );
+          continue;
+        }
+
+        // Inject/Overwrite ownerId from path to ensure truth
+        const configWithUser = { ...data, ownerId };
+
+        const parseResult = PlaylistConfigSchema.safeParse(configWithUser);
 
         if (parseResult.success) {
           validConfigs.push(parseResult.data as PlaylistConfig);
@@ -58,7 +74,16 @@ export class ConfigService {
       if (snapshot.empty) return null;
 
       const data = snapshot.docs[0].data();
-      const parseResult = PlaylistConfigSchema.safeParse(data);
+      const doc = snapshot.docs[0];
+      const ownerId = doc.ref.parent.parent?.id;
+
+      if (!ownerId) {
+        logger.warn(`Playlist ${playlistId} has no parent user.`);
+        throw new Error('Playlist owner could not be determined.');
+      }
+
+      const configWithUser = { ...data, ownerId };
+      const parseResult = PlaylistConfigSchema.safeParse(configWithUser);
 
       if (parseResult.success) {
         return parseResult.data as PlaylistConfig;

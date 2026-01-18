@@ -1,40 +1,25 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Clock, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useActivityFeed } from '../hooks/useActivityFeed';
 
-// Mock Data for now as per plan
-const MOCK_ACTIVITIES = [
-  {
-    id: '1',
-    type: 'success',
-    message: 'Added "Midnight City" by M83',
-    timestamp: '2 mins ago',
-    playlist: 'Synthwave Essentials'
-  },
-  {
-    id: '2',
-    type: 'info',
-    message: 'Scanned 50 tracks for duplication',
-    timestamp: '5 mins ago',
-    playlist: 'Synthwave Essentials'
-  },
-  {
-    id: '3',
-    type: 'success',
-    message: 'Playlist "Morning Coffee" updated successfully',
-    timestamp: '1 hour ago',
-    playlist: 'Morning Coffee'
-  },
-  {
-    id: '4',
-    type: 'warning',
-    message: 'Skipped track "Unknown" (No ID found)',
-    timestamp: '3 hours ago',
-    playlist: 'Discover Weekly Archive'
-  }
-];
+// Simple time ago formatter
+const formatTimeAgo = (isoString: string) => {
+  const date = new Date(isoString);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'just now';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+};
 
 export const ActivityFeed = () => {
+  const { activities, loading } = useActivityFeed();
+
   return (
     <Card className="h-full border-l-4 border-l-primary/20">
       <CardHeader className="pb-3">
@@ -43,19 +28,32 @@ export const ActivityFeed = () => {
             <Activity className="h-5 w-5 text-primary" />
             Recent Activity
           </CardTitle>
-          <span className="text-xs text-muted-foreground">Live Updates</span>
+          <span className="text-xs text-muted-foreground">
+            {loading ? 'Connecting...' : 'Live Updates'}
+          </span>
         </div>
       </CardHeader>
       <CardContent>
         <div className="space-y-4 pr-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-          {MOCK_ACTIVITIES.map((activity) => (
-            <div key={activity.id} className="flex gap-3 items-start group">
+          {loading && (
+            <div className="text-sm text-muted-foreground text-center py-4">Loading history...</div>
+          )}
+
+          {!loading && activities.length === 0 && (
+            <div className="text-sm text-muted-foreground text-center py-4">
+              No activity yet. Trigger a playlist update!
+            </div>
+          )}
+
+          {activities.map((activity) => (
+            <div key={activity.id} className="flex gap-3 items-start group animate-fade-in">
               <div
                 className={cn(
                   'mt-1 h-2 w-2 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card',
                   activity.type === 'success' && 'bg-green-500 ring-green-500/20',
                   activity.type === 'warning' && 'bg-amber-500 ring-amber-500/20',
-                  activity.type === 'info' && 'bg-blue-500 ring-blue-500/20'
+                  activity.type === 'info' && 'bg-blue-500 ring-blue-500/20',
+                  activity.type === 'error' && 'bg-red-500 ring-red-500/20'
                 )}
               />
               <div className="space-y-1">
@@ -64,19 +62,18 @@ export const ActivityFeed = () => {
                 </p>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <Clock className="h-3 w-3" />
-                  <span>{activity.timestamp}</span>
-                  <span>•</span>
-                  <Music className="h-3 w-3" />
-                  <span>{activity.playlist}</span>
+                  <span>{formatTimeAgo(activity.timestamp)}</span>
+                  {typeof activity.metadata?.playlistId === 'string' && (
+                    <>
+                      <span>•</span>
+                      <Music className="h-3 w-3" />
+                      <span className="max-w-[120px] truncate">{activity.metadata.playlistId}</span>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
           ))}
-          <div className="pt-2 text-center">
-            <button className="text-xs text-muted-foreground hover:text-primary transition-colors">
-              View Full History
-            </button>
-          </div>
         </div>
       </CardContent>
     </Card>

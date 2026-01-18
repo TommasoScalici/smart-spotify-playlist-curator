@@ -34,7 +34,8 @@ export default function SpotifyCallback() {
 
     const linkAccount = async () => {
       try {
-        const redirectUri = window.location.origin + '/callback';
+        const redirectUri =
+          import.meta.env.VITE_SPOTIFY_REDIRECT_URI || window.location.origin + '/callback';
         await FunctionsService.linkSpotifyAccount(code, redirectUri);
         // Invalidate connection status to force re-fetch in Layout/Dashboard
         queryClient.invalidateQueries({ queryKey: ['spotifyConnection'] });

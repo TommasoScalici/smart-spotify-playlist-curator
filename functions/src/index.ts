@@ -19,7 +19,9 @@ import { SpotifyService } from './services/spotify-service';
 import { PlaylistOrchestrator } from './core/orchestrator';
 import { TrackCleaner } from './core/track-cleaner';
 import { SlotManager } from './core/slot-manager';
+import { FirestoreLogger } from './services/firestore-logger';
 import { PlaylistConfig } from './types';
+import { db } from './config/firebase';
 
 import { onCall } from 'firebase-functions/v2/https';
 
@@ -48,32 +50,87 @@ async function runOrchestrator(playlistId?: string) {
     throw new Error('Configuration Back-end Error: ' + (e as Error).message);
   }
 
-  const spotifyService = SpotifyService.getInstance();
+  // 1. Stateless Services
   const aiService = new AiService();
   const trackCleaner = new TrackCleaner();
   const slotManager = new SlotManager();
-
-  const orchestrator = new PlaylistOrchestrator(
-    spotifyService,
-    aiService,
-    trackCleaner,
-    slotManager
-  );
+  const firestoreLogger = new FirestoreLogger();
 
   const results = [];
 
   for (const playlistConfig of configs) {
     try {
+      // 2. Multi-Tenancy Check
+      if (!playlistConfig.ownerId) {
+        throw new Error(`Playlist ${playlistConfig.name} is orphaned (no ownerId).`);
+      }
+
+      // 3. Fetch User's Spotify Token
+      // Stored in: users/{uid}/secrets/spotify
+      const userSecretSnap = await db.doc(`users/${playlistConfig.ownerId}/secrets/spotify`).get();
+
+      if (!userSecretSnap.exists) {
+        throw new Error(`Owner ${playlistConfig.ownerId} has not linked their Spotify account.`);
+      }
+
+      const refreshToken = userSecretSnap.data()?.refreshToken;
+      if (!refreshToken) {
+        throw new Error(`Owner ${playlistConfig.ownerId} has a missing refresh token.`);
+      }
+
+      // 4. Instantiate Service for this specific user
+      const userSpotifyService = SpotifyService.createForUser(refreshToken);
+
+      // 5. Create Orchestrator (User Context)
+      const orchestrator = new PlaylistOrchestrator(
+        userSpotifyService,
+        aiService,
+        trackCleaner,
+        slotManager,
+        firestoreLogger
+      );
+
+      // 6. Execute
       await orchestrator.curatePlaylist(playlistConfig);
       results.push({ name: playlistConfig.name, status: 'success' });
     } catch (error) {
+      const errMsg = (error as Error).message;
       logger.error(`Error processing playlist ${playlistConfig.name}`, error);
+
+      // Handle Critical Auth Failures (Revoked access, deleted account)
+      if (
+        (errMsg.includes('invalid_grant') || errMsg.includes('unauthorized')) &&
+        playlistConfig.ownerId
+      ) {
+        await db
+          .doc(`users/${playlistConfig.ownerId}/secrets/spotify`)
+          .set({ status: 'invalid', error: errMsg }, { merge: true });
+
+        await firestoreLogger.logActivity(
+          playlistConfig.ownerId,
+          'error',
+          'Spotify connection lost. Please re-link your account in the Dashboard.',
+          { playlistId: playlistConfig.id, error: errMsg }
+        );
+      } else if (playlistConfig.ownerId) {
+        // Log other errors as well
+        await firestoreLogger.logActivity(
+          playlistConfig.ownerId,
+          'error',
+          `Failed to curate "${playlistConfig.name}"`,
+          { playlistId: playlistConfig.id, error: errMsg }
+        );
+      }
+
       results.push({
         name: playlistConfig.name,
         status: 'error',
-        error: (error as Error).message
+        error: errMsg
       });
     }
+
+    // Rate Limit Defense: Wait 2s between playlists to avoid spiking the API
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 
   return { message: 'Playlist update completed', results };

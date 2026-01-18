@@ -4,6 +4,7 @@ import { SpotifyService } from '../../src/services/spotify-service';
 import { AiService } from '../../src/services/ai-service';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
+import { FirestoreLogger } from '../../src/services/firestore-logger';
 import { PlaylistConfig } from '../../src/types';
 
 // Mock dependencies
@@ -11,6 +12,7 @@ vi.mock('../../src/services/spotify-service');
 vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/track-cleaner');
 vi.mock('../../src/core/slot-manager');
+vi.mock('../../src/services/firestore-logger');
 
 describe('PlaylistOrchestrator', () => {
   let orchestrator: PlaylistOrchestrator;
@@ -29,6 +31,10 @@ describe('PlaylistOrchestrator', () => {
   };
   let mockSlotManager: {
     arrangePlaylist: ReturnType<typeof vi.fn>;
+  };
+  let mockFirestoreLogger: {
+    logActivity: ReturnType<typeof vi.fn>;
+    pruneOldLogs: ReturnType<typeof vi.fn>;
   };
 
   // Type casting to Bypass strict partial matching for test config
@@ -59,12 +65,17 @@ describe('PlaylistOrchestrator', () => {
     mockSlotManager = {
       arrangePlaylist: vi.fn()
     };
+    mockFirestoreLogger = {
+      logActivity: vi.fn(),
+      pruneOldLogs: vi.fn()
+    };
 
     orchestrator = new PlaylistOrchestrator(
       mockSpotifyService as unknown as SpotifyService,
       mockAiService as unknown as AiService,
       mockTrackCleaner as unknown as TrackCleaner,
-      mockSlotManager as unknown as SlotManager
+      mockSlotManager as unknown as SlotManager,
+      mockFirestoreLogger as unknown as FirestoreLogger
     );
 
     // Default mocks

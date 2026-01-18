@@ -5,13 +5,15 @@ import { SlotManager } from './slot-manager';
 import { PlaylistConfig, TrackWithMeta } from '../types';
 import * as logger from 'firebase-functions/logger';
 import { db } from '../config/firebase';
+import { FirestoreLogger } from '../services/firestore-logger';
 
 export class PlaylistOrchestrator {
   constructor(
     private spotifyService: SpotifyService,
     private aiService: AiService,
     private trackCleaner: TrackCleaner,
-    private slotManager: SlotManager
+    private slotManager: SlotManager,
+    private firestoreLogger: FirestoreLogger
   ) {}
 
   public async curatePlaylist(config: PlaylistConfig, runId?: string): Promise<void> {
@@ -23,6 +25,15 @@ export class PlaylistOrchestrator {
       dryRun,
       runId
     });
+
+    if (config.ownerId) {
+      await this.firestoreLogger.logActivity(
+        config.ownerId,
+        'info',
+        `Started curating "${config.name}"`,
+        { playlistId: config.id, dryRun }
+      );
+    }
 
     // Sanitize ID (handle spotify:playlist: prefix)
     const playlistId = config.id.replace('spotify:playlist:', '');
@@ -263,5 +274,19 @@ export class PlaylistOrchestrator {
       playlistId,
       changesApplied: !dryRun
     });
+
+    if (config.ownerId) {
+      await this.firestoreLogger.logActivity(
+        config.ownerId,
+        'success',
+        `Successfully curated "${config.name}"`,
+        {
+          playlistId: config.id,
+          added: tracksToAdd.length,
+          removed: tracksToRemove.length,
+          dryRun
+        }
+      );
+    }
   }
 }
