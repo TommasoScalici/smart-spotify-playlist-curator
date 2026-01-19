@@ -28,33 +28,37 @@ import { onCall, HttpsError } from 'firebase-functions/v2/https';
 // --- Token Management Helpers ---
 
 /**
- * Retrieves an authorized SpotifyService for a user, reusing cached access tokens if valid.
+ * Gets an authorized Spotify service for a given user, reusing cached access tokens if valid.
  */
-async function getAuthorizedSpotifyService(uid: string): Promise<{
-  service: SpotifyService;
-  originalRefreshToken: string;
-}> {
-  const userSecretSnap = await db.doc(`users/${uid}/secrets/spotify`).get();
-  if (!userSecretSnap.exists) {
-    throw new HttpsError('failed-precondition', 'Please link your Spotify account first.');
+export async function getAuthorizedSpotifyService(uid: string) {
+  const secretsRef = db.doc(`users/${uid}/secrets/spotify`);
+  const secretSnap = await secretsRef.get();
+
+  if (!secretSnap.exists) {
+    throw new HttpsError('not-found', 'Spotify not linked');
   }
 
-  const data = userSecretSnap.data() || {};
-  const { refreshToken, accessToken, expiresAt } = data;
-
+  const data = secretSnap.data();
+  const refreshToken = data?.refreshToken;
   if (!refreshToken) {
-    throw new HttpsError('failed-precondition', 'Spotify refresh token missing.');
+    throw new HttpsError('not-found', 'Spotify refresh token missing');
   }
 
+  // Create Spotify Service
   const spotifyService = SpotifyService.createForUser(refreshToken);
 
-  // If we have a cached access token, use it to avoid unnecessary refresh
-  if (accessToken && expiresAt) {
-    const expiresAtEpoch = new Date(expiresAt).getTime();
-    const now = Date.now();
-    // Only use if it has more than 5 mins left
-    if (now + 5 * 60 * 1000 < expiresAtEpoch) {
-      spotifyService.setAccessToken(accessToken, (expiresAtEpoch - now) / 1000);
+  // Check if we have a cached access token that's still valid (not expiring within 5 minutes)
+  const cachedAccessToken = data?.accessToken;
+  const cachedExpiresAt = data?.expiresAt;
+  if (cachedAccessToken && cachedExpiresAt) {
+    const expiresAtDate = new Date(cachedExpiresAt);
+    const now = new Date();
+    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
+
+    if (expiresAtDate > fiveMinutesFromNow) {
+      // Token is still valid, reuse it
+      const expiresInSeconds = Math.floor((expiresAtDate.getTime() - now.getTime()) / 1000);
+      spotifyService.setTokens(cachedAccessToken, refreshToken, expiresInSeconds);
     }
   }
 
@@ -64,7 +68,7 @@ async function getAuthorizedSpotifyService(uid: string): Promise<{
 /**
  * Persists any updated tokens (including rotated refresh tokens) back to Firestore.
  */
-async function persistSpotifyTokens(
+export async function persistSpotifyTokens(
   uid: string,
   service: SpotifyService,
   originalRefreshToken: string
@@ -177,6 +181,11 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
           .doc(`users/${playlistConfig.ownerId}/secrets/spotify`)
           .set({ status: 'invalid', error: errMsg }, { merge: true });
 
+        await db.doc(`users/${playlistConfig.ownerId}`).update({
+          'spotifyProfile.status': 'invalid',
+          'spotifyProfile.authError': errMsg
+        });
+
         await firestoreLogger.logActivity(
           playlistConfig.ownerId,
           'error',
@@ -201,7 +210,10 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
     }
 
     // Rate Limit Defense: Wait 2s between playlists to avoid spiking the API
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    const sleepTime = process.env.NODE_ENV === 'test' ? 0 : 2000;
+    if (sleepTime > 0) {
+      await new Promise((resolve) => setTimeout(resolve, sleepTime));
+    }
   }
 
   return { message: 'Playlist update completed', results };
@@ -341,3 +353,4 @@ export const searchSpotify = onCall(
   }
 );
 export { exchangeSpotifyToken } from './controllers/auth-controller';
+export { getPlaylistMetrics } from './controllers/playlist-controller';

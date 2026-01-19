@@ -57,6 +57,34 @@ export const FunctionsService = {
       { success: boolean; profile?: SpotifyProfile }
     >(functions, 'exchangeSpotifyToken');
     const result = await exchange({ code, redirectUri });
+    const profile = result.data.profile;
+    if (profile && typeof profile.linkedAt === 'string') {
+      profile.linkedAt = new Date(profile.linkedAt);
+    }
+    return { success: result.data.success, profile };
+  },
+
+  /**
+   * Fetches real-time metrics for a playlist from Spotify API.
+   */
+  async getPlaylistMetrics(playlistId: string): Promise<{
+    followers: number;
+    tracks: number;
+    lastUpdated: string;
+    imageUrl?: string | null;
+    owner?: string;
+  }> {
+    const getMetrics = httpsCallable<
+      { playlistId: string },
+      {
+        followers: number;
+        tracks: number;
+        lastUpdated: string;
+        imageUrl?: string | null;
+        owner?: string;
+      }
+    >(functions, 'getPlaylistMetrics');
+    const result = await getMetrics({ playlistId });
     return result.data;
   }
 };

@@ -44,7 +44,7 @@ export const PlaylistConfigSchema = z.object({
     .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
   name: z.string().min(3, { message: 'Name is too short' }),
   enabled: z.boolean().default(true),
-  imageUrl: z.url().optional(),
+  imageUrl: z.string().url().optional(),
   ownerId: z.string().min(1, { message: 'Owner ID is required' }), // Added for Multi-Tenancy
   owner: z.string().optional(), // Legacy field, consider removing later if redundant
   dryRun: z.boolean().optional(),
@@ -60,25 +60,36 @@ export const PlaylistConfigSchema = z.object({
 export const SpotifyProfileSchema = z.object({
   id: z.string(),
   displayName: z.string().nullable(),
-  email: z.email(),
-  avatarUrl: z.url().nullable(),
+  email: z.string().email(),
+  avatarUrl: z.string().url().nullable(),
   product: z.string(),
-  linkedAt: z.date()
+  linkedAt: z.date(),
+  status: z.enum(['active', 'invalid']).default('active'),
+  authError: z.string().optional()
 });
 
 export const UserSchema = z.object({
   uid: z.string(),
-  email: z.email(),
+  email: z.string().email(),
   displayName: z.string().optional(),
-  photoURL: z.url().optional(),
+  photoURL: z.string().url().optional(),
   createdAt: z.date(),
   lastLoginAt: z.date(),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
   spotifyProfile: SpotifyProfileSchema.optional().nullable()
 });
 
+// --- Playlist Metrics Schema ---
+
+export const PlaylistMetricsSchema = z.object({
+  followers: z.number(),
+  tracks: z.number(),
+  lastUpdated: z.string() // ISO 8601 timestamp
+});
+
 export type SpotifyProfile = z.infer<typeof SpotifyProfileSchema>;
 export type UserProfile = z.infer<typeof UserSchema>;
+export type PlaylistMetrics = z.infer<typeof PlaylistMetricsSchema>;
 
 // Infer TS types from Zod schemas
 export type PlaylistConfig = z.infer<typeof PlaylistConfigSchema>;

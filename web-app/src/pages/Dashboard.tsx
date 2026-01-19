@@ -10,13 +10,15 @@ import { Button } from '@/components/ui/button';
 import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
 import { OnboardingHero } from '@/components/OnboardingHero';
 import { TutorialDialog } from '@/components/TutorialDialog';
-import { ActivityFeed } from '@/components/ActivityFeed';
+import { ActivityDrawer } from '../components/ActivityDrawer';
+import { History } from 'lucide-react';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const [isActivityDrawerOpen, setIsActivityDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
   const { user } = useAuth();
@@ -62,7 +64,7 @@ export default function Dashboard() {
   // Not Connected State: Show Onboarding Hero exclusively
   if (!isSpotifyLinked) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center p-4">
+      <div className="flex-1 flex flex-col items-center justify-center w-full min-h-full overflow-y-auto">
         <OnboardingHero />
       </div>
     );
@@ -81,6 +83,13 @@ export default function Dashboard() {
           </p>
         </div>
         <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <Button
+            variant="outline"
+            onClick={() => setIsActivityDrawerOpen(true)}
+            className="group gap-2 border-white/10 bg-white/5 text-muted-foreground hover:text-primary hover:bg-primary/10 hover:border-primary/30 transition-all w-full sm:w-auto min-h-[44px]"
+          >
+            <History className="h-4 w-4" /> Activity
+          </Button>
           <Button
             onClick={() => navigate('/playlist/new')}
             className="group gap-2 shadow-lg shadow-secondary/10 hover:shadow-secondary/20 hover:scale-105 transition-all bg-secondary/10 text-secondary border border-secondary/20 hover:bg-secondary/20 backdrop-blur-sm w-full sm:w-auto min-h-[44px]"
@@ -104,19 +113,11 @@ export default function Dashboard() {
 
       {/* Content Area */}
       {playlists.length > 0 ? (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
-          {/* Playlist Grid */}
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6 content-start">
+        <div className="animate-in fade-in duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {playlists.map((playlist) => (
               <PlaylistCard key={playlist._docId} config={playlist} />
             ))}
-          </div>
-
-          {/* Side Panel: Activity Feed */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-24">
-              <ActivityFeed />
-            </div>
           </div>
         </div>
       ) : (
@@ -136,7 +137,10 @@ export default function Dashboard() {
           </div>
         )
       )}
-      {/* Tutorial Dialog for New Users */}
+
+      {/* Activity Toggleable Side Panel */}
+      <ActivityDrawer open={isActivityDrawerOpen} onOpenChange={setIsActivityDrawerOpen} />
+
       <TutorialDialog
         open={playlists.length === 0 && !error && !tutorialDismissed}
         onOpenChange={(open) => {

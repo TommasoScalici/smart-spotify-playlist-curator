@@ -3,11 +3,34 @@ import {
   signInWithPopup,
   signOut,
   User as FirebaseUser,
+  IdTokenResult,
   onAuthStateChanged
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './firebase';
 import { UserSchema, UserProfile } from '@smart-spotify-curator/shared';
+
+const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
+
+const MOCK_USER: FirebaseUser = {
+  uid: 'debug-user-123',
+  email: 'debug@example.com',
+  displayName: 'Debug User',
+  photoURL: 'https://ui-avatars.com/api/?name=Debug+User',
+  emailVerified: true,
+  isAnonymous: false,
+  metadata: {},
+  providerData: [],
+  refreshToken: 'mock-refresh-token',
+  tenantId: null,
+  delete: async () => {},
+  getIdToken: async () => 'mock-id-token',
+  getIdTokenResult: async () => ({}) as IdTokenResult,
+  reload: async () => {},
+  toJSON: () => ({}),
+  phoneNumber: null,
+  providerId: 'google.com'
+} as unknown as FirebaseUser;
 
 export const AuthService = {
   /**
@@ -16,6 +39,12 @@ export const AuthService = {
    * - Syncs user profile to Firestore
    */
   async signInWithGoogle(): Promise<FirebaseUser> {
+    if (IS_DEBUG_MODE) {
+      console.warn('[AUTH] Debug Mode Active: Bypassing Google Sign-In');
+      await this.syncUserToFirestore(MOCK_USER);
+      return MOCK_USER;
+    }
+
     const provider = new GoogleAuthProvider();
     try {
       const result = await signInWithPopup(auth, provider);
@@ -32,6 +61,11 @@ export const AuthService = {
    * Sign Out
    */
   async signOut(): Promise<void> {
+    if (IS_DEBUG_MODE) {
+      // In debug mode, we just let the state change handle it or we could use a custom event
+      // For now, reload the page to clear the mock state if needed, or just let onAuthStateChanged handle it
+      return;
+    }
     await signOut(auth);
   },
 
@@ -72,6 +106,12 @@ export const AuthService = {
    * Observe Auth State
    */
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
+    if (IS_DEBUG_MODE) {
+      console.warn('[AUTH] Debug Mode Active: Triggering Mock Auth State');
+      // Delay slightly to simulate async check
+      const timeout = setTimeout(() => callback(MOCK_USER), 100);
+      return () => clearTimeout(timeout);
+    }
     return onAuthStateChanged(auth, callback);
   }
 };

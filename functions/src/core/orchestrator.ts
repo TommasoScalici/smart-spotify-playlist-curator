@@ -280,6 +280,15 @@ export class PlaylistOrchestrator {
       changesApplied: !dryRun
     });
 
+    if (!dryRun && config.ownerId) {
+      const docRef = db.doc(`users/${config.ownerId}/playlists/${config.id}`);
+      await docRef
+        .update({
+          lastCuratedAt: new Date().toISOString()
+        })
+        .catch((err) => logger.error('Failed to update lastCuratedAt', err));
+    }
+
     if (config.ownerId) {
       await this.firestoreLogger.logActivity(
         config.ownerId,

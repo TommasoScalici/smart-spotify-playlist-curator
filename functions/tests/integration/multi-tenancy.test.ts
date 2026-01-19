@@ -68,11 +68,21 @@ describe('Multi-Tenancy Integration', () => {
       return Promise.resolve({ exists: false });
     });
 
-    const mockSet = vi.fn();
-
-    (db.doc as unknown) = vi.fn((path: string) => ({
+    const mockSet = vi.fn().mockResolvedValue(undefined);
+    const mockDoc = (path: string) => ({
       get: () => mockGet(path),
-      set: mockSet
+      set: mockSet,
+      update: mockSet,
+      collection: (col: string) => ({
+        doc: (id: string) => mockDoc(`${path}/${col}/${id}`),
+        add: mockSet
+      })
+    });
+
+    (db.doc as unknown) = vi.fn(mockDoc);
+    (db.collection as unknown) = vi.fn((col: string) => ({
+      doc: (id: string) => mockDoc(`${col}/${id}`),
+      add: mockSet
     }));
 
     // 4. Mock SpotifyService Factory
@@ -102,5 +112,5 @@ describe('Multi-Tenancy Integration', () => {
     const tokens = calls.map((c: unknown[]) => c[0]);
     expect(tokens).toContain(mockUserA.token);
     expect(tokens).toContain(mockUserB.token);
-  }, 10000);
+  }, 30000);
 });

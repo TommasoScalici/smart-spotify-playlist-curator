@@ -6,7 +6,8 @@ export {
   PlaylistSettingsSchema,
   PlaylistConfigSchema,
   UserSchema,
-  SpotifyProfileSchema
+  SpotifyProfileSchema,
+  PlaylistMetricsSchema
 } from './schemas';
 
 export type {
@@ -17,5 +18,6 @@ export type {
   PlaylistSettings,
   PositionRange,
   UserProfile,
-  SpotifyProfile
+  SpotifyProfile,
+  PlaylistMetrics
 } from './schemas';

@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
+import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
+
+const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 export interface ActivityLog {
   id: string;
@@ -49,6 +52,17 @@ export const useActivityFeed = () => {
 
     return () => unsubscribe();
   }, [user]);
+
+  // Debug Mode: Return mock activities after all hooks
+  if (IS_DEBUG_MODE) {
+    return {
+      activities: MOCK_ACTIVITIES.map((activity) => ({
+        ...activity,
+        read: false
+      })),
+      loading: false
+    };
+  }
 
   return { activities, loading };
 };

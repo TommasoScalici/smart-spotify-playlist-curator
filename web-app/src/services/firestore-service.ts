@@ -9,7 +9,14 @@ import {
   where
 } from 'firebase/firestore';
 import { db } from './firebase';
-import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
+import {
+  PlaylistConfig,
+  PlaylistConfigSchema,
+  SpotifyProfile
+} from '@smart-spotify-curator/shared';
+import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
+
+const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 export const FirestoreService = {
   /**
@@ -20,6 +27,12 @@ export const FirestoreService = {
    * Fetch all playlists for a specific user.
    */
   async getUserPlaylists(uid: string): Promise<(PlaylistConfig & { _docId: string })[]> {
+    // Debug Mode: Return mock playlists
+    if (IS_DEBUG_MODE) {
+      console.warn('[FIRESTORE] Debug Mode: Returning Mock Playlists');
+      return MOCK_PLAYLISTS;
+    }
+
     const playlistsRef = collection(db, 'users', uid, 'playlists');
     const querySnapshot = await getDocs(playlistsRef);
     const playlists: (PlaylistConfig & { _docId: string })[] = [];
@@ -78,23 +91,35 @@ export const FirestoreService = {
   },
 
   /**
+   * Delete a playlist configuration for a user.
+   */
+  async deleteUserPlaylist(uid: string, docId: string): Promise<void> {
+    const docRef = doc(db, 'users', uid, 'playlists', docId);
+    await deleteDoc(docRef);
+  },
+
+  /**
    * Check if user has linked Spotify account.
    */
   /**
    * Check if user has linked Spotify account, and if it's valid.
    */
   async checkSpotifyConnection(uid: string): Promise<{ isLinked: boolean; authError?: string }> {
-    try {
-      const docRef = doc(db, 'users', uid, 'secrets', 'spotify');
-      const snapshot = await getDoc(docRef);
+    // Debug Mode: Always return linked
+    if (IS_DEBUG_MODE) {
+      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Connection');
+      return { isLinked: true };
+    }
 
-      if (!snapshot.exists()) {
+    try {
+      const profile = await this.getSpotifyProfile(uid);
+
+      if (!profile) {
         return { isLinked: false };
       }
 
-      const data = snapshot.data();
-      if (data?.status === 'invalid') {
-        return { isLinked: true, authError: data.error || 'Authentication failed' };
+      if (profile.status === 'invalid') {
+        return { isLinked: true, authError: profile.authError || 'Authentication failed' };
       }
 
       return { isLinked: true };
@@ -121,20 +146,38 @@ export const FirestoreService = {
    * Fetches the public Spotify Profile info stored on the user document.
    */
   async getSpotifyProfile(uid: string): Promise<SpotifyProfile | null> {
+    // Debug Mode: Return mock profile
+    if (IS_DEBUG_MODE) {
+      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Profile');
+      return {
+        id: 'debug-spotify-id',
+        displayName: MOCK_SPOTIFY_PROFILE.displayName,
+        email: MOCK_SPOTIFY_PROFILE.email,
+        avatarUrl: MOCK_SPOTIFY_PROFILE.avatarUrl,
+        product: 'premium',
+        linkedAt: new Date(),
+        status: 'active'
+      };
+    }
+
     const userRef = doc(db, 'users', uid);
     const snapshot = await getDoc(userRef);
     if (snapshot.exists()) {
-      return snapshot.data().spotifyProfile as SpotifyProfile | null;
+      const data = snapshot.data();
+      const rawProfile = data.spotifyProfile;
+      if (!rawProfile) return null;
+
+      // Handle Firestore Timestamp conversion without 'any'
+      const linkedAt =
+        rawProfile.linkedAt && typeof rawProfile.linkedAt.toDate === 'function'
+          ? rawProfile.linkedAt.toDate()
+          : (rawProfile.linkedAt as Date);
+
+      return {
+        ...rawProfile,
+        linkedAt
+      } as SpotifyProfile;
     }
     return null;
   }
 };
-
-export interface SpotifyProfile {
-  id: string;
-  displayName: string;
-  email: string;
-  avatarUrl: string | null;
-  product: string;
-  linkedAt: string;
-}

@@ -241,6 +241,32 @@ export class SpotifyService {
     return allTracks;
   }
 
+  /**
+   * Fetches the timestamp of the most recently added track in a playlist.
+   */
+  public async getLatestTrackAddedAt(
+    playlistId: string,
+    totalTracks: number
+  ): Promise<string | null> {
+    if (totalTracks === 0) return null;
+
+    // Get the very last track added (if possible)
+    // Spotify API allows offset up to totalTracks - 1
+    const offset = Math.max(0, totalTracks - 1);
+
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.getPlaylistTracks(playlistId, {
+        limit: 1,
+        offset
+      });
+      const items = response.body.items;
+      if (items.length > 0 && items[0].added_at) {
+        return items[0].added_at;
+      }
+      return null;
+    });
+  }
+
   public async getTracks(uris: string[]): Promise<TrackInfo[]> {
     if (uris.length === 0) return [];
     const trackIds = uris.map((uri) => uri.replace('spotify:track:', ''));
@@ -278,6 +304,30 @@ export class SpotifyService {
         description: response.body.description || '',
         imageUrl: response.body.images?.[0]?.url,
         owner: response.body.owner.display_name || 'Unknown'
+      };
+    });
+  }
+
+  /**
+   * Get full playlist details including followers and track count
+   */
+  public async getPlaylistDetails(playlistId: string): Promise<{
+    name: string;
+    description: string;
+    imageUrl?: string;
+    owner: string;
+    followers: number;
+    totalTracks: number;
+  }> {
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.getPlaylist(playlistId);
+      return {
+        name: response.body.name,
+        description: response.body.description || '',
+        imageUrl: response.body.images?.[0]?.url,
+        owner: response.body.owner.display_name || 'Unknown',
+        followers: response.body.followers?.total || 0,
+        totalTracks: response.body.tracks?.total || 0
       };
     });
   }

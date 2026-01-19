@@ -73,7 +73,8 @@ export const exchangeSpotifyToken = functions.https.onCall(
         email: me.email,
         avatarUrl: me.images?.[0]?.url ?? null,
         product: me.product,
-        linkedAt: new Date().toISOString()
+        linkedAt: new Date(),
+        status: 'active'
       };
 
       await db.collection('users').doc(uid).set(
