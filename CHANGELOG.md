@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.3.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.2.1...v1.3.0) (2026-01-19)
+
+### Features
+
+- premium UI for Login & Spotify linking, fixed auth race conditions & badge clarity, optimized onboarding layout, and bumped version to 1.2.1 ([c56f58b](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/c56f58b886dbe1736312d7f5e1a6b5dc464468a6))
+- UI polish, debug mode & dashboard features. Warm light theme, glassmorphism modals, minimalist mobile menu, debug mode w/ mocks, playlist delete/toggle ([b606624](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/b6066249c1e88b7d0477b0658f29bb69ca3e4b9c))
+
+### Bug Fixes
+
+- Spotify auth flow with token rotation, dynamic redirect URI, and cache sync improvements ([3eb9e5f](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/3eb9e5facf0fecd193bcf6a33993228f5d5b8eeb))
+
 ### [1.2.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.2.0...v1.2.1) (2026-01-18)
 
 ## [1.2.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.1.0...v1.2.0) (2026-01-18)
