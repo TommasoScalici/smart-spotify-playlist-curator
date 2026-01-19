@@ -44,41 +44,52 @@ export const exchangeSpotifyToken = functions.https.onCall(
     try {
       // 3. Exchange Code for Tokens
       const spotifyService = SpotifyService.getInstance();
-      const { refreshToken } = await spotifyService.exchangeCode(input.code, input.redirectUri);
+      const { refreshToken, accessToken } = await spotifyService.exchangeCode(
+        input.code,
+        input.redirectUri
+      );
 
-      // 4. Securely Store Refresh Token
-      await db.collection('users').doc(uid).collection('secrets').doc('spotify').set({
-        refreshToken,
-        updatedAt: new Date().toISOString() // Fixed: Using proper method call
-      });
-
-      // 5. Fetch & Store Public Profile Info (for UI Badge)
-      // Use the *new* tokens to fetch user profile immediately
-      const userClient = SpotifyService.createForUser(refreshToken);
-      const me = await userClient.getMe(); // We need to check if this exists in SpotifyService
-
+      // 4. Securely Store Tokens & Cache Access Token
       await db
         .collection('users')
         .doc(uid)
-        .set(
-          {
-            spotifyProfile: {
-              id: me.id,
-              displayName: me.display_name,
-              email: me.email,
-              avatarUrl: me.images?.[0]?.url ?? null,
-              product: me.product, // 'premium' or 'free' - useful for debugging
-              linkedAt: new Date().toISOString()
-            }
-          },
-          { merge: true }
-        );
+        .collection('secrets')
+        .doc('spotify')
+        .set({
+          refreshToken,
+          accessToken,
+          expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+          updatedAt: new Date().toISOString()
+        });
 
-      // 6. Return Success
-      return { success: true };
+      // 5. Fetch & Store Public Profile Info (for UI Badge)
+      // Use the *new* tokens to fetch user profile immediately, avoiding redundant refresh
+      const userClient = SpotifyService.createForUser(refreshToken, accessToken);
+      const me = await userClient.getMe();
+
+      const spotifyProfile = {
+        id: me.id,
+        displayName: me.display_name,
+        email: me.email,
+        avatarUrl: me.images?.[0]?.url ?? null,
+        product: me.product,
+        linkedAt: new Date().toISOString()
+      };
+
+      await db.collection('users').doc(uid).set(
+        {
+          spotifyProfile
+        },
+        { merge: true }
+      );
+
+      // 6. Return Success with Profile for Cache Seeding
+      return { success: true, profile: spotifyProfile };
     } catch (error) {
       logger.error('Error linking Spotify account:', error);
-      throw new functions.https.HttpsError('internal', 'Failed to link Spotify account.');
+      // Even if it failed, we might have successfully saved the refreshToken in Step 4.
+      // We throw to let the UI know about the complication, but the account might be "partially" linked.
+      throw new functions.https.HttpsError('internal', 'Failed to link Spotify account fully.');
     }
   }
 );

@@ -43,8 +43,41 @@ export class SpotifyService {
   /**
    * Creates a new service instance for a specific user.
    */
-  public static createForUser(refreshToken: string): SpotifyService {
-    return new SpotifyService(refreshToken);
+  public static createForUser(refreshToken: string, accessToken?: string): SpotifyService {
+    const service = new SpotifyService(refreshToken);
+    if (accessToken) {
+      service.setAccessToken(accessToken, 3600); // Assume 1 hour default if not specified
+    }
+    return service;
+  }
+
+  /**
+   * Manually sets the access token and its expiration.
+   */
+  public setAccessToken(token: string, expiresInSeconds: number): void {
+    this.spotifyApi.setAccessToken(token);
+    this.tokenExpirationEpoch = Date.now() + expiresInSeconds * 1000;
+  }
+
+  /**
+   * Sets all token information at once.
+   */
+  public setTokens(accessToken: string, refreshToken: string, expiresInSeconds: number): void {
+    this.spotifyApi.setAccessToken(accessToken);
+    this.spotifyApi.setRefreshToken(refreshToken);
+    this.tokenExpirationEpoch = Date.now() + expiresInSeconds * 1000;
+  }
+
+  public getAccessToken(): string | undefined {
+    return this.spotifyApi.getAccessToken();
+  }
+
+  public getRefreshToken(): string | undefined {
+    return this.spotifyApi.getRefreshToken();
+  }
+
+  public getTokenExpirationEpoch(): number {
+    return this.tokenExpirationEpoch;
   }
 
   /**
@@ -148,11 +181,17 @@ export class SpotifyService {
     // Refresh if token is missing or expires in less than 5 minutes
     if (now + 5 * 60 * 1000 > this.tokenExpirationEpoch) {
       try {
+        logger.info('Refreshing Spotify access token...');
         const data = await this.spotifyApi.refreshAccessToken();
         const accessToken = data.body['access_token'];
         const expiresInSeconds = data.body['expires_in'];
+        const newRefreshToken = data.body['refresh_token'];
 
         this.spotifyApi.setAccessToken(accessToken);
+        if (newRefreshToken) {
+          logger.info('Spotify returned a new refresh token (rotation).');
+          this.spotifyApi.setRefreshToken(newRefreshToken);
+        }
         this.tokenExpirationEpoch = now + expiresInSeconds * 1000;
       } catch (error) {
         logger.error('Failed to refresh access token:', error);

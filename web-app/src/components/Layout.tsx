@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ModeToggle } from './mode-toggle';
@@ -13,7 +14,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu';
-import { LogOut, CheckCircle2, XCircle, Unlink } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
+import { LogOut, CheckCircle2, XCircle, Unlink, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { FirestoreService } from '../services/firestore-service';
 import { useQueryClient } from '@tanstack/react-query';
@@ -24,13 +35,10 @@ export const Layout = () => {
   const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
   const isSpotifyLinked = data?.isLinked;
   const queryClient = useQueryClient();
+  const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
 
   const handleUnlink = async () => {
-    if (
-      !user ||
-      !window.confirm('Are you sure you want to unlink your Spotify account? Automation will stop.')
-    )
-      return;
+    if (!user) return;
 
     try {
       await FirestoreService.unlinkSpotifyAccount(user.uid);
@@ -135,7 +143,10 @@ export const Layout = () => {
                       {isSpotifyLinked && (
                         <>
                           <DropdownMenuItem
-                            onClick={handleUnlink}
+                            onSelect={(e: Event) => {
+                              e.preventDefault();
+                              setShowUnlinkDialog(true);
+                            }}
                             className="text-destructive focus:text-destructive cursor-pointer"
                           >
                             <Unlink className="mr-2 h-4 w-4" />
@@ -168,6 +179,40 @@ export const Layout = () => {
       >
         <Outlet />
       </main>
+
+      {/* Premium Unlink Confirmation Modal */}
+      <AlertDialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
+        <AlertDialogContent className="bg-black/80 backdrop-blur-xl border-white/10 ring-1 ring-white/20 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <AlertDialogTitle className="text-xl font-bold">
+                Unlink Spotify Account?
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-muted-foreground text-sm leading-relaxed">
+              This will stop all automated playlist curations and clear your Spotify profile data
+              from our system.
+              <span className="block mt-2 font-medium text-destructive/80 italic">
+                You'll need to re-link your account to resume automation.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="mt-6 gap-3 sm:gap-0">
+            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-white transition-all">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUnlink}
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold shadow-lg shadow-destructive/20 active:scale-95 transition-all"
+            >
+              Unlink Now
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

@@ -57,16 +57,27 @@ export const PlaylistConfigSchema = z.object({
 
 // --- User Schema ---
 
+export const SpotifyProfileSchema = z.object({
+  id: z.string(),
+  displayName: z.string().nullable(),
+  email: z.email(),
+  avatarUrl: z.url().nullable(),
+  product: z.string(),
+  linkedAt: z.date()
+});
+
 export const UserSchema = z.object({
   uid: z.string(),
   email: z.email(),
   displayName: z.string().optional(),
   photoURL: z.url().optional(),
-  createdAt: z.string().datetime(),
-  lastLoginAt: z.string().datetime(),
-  theme: z.enum(['light', 'dark', 'system']).default('system')
+  createdAt: z.date(),
+  lastLoginAt: z.date(),
+  theme: z.enum(['light', 'dark', 'system']).default('system'),
+  spotifyProfile: SpotifyProfileSchema.optional().nullable()
 });
 
+export type SpotifyProfile = z.infer<typeof SpotifyProfileSchema>;
 export type UserProfile = z.infer<typeof UserSchema>;
 
 // Infer TS types from Zod schemas

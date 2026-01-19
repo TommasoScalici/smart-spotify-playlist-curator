@@ -25,6 +25,81 @@ import { db } from './config/firebase';
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 
+// --- Token Management Helpers ---
+
+/**
+ * Retrieves an authorized SpotifyService for a user, reusing cached access tokens if valid.
+ */
+async function getAuthorizedSpotifyService(uid: string): Promise<{
+  service: SpotifyService;
+  originalRefreshToken: string;
+}> {
+  const userSecretSnap = await db.doc(`users/${uid}/secrets/spotify`).get();
+  if (!userSecretSnap.exists) {
+    throw new HttpsError('failed-precondition', 'Please link your Spotify account first.');
+  }
+
+  const data = userSecretSnap.data() || {};
+  const { refreshToken, accessToken, expiresAt } = data;
+
+  if (!refreshToken) {
+    throw new HttpsError('failed-precondition', 'Spotify refresh token missing.');
+  }
+
+  const spotifyService = SpotifyService.createForUser(refreshToken);
+
+  // If we have a cached access token, use it to avoid unnecessary refresh
+  if (accessToken && expiresAt) {
+    const expiresAtEpoch = new Date(expiresAt).getTime();
+    const now = Date.now();
+    // Only use if it has more than 5 mins left
+    if (now + 5 * 60 * 1000 < expiresAtEpoch) {
+      spotifyService.setAccessToken(accessToken, (expiresAtEpoch - now) / 1000);
+    }
+  }
+
+  return { service: spotifyService, originalRefreshToken: refreshToken };
+}
+
+/**
+ * Persists any updated tokens (including rotated refresh tokens) back to Firestore.
+ */
+async function persistSpotifyTokens(
+  uid: string,
+  service: SpotifyService,
+  originalRefreshToken: string
+) {
+  const newRefreshToken = service.getRefreshToken();
+  const newAccessToken = service.getAccessToken();
+  const newExpiresAt = service.getTokenExpirationEpoch();
+
+  const updates: {
+    refreshToken?: string;
+    accessToken?: string;
+    expiresAt?: string;
+    updatedAt?: string;
+  } = {};
+  // Only update if refresh token actually rotated
+  if (newRefreshToken && newRefreshToken !== originalRefreshToken) {
+    updates.refreshToken = newRefreshToken;
+  }
+  // Always update access token cache if available/fresh
+  if (newAccessToken) {
+    updates.accessToken = newAccessToken;
+    updates.expiresAt = new Date(newExpiresAt).toISOString();
+  }
+
+  if (Object.keys(updates).length > 0) {
+    updates.updatedAt = new Date().toISOString();
+    try {
+      await db.doc(`users/${uid}/secrets/spotify`).set(updates, { merge: true });
+      logger.info(`Persisted updated Spotify tokens for user ${uid}`);
+    } catch (e) {
+      logger.error(`Failed to persist updated Spotify tokens for user ${uid}`, e);
+    }
+  }
+}
+
 // Shared logic for both onRequest (Cron/HTTP) and onCall (Web App)
 export async function runOrchestrator(playlistId?: string, callerUid?: string) {
   const configService = new ConfigService();
@@ -69,18 +144,10 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
         throw new Error(`Playlist ${playlistConfig.name} is orphaned (no ownerId).`);
       }
 
-      // 3. Fetch User's Spotify Token
-      // Stored in: users/{uid}/secrets/spotify
-      const userSecretSnap = await db.doc(`users/${playlistConfig.ownerId}/secrets/spotify`).get();
-
-      if (!userSecretSnap.exists) {
-        throw new Error(`Owner ${playlistConfig.ownerId} has not linked their Spotify account.`);
-      }
-
-      const refreshToken = userSecretSnap.data()?.refreshToken;
-      if (!refreshToken) {
-        throw new Error(`Owner ${playlistConfig.ownerId} has a missing refresh token.`);
-      }
+      // 3. Fetch User's Spotify Token & Create Orchestrator
+      const { service: spotifyService, originalRefreshToken } = await getAuthorizedSpotifyService(
+        playlistConfig.ownerId
+      );
 
       // 4. Create Orchestrator (handles Spotify auth internally)
       const orchestrator = new PlaylistOrchestrator(
@@ -92,6 +159,10 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
 
       // 5. Execute
       await orchestrator.curatePlaylist(playlistConfig);
+
+      // 6. Persist any token updates (Important for rotation)
+      await persistSpotifyTokens(playlistConfig.ownerId, spotifyService, originalRefreshToken);
+
       results.push({ name: playlistConfig.name, status: 'success' });
     } catch (error) {
       const errMsg = (error as Error).message;
@@ -235,22 +306,15 @@ export const searchSpotify = onCall(
       }
     }
 
-    // Fetch user's Spotify token
-    const userSecretSnap = await db.doc(`users/${uid}/secrets/spotify`).get();
-    if (!userSecretSnap.exists) {
-      throw new HttpsError('failed-precondition', 'Please link your Spotify account first.');
-    }
-
-    const refreshToken = userSecretSnap.data()?.refreshToken;
-    if (!refreshToken) {
-      throw new HttpsError('failed-precondition', 'Spotify refresh token missing.');
-    }
-
-    // Create user-specific service
-    const spotifyService = SpotifyService.createForUser(refreshToken);
-
     try {
+      // Create user-specific service using the robust helper
+      const { service: spotifyService, originalRefreshToken } =
+        await getAuthorizedSpotifyService(uid);
+
       const results = await spotifyService.search(query, searchTypes, limit || 20);
+
+      // Persist any token updates (Important for rotation)
+      await persistSpotifyTokens(uid, spotifyService, originalRefreshToken);
 
       // FILTER: For playlists, only return user-owned ones
       if (searchTypes.includes('playlist')) {

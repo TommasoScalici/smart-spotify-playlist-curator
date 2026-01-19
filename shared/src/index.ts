@@ -4,7 +4,9 @@ export {
   AiGenerationConfigSchema,
   CurationRulesSchema,
   PlaylistSettingsSchema,
-  PlaylistConfigSchema
+  PlaylistConfigSchema,
+  UserSchema,
+  SpotifyProfileSchema
 } from './schemas';
 
 export type {
@@ -14,7 +16,6 @@ export type {
   CurationRules,
   PlaylistSettings,
   PositionRange,
-  UserProfile
+  UserProfile,
+  SpotifyProfile
 } from './schemas';
-
-export { UserSchema } from './schemas';

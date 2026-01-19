@@ -22,8 +22,21 @@ export default defineConfig({
       output: {
         manualChunks: {
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'firebase-vendor': ['firebase/app', 'firebase/firestore', 'firebase/functions'],
-          'ui-vendor': ['lucide-react', 'react-hook-form', '@hookform/resolvers', 'zod']
+          'firebase-vendor': [
+            'firebase/app',
+            'firebase/auth',
+            'firebase/firestore',
+            'firebase/functions'
+          ],
+          'query-vendor': ['@tanstack/react-query'],
+          'ui-vendor': [
+            'lucide-react',
+            'react-hook-form',
+            '@hookform/resolvers',
+            'zod',
+            'clsx',
+            'tailwind-merge'
+          ]
         }
       }
     }

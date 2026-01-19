@@ -39,10 +39,11 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
 
   const playlistId = useWatch({ control, name: 'id' });
   const playlistName = useWatch({ control, name: 'name' });
+  const imageUrl = useWatch({ control, name: 'imageUrl' });
 
-  // Fetch playlist meta if we have ID but no name (e.g. initial load logic if name missing)
+  // Fetch playlist meta if we have ID but missing name or image
   const shouldFetchPlaylist =
-    !!playlistId && playlistId.startsWith('spotify:playlist:') && !playlistName;
+    !!playlistId && playlistId.startsWith('spotify:playlist:') && (!playlistName || !imageUrl);
 
   const { data: fetchedPlaylist } = useQuery({
     queryKey: ['spotify', 'playlist', playlistId],
@@ -57,8 +58,13 @@ export const ConfigEditor = ({ initialConfig, onSubmit }: ConfigEditorProps) => 
 
   // Basic one-way sync
   useEffect(() => {
-    if (fetchedPlaylist && !getValues('name')) {
-      setValue('name', fetchedPlaylist.name);
+    if (fetchedPlaylist) {
+      if (!getValues('name')) {
+        setValue('name', fetchedPlaylist.name);
+      }
+      if (!getValues('imageUrl')) {
+        setValue('imageUrl', fetchedPlaylist.imageUrl);
+      }
     }
   }, [fetchedPlaylist, getValues, setValue]);
 

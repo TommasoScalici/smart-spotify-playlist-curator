@@ -45,7 +45,7 @@ export const AuthService = {
     const userRef = doc(db, 'users', user.uid);
     const userSnap = await getDoc(userRef);
 
-    const now = new Date().toISOString();
+    const now = new Date();
 
     if (userSnap.exists()) {
       // Update lastLoginAt

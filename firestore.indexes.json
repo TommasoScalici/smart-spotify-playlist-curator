@@ -1,15 +1,4 @@
 {
-  "indexes": [
-    {
-      "collectionGroup": "playlists",
-      "queryScope": "COLLECTION_GROUP",
-      "fields": [
-        {
-          "fieldPath": "enabled",
-          "order": "ASCENDING"
-        }
-      ]
-    }
-  ],
+  "indexes": [],
   "fieldOverrides": []
 }

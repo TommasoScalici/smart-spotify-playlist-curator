@@ -32,9 +32,10 @@ export default function SpotifyCallback() {
 
   // Effect for auto-navigation on success
   useEffect(() => {
+    // Only navigate if we are definitively successful
     if (effectiveStatus !== 'success') return;
 
-    const timer = setTimeout(() => navigate('/'), 2000);
+    const timer = setTimeout(() => navigate('/'), 1200); // FASTER redirection
     return () => clearTimeout(timer);
   }, [effectiveStatus, navigate]);
 
@@ -43,6 +44,8 @@ export default function SpotifyCallback() {
       return;
     }
 
+    // CRITICAL: If data confirms we are already linked, DON'T attempt to exchange code again.
+    // This prevents the "Link FAILED" error on page refresh if the link was actually successful.
     if (!code || !user || linkingRef.current || isActuallyLinked) {
       return;
     }
@@ -51,10 +54,18 @@ export default function SpotifyCallback() {
       linkingRef.current = true;
       try {
         const redirectUri =
-          import.meta.env.VITE_SPOTIFY_REDIRECT_URI || window.location.origin + '/callback';
-        await FunctionsService.linkSpotifyAccount(code, redirectUri);
-        await queryClient.invalidateQueries({ queryKey: ['spotifyConnection'] });
-
+          import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`;
+        const result = await FunctionsService.linkSpotifyAccount(code, redirectUri);
+        if (result.success && result.profile) {
+          // Proactively seed the cache so all observers see the change immediately
+          queryClient.setQueryData(['spotifyConnection', user.uid], {
+            isLinked: true,
+            profile: result.profile
+          });
+          // NOTE: We do NOT invalidate queries here anymore.
+          // We trust the seeded data from the Cloud Function to be fresh.
+          // Invalidating immediately can race with the Firestore propagation delay.
+        }
         setStatus('success');
       } catch (error) {
         console.error('Linking failed', error);
@@ -116,7 +127,16 @@ export default function SpotifyCallback() {
               </div>
               <div className="space-y-2">
                 <h2 className="text-2xl font-bold tracking-tight">Successfully Linked!</h2>
-                <p className="text-muted-foreground">Redirecting to your dashboard...</p>
+                <p className="text-muted-foreground">
+                  Welcome back,{' '}
+                  <span className="text-white font-semibold">
+                    {spotifyData?.profile?.displayName || 'Music Lover'}
+                  </span>
+                  .
+                </p>
+                <p className="text-muted-foreground text-xs opacity-70">
+                  Redirecting to your dashboard...
+                </p>
               </div>
             </div>
           )}

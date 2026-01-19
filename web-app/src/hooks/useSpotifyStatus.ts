@@ -17,6 +17,6 @@ export const useSpotifyStatus = (uid: string | undefined) => {
       };
     },
     enabled: !!uid,
-    staleTime: Infinity
+    staleTime: 1000 * 60 // 1 Minute. We trust cache after seeding from Callback.
   });
 };

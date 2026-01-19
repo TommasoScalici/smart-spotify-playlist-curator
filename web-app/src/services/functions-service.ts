@@ -1,5 +1,6 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from './firebase';
+import { SpotifyProfile } from '@smart-spotify-curator/shared';
 
 export interface CurationResult {
   message: string;
@@ -47,11 +48,14 @@ export const FunctionsService = {
   /**
    * Links a Spotify Account by exchanging the Auth Code.
    */
-  async linkSpotifyAccount(code: string, redirectUri: string): Promise<{ success: boolean }> {
-    const exchange = httpsCallable<{ code: string; redirectUri: string }, { success: boolean }>(
-      functions,
-      'exchangeSpotifyToken'
-    );
+  async linkSpotifyAccount(
+    code: string,
+    redirectUri: string
+  ): Promise<{ success: boolean; profile?: SpotifyProfile }> {
+    const exchange = httpsCallable<
+      { code: string; redirectUri: string },
+      { success: boolean; profile?: SpotifyProfile }
+    >(functions, 'exchangeSpotifyToken');
     const result = await exchange({ code, redirectUri });
     return result.data;
   }

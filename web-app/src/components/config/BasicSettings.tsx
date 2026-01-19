@@ -32,6 +32,7 @@ export const BasicSettings = ({
 }: BasicSettingsProps) => {
   const playlistId = watch('id');
   const playlistName = watch('name');
+  const imageUrl = watch('imageUrl');
 
   // Note: Parent component handles the metadata state logic (playlistMeta),
   // but for a pure refactor we might want to pass display props or move that logic here.
@@ -60,6 +61,7 @@ export const BasicSettings = ({
                   onSelect={(result) => {
                     field.onChange(result.uri);
                     setValue('name', result.name);
+                    setValue('imageUrl', result.imageUrl);
                     // We set the description if it's new
                     if (result.owner) {
                       const currentDesc = watch('settings.description');
@@ -76,8 +78,12 @@ export const BasicSettings = ({
             />
           ) : (
             <div className="flex items-center gap-4 p-4 border rounded-md bg-accent/20">
-              <div className="h-16 w-16 bg-muted rounded flex items-center justify-center shrink-0">
-                <Music className="h-8 w-8 text-muted-foreground" />
+              <div className="h-16 w-16 bg-black/40 rounded overflow-hidden flex items-center justify-center shrink-0 border border-white/5 shadow-inner">
+                {imageUrl ? (
+                  <img src={imageUrl} alt={playlistName} className="h-full w-full object-cover" />
+                ) : (
+                  <Music className="h-8 w-8 text-muted-foreground" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-lg font-semibold truncate">{playlistName || playlistId}</h4>
