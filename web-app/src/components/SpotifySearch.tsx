@@ -1,6 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { FunctionsService } from '../services/functions-service';
-import { Search, Loader2, Music, Disc } from 'lucide-react';
+import { Loader2, Music, Disc, Check, ChevronsUpDown } from 'lucide-react';
+import {
+  Command,
+  CommandInput,
+  CommandList,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem
+} from '@/components/ui/command';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SearchResult {
   uri: string;
@@ -15,7 +26,7 @@ interface SpotifySearchProps {
   type: 'track' | 'playlist';
   placeholder?: string;
   onSelect: (result: SearchResult) => void;
-  defaultValue?: string; // To show initial URI if needed, though usually we want the name
+  defaultValue?: string;
 }
 
 export const SpotifySearch = ({
@@ -27,181 +38,117 @@ export const SpotifySearch = ({
   const [query, setQuery] = useState(defaultValue || '');
   const [results, setResults] = useState<SearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isOpen, setIsOpen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
 
-  // Debounce logic manually here to avoid dep issues if hook missing
+  // Debounce logic
   useEffect(() => {
     const timer = setTimeout(async () => {
-      if (query.trim().length < 3) {
+      if (query && query.trim().length >= 3) {
+        setLoading(true);
+        try {
+          const data = await FunctionsService.searchSpotify(query, type);
+          setResults(data);
+          if (data.length > 0) setOpen(true);
+        } catch (error) {
+          console.error('Search failed', error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
         setResults([]);
-        return;
-      }
-
-      setLoading(true);
-      try {
-        const data = await FunctionsService.searchSpotify(query, type);
-        setResults(data);
-        setIsOpen(true);
-      } catch {
-        // Silent failure or handled by UI state if critical
-      } finally {
-        setLoading(false);
       }
     }, 500);
 
     return () => clearTimeout(timer);
   }, [query, type]);
 
-  // Close on click outside
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [wrapperRef]);
-
   const handleSelect = (item: SearchResult) => {
-    setQuery(item.name); // Set input to name for display
-    setIsOpen(false);
+    setQuery(item.name);
+    setOpen(false);
     onSelect(item);
   };
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
-      <div style={{ position: 'relative' }}>
-        <Search
-          size={18}
-          style={{
-            position: 'absolute',
-            left: '12px',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            color: 'var(--text-secondary)'
-          }}
-        />
-        <input
-          type="text"
-          className="form-input"
-          placeholder={placeholder || `Search ${type}s...`}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => {
-            if (results.length > 0) setIsOpen(true);
-          }}
-          style={{
-            width: '100%',
-            padding: '10px 10px 10px 40px',
-            borderRadius: '6px',
-            border: '1px solid var(--border-subtle)',
-            background: 'rgba(255,255,255,0.05)',
-            color: 'white'
-          }}
-        />
-        {loading && (
-          <Loader2
-            className="animate-spin"
-            size={18}
-            style={{
-              position: 'absolute',
-              right: '12px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              color: 'var(--primary)'
-            }}
-          />
-        )}
-      </div>
-
-      {isOpen && results.length > 0 && (
-        <div
-          style={{
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            zIndex: 1000,
-            background: '#1e1e1e', // bg-surface-elevated
-            border: '1px solid var(--border-subtle)',
-            borderRadius: '8px',
-            marginTop: '4px',
-            maxHeight: '300px',
-            overflowY: 'auto',
-            boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-          }}
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between h-12 text-left font-normal bg-background/50 hover:bg-background/80 border-border/50"
         >
-          {results.map((item) => (
-            <div
-              key={item.uri}
-              onClick={() => handleSelect(item)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '10px 14px',
-                cursor: 'pointer',
-                borderBottom: '1px solid rgba(255,255,255,0.05)',
-                transition: 'background 0.2s'
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-              onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-            >
-              {item.imageUrl ? (
-                <img
-                  src={item.imageUrl}
-                  alt={item.name}
-                  style={{ width: '40px', height: '40px', borderRadius: '4px', objectFit: 'cover' }}
-                />
-              ) : (
-                <div
-                  style={{
-                    width: '40px',
-                    height: '40px',
-                    borderRadius: '4px',
-                    background: '#333',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {type === 'track' ? (
-                    <Music size={20} color="#666" />
-                  ) : (
-                    <Disc size={20} color="#666" />
-                  )}
-                </div>
-              )}
+          {query ? (
+            <span className="truncate">{query}</span>
+          ) : (
+            <span className="text-muted-foreground">{placeholder || `Search ${type}s...`}</span>
+          )}
+          {loading ? (
+            <Loader2 className="ml-2 h-4 w-4 shrink-0 animate-spin opacity-50" />
+          ) : (
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+        <Command shouldFilter={false}>
+          {/* We use shouldFilter={false} because the API already filters for us */}
+          <CommandInput
+            placeholder={`Type to search ${type}s...`}
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {loading && (
+              <div className="py-6 text-center text-sm text-muted-foreground">Searching...</div>
+            )}
 
-              <div style={{ flex: 1, overflow: 'hidden' }}>
-                <div
-                  style={{
-                    fontWeight: 500,
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
+            {!loading && results.length === 0 && query.length >= 3 && (
+              <CommandEmpty>No results found.</CommandEmpty>
+            )}
+
+            <CommandGroup>
+              {results.map((item) => (
+                <CommandItem
+                  key={item.uri}
+                  value={item.uri} // Value must be unique-ish
+                  onSelect={() => handleSelect(item)}
+                  className="cursor-pointer"
                 >
-                  {item.name}
-                </div>
-                <div
-                  style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}
-                >
-                  {type === 'track' ? item.artist : `by ${item.owner}`}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+                  <div className="flex items-center gap-3 w-full overflow-hidden">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.name}
+                        className="h-8 w-8 rounded object-cover bg-muted"
+                      />
+                    ) : (
+                      <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                        {type === 'track' ? (
+                          <Music className="h-4 w-4" />
+                        ) : (
+                          <Disc className="h-4 w-4" />
+                        )}
+                      </div>
+                    )}
+                    <div className="flex flex-col overflow-hidden">
+                      <span className="truncate font-medium">{item.name}</span>
+                      <span className="truncate text-xs text-muted-foreground">
+                        {type === 'track' ? item.artist : `by ${item.owner}`}
+                      </span>
+                    </div>
+                  </div>
+                  <Check
+                    className={cn(
+                      'ml-auto h-4 w-4',
+                      query === item.name ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };

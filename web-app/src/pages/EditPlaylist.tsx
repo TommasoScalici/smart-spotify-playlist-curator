@@ -24,11 +24,15 @@ export default function EditPlaylist() {
         if (playlist) {
           setConfig(playlist);
         } else {
-          alert('Playlist not found!');
+          toast.error('Playlist not found', {
+            description: 'The requested playlist configuration could not be loaded.'
+          });
           navigate('/');
         }
       } catch {
-        alert('Error loading playlist');
+        toast.error('Error loading playlist', {
+          description: 'Please check your internet connection and try again.'
+        });
       } finally {
         setLoading(false);
       }
@@ -53,8 +57,6 @@ export default function EditPlaylist() {
     toast.promise(FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id), {
       loading: 'Saving configuration...',
       success: () => {
-        // Navigate after a short delay or immediately? Standard is fine.
-        // We will navigate immediately but the toast will persist due to Toaster being at root.
         navigate('/');
         return 'Playlist saved successfully! 💾';
       },
@@ -64,15 +66,16 @@ export default function EditPlaylist() {
 
   if (loading) {
     return (
-      <div style={{ display: 'flex', justifyContent: 'center', paddingTop: '100px' }}>
-        <Loader2 className="animate-spin" size={40} color="var(--primary)" />
+      <div className="flex h-[50vh] w-full items-center justify-center">
+        <Loader2 className="h-10 w-10 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col gap-2 mb-8 select-none">
+    <div className="container max-w-4xl mx-auto py-8 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
+      {/* Header Section */}
+      <div className="flex flex-col gap-2 select-none">
         <Button
           variant="ghost"
           onClick={() => navigate('/')}
@@ -90,7 +93,12 @@ export default function EditPlaylist() {
         </p>
       </div>
 
-      <div className="relative">
+      {/* Editor Wrapper with Glass Effect */}
+      <div className="relative rounded-xl border border-white/5 bg-card/30 backdrop-blur-xl shadow-2xl overflow-hidden p-6 md:p-8">
+        {/* Decorative Background Mesh */}
+        <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 p-24 bg-secondary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+
         <ConfigEditor initialConfig={config} onSubmit={handleSave} />
       </div>
     </div>

@@ -105,7 +105,11 @@ export async function persistSpotifyTokens(
 }
 
 // Shared logic for both onRequest (Cron/HTTP) and onCall (Web App)
-export async function runOrchestrator(playlistId?: string, callerUid?: string) {
+export async function runOrchestrator(
+  playlistId?: string,
+  callerUid?: string,
+  dryRunOverride?: boolean
+) {
   const configService = new ConfigService();
   let configs: PlaylistConfig[] = [];
 
@@ -142,6 +146,11 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
   const results = [];
 
   for (const playlistConfig of configs) {
+    // Apply Dry Run Override if present
+    if (dryRunOverride !== undefined) {
+      playlistConfig.dryRun = dryRunOverride;
+    }
+
     try {
       // 2. Multi-Tenancy Check
       if (!playlistConfig.ownerId) {
@@ -162,7 +171,7 @@ export async function runOrchestrator(playlistId?: string, callerUid?: string) {
       );
 
       // 5. Execute
-      await orchestrator.curatePlaylist(playlistConfig);
+      await orchestrator.curatePlaylist(playlistConfig, spotifyService);
 
       // 6. Persist any token updates (Important for rotation)
       await persistSpotifyTokens(playlistConfig.ownerId, spotifyService, originalRefreshToken);
@@ -258,9 +267,9 @@ export const triggerCuration = onCall(
     }
 
     const uid = request.auth.uid;
-    const { playlistId } = request.data || {};
+    const { playlistId, dryRun } = request.data || {};
 
-    logger.info(`Received triggerCuration from user ${uid}`, { playlistId });
+    logger.info(`Received triggerCuration from user ${uid}`, { playlistId, dryRun });
 
     // SECURITY: If specific playlist requested, verify ownership
     if (playlistId) {
@@ -275,7 +284,7 @@ export const triggerCuration = onCall(
     }
 
     try {
-      return await runOrchestrator(playlistId, uid);
+      return await runOrchestrator(playlistId, uid, dryRun);
     } catch (e) {
       logger.error('Orchestrator execution failed', e);
       throw new HttpsError('internal', (e as Error).message);

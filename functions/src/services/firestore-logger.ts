@@ -35,4 +35,35 @@ export class FirestoreLogger {
       logger.error('Failed to write activity log to Firestore:', error);
     }
   }
+  /**
+   * Updates the curation status for a specific playlist.
+   */
+  async updateCurationStatus(
+    ownerId: string,
+    playlistId: string,
+    status: {
+      state: 'idle' | 'running' | 'completed' | 'error';
+      progress: number;
+      step?: string;
+      isDryRun?: boolean;
+      diff?: {
+        added: { uri: string; name: string; artist: string }[];
+        removed: { uri: string; name: string; artist: string }[];
+      };
+    }
+  ): Promise<void> {
+    if (!ownerId || !playlistId) return;
+
+    try {
+      await db.doc(`users/${ownerId}/playlists/${playlistId}`).update({
+        curationStatus: {
+          ...status,
+          lastUpdated: new Date().toISOString()
+        }
+      });
+    } catch (error) {
+      // Log but don't throw, as status updates shouldn't fail the job
+      logger.warn('Failed to update curation status', error);
+    }
+  }
 }

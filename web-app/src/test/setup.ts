@@ -42,3 +42,11 @@ vi.stubGlobal('import.meta', {
     VITE_FIREBASE_PROJECT_ID: 'mock-project-id'
   }
 });
+
+class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
+vi.stubGlobal('ResizeObserver', ResizeObserver);

@@ -14,7 +14,7 @@ service cloud.firestore {
         // SECURITY: Secrets (refresh tokens) are SERVER-ONLY readable.
         // Clients can only write (link account) or delete (unlink account).
         allow read: if false;
-        allow write, delete: if request.auth != null && request.auth.uid == userId;
+        allow delete: if request.auth != null && request.auth.uid == userId;
       }
     }
   }

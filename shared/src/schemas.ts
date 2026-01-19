@@ -36,6 +36,22 @@ export const PlaylistSettingsSchema = z.object({
   referenceArtists: z.array(z.string()).optional()
 });
 
+// --- Curation Status Schema ---
+
+export const CurationDiffSchema = z.object({
+  added: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() })),
+  removed: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() }))
+});
+
+export const CurationStatusSchema = z.object({
+  state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
+  progress: z.number().min(0).max(100).default(0),
+  step: z.string().optional(),
+  lastUpdated: z.string().optional(),
+  diff: CurationDiffSchema.optional(),
+  isDryRun: z.boolean().optional()
+});
+
 // --- Main Schema ---
 
 export const PlaylistConfigSchema = z.object({
@@ -44,7 +60,7 @@ export const PlaylistConfigSchema = z.object({
     .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
   name: z.string().min(3, { message: 'Name is too short' }),
   enabled: z.boolean().default(true),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.url().optional(),
   ownerId: z.string().min(1, { message: 'Owner ID is required' }), // Added for Multi-Tenancy
   owner: z.string().optional(), // Legacy field, consider removing later if redundant
   dryRun: z.boolean().optional(),
@@ -52,7 +68,8 @@ export const PlaylistConfigSchema = z.object({
   settings: PlaylistSettingsSchema,
   mandatoryTracks: z.array(MandatoryTrackSchema),
   aiGeneration: AiGenerationConfigSchema,
-  curationRules: CurationRulesSchema
+  curationRules: CurationRulesSchema,
+  curationStatus: CurationStatusSchema.optional()
 });
 
 // --- User Schema ---
@@ -60,8 +77,8 @@ export const PlaylistConfigSchema = z.object({
 export const SpotifyProfileSchema = z.object({
   id: z.string(),
   displayName: z.string().nullable(),
-  email: z.string().email(),
-  avatarUrl: z.string().url().nullable(),
+  email: z.email(),
+  avatarUrl: z.url().nullable(),
   product: z.string(),
   linkedAt: z.date(),
   status: z.enum(['active', 'invalid']).default('active'),
@@ -70,9 +87,9 @@ export const SpotifyProfileSchema = z.object({
 
 export const UserSchema = z.object({
   uid: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   displayName: z.string().optional(),
-  photoURL: z.string().url().optional(),
+  photoURL: z.url().optional(),
   createdAt: z.date(),
   lastLoginAt: z.date(),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
@@ -98,3 +115,5 @@ export type AiGenerationConfig = z.infer<typeof AiGenerationConfigSchema>;
 export type CurationRules = z.infer<typeof CurationRulesSchema>;
 export type PlaylistSettings = z.infer<typeof PlaylistSettingsSchema>;
 export type PositionRange = z.infer<typeof PositionRangeSchema>;
+export type CurationStatus = z.infer<typeof CurationStatusSchema>;
+export type CurationDiff = z.infer<typeof CurationDiffSchema>;

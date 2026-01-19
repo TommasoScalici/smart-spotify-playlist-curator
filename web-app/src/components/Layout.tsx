@@ -1,3 +1,11 @@
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet';
 import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
@@ -31,7 +39,6 @@ import {
   Unlink,
   AlertTriangle,
   Menu,
-  X,
   History as HistoryIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -45,7 +52,7 @@ export const Layout = () => {
   const isSpotifyLinked = data?.isLinked;
   const queryClient = useQueryClient();
   const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   const handleUnlink = async () => {
     if (!user) return;
@@ -62,6 +69,14 @@ export const Layout = () => {
 
   return (
     <div className="layout min-h-screen flex flex-col bg-background text-foreground font-sans antialiased">
+      {/* Skip to Content Link for Keyboard Accessibility */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-[100] px-4 py-2 bg-primary text-primary-foreground font-bold rounded-md shadow-lg ring-2 ring-white/20"
+      >
+        Skip to content
+      </a>
+
       <header className="layout-header border-b bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="layout-header__content container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="brand-logo flex items-center gap-2">
@@ -76,15 +91,154 @@ export const Layout = () => {
               <ModeToggle />
             </div>
 
-            {/* Mobile Menu Trigger */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </Button>
+            {/* Mobile Menu Trigger (Sheet) */}
+            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="right"
+                className="w-80 p-0 border-l border-border bg-card/95 backdrop-blur-xl"
+              >
+                <SheetHeader className="p-4 border-b">
+                  <SheetTitle>Navigation</SheetTitle>
+                  <SheetDescription>Access your dashboard and settings</SheetDescription>
+                </SheetHeader>
+                <div className="max-h-[calc(100vh-5rem)] overflow-y-auto p-4 space-y-4">
+                  {/* Nav Links */}
+                  <div className="space-y-2">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                      Navigation
+                    </p>
+                    <Link
+                      to="/"
+                      onClick={() => setIsSheetOpen(false)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-accent hover:bg-accent/80 border border-border/50 transition-all active:scale-95"
+                    >
+                      <HistoryIcon className="h-4 w-4 text-primary" />
+                      <span className="font-semibold text-sm">Dashboard</span>
+                    </Link>
+                  </div>
+
+                  {/* Spotify Status (Mobile) */}
+                  {user && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                        Spotify
+                      </p>
+                      <div
+                        className={cn(
+                          'p-3 rounded-xl border transition-all',
+                          isSpotifyLinked
+                            ? 'bg-[#1DB954]/10 border-[#1DB954]/30'
+                            : 'bg-destructive/10 border-destructive/30'
+                        )}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={cn(
+                                'h-8 w-8 rounded-lg flex items-center justify-center',
+                                isSpotifyLinked
+                                  ? 'bg-[#1DB954]/20 text-[#1DB954]'
+                                  : 'bg-destructive/20 text-destructive'
+                              )}
+                            >
+                              {isSpotifyLinked ? (
+                                <CheckCircle2 className="h-4 w-4" />
+                              ) : (
+                                <XCircle className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-xs font-bold">
+                                {isSpotifyLinked ? 'Connected' : 'Disconnected'}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {isSpotifyLinked
+                                  ? data?.profile?.displayName || 'Active'
+                                  : 'Action Required'}
+                              </p>
+                            </div>
+                          </div>
+                          {isSpotifyLinked && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              aria-label="Unlink Spotify account"
+                              onClick={() => {
+                                setIsSheetOpen(false);
+                                setShowUnlinkDialog(true);
+                              }}
+                            >
+                              <Unlink className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                        </div>
+                        {!isSpotifyLinked && (
+                          <Button
+                            asChild
+                            size="sm"
+                            className="w-full mt-2 bg-[#1DB954] hover:bg-[#1ed760] font-bold text-xs"
+                          >
+                            <Link to="/" onClick={() => setIsSheetOpen(false)}>
+                              Connect Account
+                            </Link>
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* User Profile (Mobile) */}
+                  {user && (
+                    <div className="space-y-2">
+                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                        Account
+                      </p>
+                      <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
+                        <div className="flex items-center gap-2">
+                          <img
+                            src={user.photoURL || ''}
+                            alt="Profile"
+                            className="h-8 w-8 rounded-full object-cover ring-1 ring-border"
+                          />
+                          <div>
+                            <p className="text-xs font-bold truncate max-w-[120px]">
+                              {user.displayName}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                              {user.email}
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setIsSheetOpen(false);
+                            signOut();
+                          }}
+                          aria-label="Log out"
+                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        >
+                          <LogOut className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Theme Toggle */}
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
+                    <span className="text-xs font-semibold">Appearance</span>
+                    <ModeToggle />
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
 
             <nav className="hidden md:flex items-center gap-6">
               <Link
@@ -147,6 +301,7 @@ export const Layout = () => {
                     <DropdownMenuTrigger asChild>
                       <Button
                         variant="ghost"
+                        aria-label="User profile menu"
                         className="relative h-9 w-9 rounded-full p-0 overflow-hidden border border-input shadow-sm hover:ring-2 hover:ring-primary/20 transition-all"
                       >
                         <img
@@ -195,144 +350,10 @@ export const Layout = () => {
             </nav>
           </div>
         </div>
-
-        {/* Mobile Menu Dropdown */}
-        <div
-          className={cn(
-            'md:hidden fixed top-16 right-0 w-80 max-w-[calc(100vw-2rem)] z-[100] bg-card/95 backdrop-blur-xl border border-border rounded-l-2xl shadow-2xl transition-all duration-300 ease-in-out overflow-hidden',
-            isMobileMenuOpen
-              ? 'opacity-100 translate-x-0'
-              : 'opacity-0 translate-x-full pointer-events-none'
-          )}
-        >
-          <div className="max-h-[calc(100vh-5rem)] overflow-y-auto p-4 space-y-4">
-            {/* Nav Links */}
-            <div className="space-y-2">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
-                Navigation
-              </p>
-              <Link
-                to="/"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex items-center gap-3 p-3 rounded-xl bg-accent hover:bg-accent/80 border border-border/50 transition-all active:scale-95"
-              >
-                <HistoryIcon className="h-4 w-4 text-primary" />
-                <span className="font-semibold text-sm">Dashboard</span>
-              </Link>
-            </div>
-
-            {/* Spotify Status (Mobile) */}
-            {user && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
-                  Spotify
-                </p>
-                <div
-                  className={cn(
-                    'p-3 rounded-xl border transition-all',
-                    isSpotifyLinked
-                      ? 'bg-[#1DB954]/10 border-[#1DB954]/30'
-                      : 'bg-destructive/10 border-destructive/30'
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className={cn(
-                          'h-8 w-8 rounded-lg flex items-center justify-center',
-                          isSpotifyLinked
-                            ? 'bg-[#1DB954]/20 text-[#1DB954]'
-                            : 'bg-destructive/20 text-destructive'
-                        )}
-                      >
-                        {isSpotifyLinked ? (
-                          <CheckCircle2 className="h-4 w-4" />
-                        ) : (
-                          <XCircle className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold">
-                          {isSpotifyLinked ? 'Connected' : 'Disconnected'}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground">
-                          {isSpotifyLinked
-                            ? data?.profile?.displayName || 'Active'
-                            : 'Action Required'}
-                        </p>
-                      </div>
-                    </div>
-                    {isSpotifyLinked && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          setShowUnlinkDialog(true);
-                        }}
-                      >
-                        <Unlink className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
-                  </div>
-                  {!isSpotifyLinked && (
-                    <Button
-                      asChild
-                      size="sm"
-                      className="w-full mt-2 bg-[#1DB954] hover:bg-[#1ed760] font-bold text-xs"
-                    >
-                      <Link to="/" onClick={() => setIsMobileMenuOpen(false)}>
-                        Connect Account
-                      </Link>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* User Profile (Mobile) */}
-            {user && (
-              <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
-                  Account
-                </p>
-                <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={user.photoURL || ''}
-                      alt="Profile"
-                      className="h-8 w-8 rounded-full object-cover ring-1 ring-border"
-                    />
-                    <div>
-                      <p className="text-xs font-bold truncate max-w-[120px]">{user.displayName}</p>
-                      <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                        {user.email}
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={signOut}
-                    className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Theme Toggle */}
-            <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
-              <span className="text-xs font-semibold">Appearance</span>
-              <ModeToggle />
-            </div>
-          </div>
-        </div>
       </header>
 
       <main
+        id="main-content"
         className={cn(
           'main-content animate-fade-in flex-1 flex flex-col',
           !isSpotifyLinked && !checkingLink && 'py-0 max-w-none'

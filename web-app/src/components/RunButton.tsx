@@ -50,6 +50,7 @@ export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunB
               size="icon"
               onClick={handleRun}
               disabled={loading}
+              aria-label="Run curation"
               className={cn(
                 'rounded-full border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary hover:scale-105 transition-all duration-200 shadow-sm',
                 className

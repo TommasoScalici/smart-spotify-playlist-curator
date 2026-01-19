@@ -21,12 +21,15 @@ export const FunctionsService = {
    * Triggers the curation orchestration manually.
    * Calls the 'triggerCuration' Cloud Function.
    */
-  async triggerCuration(playlistId?: string): Promise<CurationResult> {
-    const trigger = httpsCallable<{ playlistId?: string }, CurationResult>(
+  async triggerCuration(
+    playlistId?: string,
+    options?: { dryRun?: boolean }
+  ): Promise<CurationResult> {
+    const trigger = httpsCallable<{ playlistId?: string; dryRun?: boolean }, CurationResult>(
       functions,
       'triggerCuration'
     );
-    const result = await trigger({ playlistId });
+    const result = await trigger({ playlistId, dryRun: options?.dryRun });
     return result.data;
   },
 

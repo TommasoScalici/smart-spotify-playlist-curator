@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { Edit2, Music, Calendar, Users, Radio, Trash2 } from 'lucide-react';
+import { Edit2, Music, Calendar, Users, Radio, Trash2, History, FlaskConical } from 'lucide-react';
 import { RunButton } from './RunButton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { Progress } from '@/components/ui/progress';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { DiffViewer } from './DiffViewer';
 
 interface PlaylistCardProps {
   config: PlaylistConfig & { _docId: string };
@@ -50,6 +60,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
 
   // Fetch real metrics from Spotify API
   const { data: metrics, isLoading } = useQuery({
@@ -283,7 +294,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                 </div>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{metrics?.tracks ?? 0} tracks currenty in playlist</p>
+                <p>{metrics?.tracks ?? 0} tracks currently in playlist</p>
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
@@ -294,6 +305,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Edit playlist settings"
           className="group/btn border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
           onClick={(e) => {
             e.stopPropagation();
@@ -306,6 +318,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         <Button
           variant="outline"
           size="icon"
+          aria-label="Delete playlist"
           className="group/del border-white/10 bg-white/5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
           onClick={(e) => {
             e.stopPropagation();
@@ -315,8 +328,74 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
           <Trash2 className="h-4 w-4 transition-transform group-hover/del:scale-110" />
         </Button>
 
-        <div className="flex-1">
-          <RunButton playlistId={config.id} className="w-full h-10 min-h-[44px]" />
+        <div className="flex-1 flex flex-col justify-center min-h-[44px]">
+          {config.curationStatus?.state === 'running' ? (
+            <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex justify-between text-[10px] items-center px-0.5">
+                <span className="font-semibold text-primary animate-pulse uppercase tracking-wider">
+                  {config.curationStatus.step || 'Curating...'}
+                </span>
+                <span className="font-mono text-muted-foreground">
+                  {config.curationStatus.progress}%
+                </span>
+              </div>
+              <Progress value={config.curationStatus.progress} className="h-1.5 bg-secondary/50" />
+            </div>
+          ) : (
+            <div className="flex gap-2 w-full">
+              <RunButton playlistId={config.id} className="flex-1 h-10 min-h-[44px]" />
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      aria-label="Start test run"
+                      className="border-white/10 bg-white/5 text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toast.promise(
+                          FunctionsService.triggerCuration(config.id, { dryRun: true }),
+                          {
+                            loading: 'Starting test run...',
+                            success: 'Test run started! Watch the progress bar.',
+                            error: 'Failed to start test run.'
+                          }
+                        );
+                      }}
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Test Run (Dry Run) - See changes without saving</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+
+              {config.curationStatus?.diff && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  aria-label="View curation history"
+                  className={cn(
+                    'border-white/10 bg-white/5 text-muted-foreground transition-all h-10 w-10 min-h-[44px] min-w-[44px]',
+                    // Highlight history button if it was a dry run to encourage checking results
+                    config.curationStatus.isDryRun
+                      ? 'hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 text-amber-500/80'
+                      : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10'
+                  )}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowHistory(true);
+                  }}
+                >
+                  <History className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </CardFooter>
 
@@ -344,6 +423,31 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* History / Diff Dialog */}
+      {config.curationStatus?.diff && (
+        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+          <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+            <DialogHeader>
+              <DialogTitle>Curation History: {config.name}</DialogTitle>
+              <DialogDescription>
+                Changes applied during the last run (
+                {metrics?.lastUpdated ? new Date(metrics.lastUpdated).toLocaleString() : 'Just now'}
+                )
+              </DialogDescription>
+            </DialogHeader>
+            <div className="flex-1 overflow-hidden min-h-0 py-4">
+              <DiffViewer
+                diff={config.curationStatus.diff}
+                isDryRun={config.curationStatus.isDryRun}
+              />
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowHistory(false)}>Close</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </Card>
   );
 };

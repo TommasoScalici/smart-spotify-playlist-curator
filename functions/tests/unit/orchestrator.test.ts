@@ -13,6 +13,7 @@ vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/track-cleaner');
 vi.mock('../../src/core/slot-manager');
 vi.mock('../../src/services/firestore-logger');
+vi.mock('../../src/services/firestore-logger');
 vi.mock('../../src/config/firebase', () => ({
   db: {
     doc: vi.fn(() => ({
@@ -23,7 +24,9 @@ vi.mock('../../src/config/firebase', () => ({
       update: vi.fn().mockResolvedValue(undefined)
     })),
     collection: vi.fn(() => ({
-      doc: vi.fn()
+      doc: vi.fn(() => ({
+        update: vi.fn().mockResolvedValue(undefined)
+      }))
     }))
   }
 }));
@@ -49,6 +52,7 @@ describe('PlaylistOrchestrator', () => {
   let mockFirestoreLogger: {
     logActivity: ReturnType<typeof vi.fn>;
     pruneOldLogs: ReturnType<typeof vi.fn>;
+    updateCurationStatus: ReturnType<typeof vi.fn>;
   };
 
   // Type casting to Bypass strict partial matching for test config
@@ -82,13 +86,14 @@ describe('PlaylistOrchestrator', () => {
     };
     mockFirestoreLogger = {
       logActivity: vi.fn(),
-      pruneOldLogs: vi.fn()
+      pruneOldLogs: vi.fn(),
+      updateCurationStatus: vi.fn()
     };
 
     // Mock SpotifyService.createForUser to return our mock service
-    vi.mocked(SpotifyService.createForUser).mockReturnValue(
-      mockSpotifyService as unknown as SpotifyService
-    );
+    // vi.mocked(SpotifyService.createForUser).mockReturnValue(
+    //   mockSpotifyService as unknown as SpotifyService
+    // );
 
     orchestrator = new PlaylistOrchestrator(
       mockAiService as unknown as AiService,
@@ -133,7 +138,7 @@ describe('PlaylistOrchestrator', () => {
       }
     ]);
 
-    await orchestrator.curatePlaylist(mockConfig);
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
@@ -164,7 +169,7 @@ describe('PlaylistOrchestrator', () => {
       new Array(20).fill({ uri: 'ai-uri', artist: 'AI Artist' })
     );
 
-    await orchestrator.curatePlaylist(mockConfig);
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
@@ -193,7 +198,7 @@ describe('PlaylistOrchestrator', () => {
 
     mockSpotifyService.getTracks.mockResolvedValue([]);
 
-    await orchestrator.curatePlaylist(mockConfig);
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalledWith(
       expect.any(Array),
@@ -207,6 +212,39 @@ describe('PlaylistOrchestrator', () => {
       expect.any(String), // generated prompt
       35, // count
       expect.any(Array) // excludedTracks
+    );
+  });
+  it('Dry Run: Should propagate flag and not modify state', async () => {
+    const dryRunConfig = { ...mockConfig, dryRun: true };
+
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+    mockTrackCleaner.processCurrentTracks.mockReturnValue({
+      keptTracks: [],
+      tracksToRemove: [],
+      slotsNeeded: 10
+    });
+    mockAiService.generateSuggestions.mockResolvedValue([]);
+    mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
+
+    await orchestrator.curatePlaylist(
+      dryRunConfig,
+      mockSpotifyService as unknown as SpotifyService
+    );
+
+    expect(mockFirestoreLogger.updateCurationStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({
+        isDryRun: true,
+        diff: expect.objectContaining({ added: expect.any(Array), removed: expect.any(Array) })
+      })
+    );
+
+    expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(Array),
+      true, // dryRun check
+      expect.any(Array)
     );
   });
 });

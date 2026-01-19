@@ -37,7 +37,7 @@ describe('Spotify Integration: Service Logic', () => {
         const targetOrder = [trackB.uri, trackA.uri, ...initialTracks.slice(2).map((t) => t.uri)];
 
         // 2. Execution Phase
-        await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, [], [], targetOrder);
+        await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, targetOrder);
 
         // Wait for eventual consistency
         await new Promise((r) => setTimeout(r, 5000));
@@ -47,7 +47,7 @@ describe('Spotify Integration: Service Logic', () => {
 
         // Cleanup: Revert changes immediately
         const revertOrder = initialTracks.map((t) => t.uri);
-        await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, [], [], revertOrder);
+        await service.performSmartUpdate(SANDBOX_PLAYLIST_ID, revertOrder);
 
         // Assertions
         expect(finalTracks[0].uri).toBe(trackB.uri);

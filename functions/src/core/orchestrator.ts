@@ -8,6 +8,7 @@ import * as logger from 'firebase-functions/logger';
 import { db } from '../config/firebase';
 import { FirestoreLogger } from '../services/firestore-logger';
 import { PromptGenerator } from '../services/prompt-generator';
+import { DiffCalculator } from './diff-calculator';
 
 export class PlaylistOrchestrator {
   constructor(
@@ -17,7 +18,11 @@ export class PlaylistOrchestrator {
     private firestoreLogger: FirestoreLogger
   ) {}
 
-  public async curatePlaylist(config: PlaylistConfig, runId?: string): Promise<void> {
+  public async curatePlaylist(
+    config: PlaylistConfig,
+    spotifyService: SpotifyService,
+    runId?: string
+  ): Promise<void> {
     const { settings, dryRun } = config;
     const targetTotal = settings.targetTotalTracks;
 
@@ -34,33 +39,26 @@ export class PlaylistOrchestrator {
         `Started curating "${config.name}"`,
         { playlistId: config.id, dryRun }
       );
+
+      // Initialize Progress
+      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+        state: 'running',
+        progress: 0,
+        step: 'Starting curation...',
+        isDryRun: !!config.dryRun
+      });
     }
 
     // Sanitize ID (handle spotify:playlist: prefix)
     const playlistId = config.id.replace('spotify:playlist:', '');
 
-    // 1. Determine Spotify Identity - MUST use user token (no global fallback)
-    let spotifyService: SpotifyService | null = null;
-
     if (config.ownerId) {
-      try {
-        const secretDoc = await db.doc(`users/${config.ownerId}/secrets/spotify`).get();
-        if (secretDoc.exists) {
-          const refreshToken = secretDoc.data()?.refreshToken;
-          if (refreshToken) {
-            spotifyService = SpotifyService.createForUser(refreshToken);
-          }
-        }
-      } catch (e) {
-        logger.error(`Failed to fetch Spotify credentials for user ${config.ownerId}`, e);
-      }
-    }
-
-    // SECURITY: Fail fast if no user token available (no global fallback)
-    if (!spotifyService) {
-      throw new Error(
-        `Cannot curate "${config.name}": Owner has not linked their Spotify account.`
-      );
+      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+        state: 'running',
+        progress: 10,
+        step: 'Fetching current tracks...',
+        isDryRun: !!config.dryRun
+      });
     }
 
     // 2. Fetch Current State & Metadata
@@ -101,8 +99,17 @@ export class PlaylistOrchestrator {
     const vipUris = config.mandatoryTracks.map((m) => m.uri);
     const currentSize = currentTracks.length;
 
+    if (config.ownerId) {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+        state: 'running',
+        progress: 25,
+        step: 'Analyzing and cleaning playlist...',
+        isDryRun: !!config.dryRun
+      });
+    }
+
     let keptTracks: TrackWithMeta[] = [];
-    let tracksToRemove: string[] = [];
+
     let slotsNeeded = 0;
 
     // 2. Logic Paths
@@ -115,7 +122,6 @@ export class PlaylistOrchestrator {
       // Path 2: Under Target (Standard Fill)
       const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
       keptTracks = result.keptTracks;
-      tracksToRemove = result.tracksToRemove;
       slotsNeeded = result.slotsNeeded;
     } else {
       // Path 3: Over Target (Aggressive Cleanup)
@@ -129,7 +135,7 @@ export class PlaylistOrchestrator {
       );
 
       keptTracks = result.keptTracks;
-      tracksToRemove = result.tracksToRemove;
+
       slotsNeeded = Math.max(0, targetTotal - keptTracks.length);
     }
 
@@ -165,6 +171,16 @@ export class PlaylistOrchestrator {
         logger.info(
           `[Attempt ${attempts}/${maxAttempts}] Requesting ${requestCount} tracks to fill gap of ${currentGap} (Ratio: ${ratio})...`
         );
+
+        if (config.ownerId) {
+          const progressStep = 30 + Math.floor((attempts / maxAttempts) * 50); // 30% to 80%
+          await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+            state: 'running',
+            progress: progressStep,
+            step: `Consulting AI (Attempt ${attempts}/${maxAttempts})...`,
+            isDryRun: !!config.dryRun
+          });
+        }
 
         // EXCLUDE: Pass distinct "Artist - Track" strings to the prompt to encourage variety
         // Existing `generateSuggestions` checks against this list semantically.
@@ -261,19 +277,25 @@ export class PlaylistOrchestrator {
       targetTotal
     );
 
-    // Re-derive survivorUris for diffing
-    const survivorUris = keptTracks.map((t) => t.uri);
-    // Determine all tracks that need to be added (AI tracks + missing VIPs)
-    const tracksToAdd = finalTrackList.filter((uri) => !survivorUris.includes(uri));
-
-    await spotifyService.performSmartUpdate(
-      playlistId,
-      tracksToRemove,
-      tracksToAdd,
+    // 4b. Calculate Diff for History (Logic extracted to clean helper)
+    const { added: addedDiff, removed: removedDiff } = DiffCalculator.calculate(
+      currentTracks,
+      keptTracks,
       finalTrackList,
-      dryRun,
-      vipUris
+      config.mandatoryTracks,
+      newAiStatus
     );
+
+    if (config.ownerId) {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+        state: 'running',
+        progress: 90,
+        step: 'Updating Spotify playlist...',
+        isDryRun: !!config.dryRun
+      });
+    }
+
+    await spotifyService.performSmartUpdate(playlistId, finalTrackList, dryRun, vipUris);
 
     logger.info(`Curation complete for ${config.name}.`, {
       playlistId,
@@ -296,11 +318,23 @@ export class PlaylistOrchestrator {
         `Successfully curated "${config.name}"`,
         {
           playlistId: config.id,
-          added: tracksToAdd.length,
-          removed: tracksToRemove.length,
+          added: addedDiff.length,
+          removed: removedDiff.length,
           dryRun
         }
       );
+
+      // Mark Complete with Diff
+      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+        state: 'completed',
+        progress: 100,
+        step: 'Done!',
+        diff: {
+          added: addedDiff,
+          removed: removedDiff
+        },
+        isDryRun: !!config.dryRun
+      });
     }
   }
 }

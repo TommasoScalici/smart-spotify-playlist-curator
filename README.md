@@ -1,6 +1,6 @@
 # Smart Spotify Playlist Curator
 
-> **Status**: v2.0.0 (Private Beta) | **License**: MIT
+> **Status**: v1.3.0 | **License**: MIT
 > **Stack**: React 19, Node 24, Firebase Gen 2, Gemini 2.5 Flash
 
 A powerful **Private Playlist Utility** that curates Spotify playlists for you and your friends using **Google Gemini 2.5 Flash**. Designed as a self-hosted tool for small groups (up to 25 users).

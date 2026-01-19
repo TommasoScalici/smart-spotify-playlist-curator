@@ -24,9 +24,9 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-[#050505] animate-in fade-in duration-1000">
+    <div className="min-h-screen flex items-center justify-center p-6 bg-background animate-in fade-in duration-1000 overflow-hidden relative">
       {/* Ambient Glow */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] pointer-events-none opacity-50" />
 
       <div className="relative w-full max-w-[400px] space-y-8 text-center">
         <div className="space-y-6">
@@ -54,14 +54,14 @@ export default function Login() {
           <Button
             onClick={handleLogin}
             size="lg"
-            className="w-full h-14 rounded-2xl bg-white text-black hover:bg-white/90 font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl"
+            className="w-full h-14 rounded-2xl bg-foreground text-background hover:bg-foreground/90 font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl"
           >
             <Chrome className="mr-2 h-5 w-5" />
             Sign in with Google
           </Button>
 
           <div className="flex items-center justify-center gap-4 text-[10px] text-muted-foreground font-bold uppercase tracking-widest opacity-40">
-            <span>v2.0 Beta</span>
+            <span>v1.3.0</span>
             <span className="h-1 w-1 bg-current rounded-full" />
             <span>OAuth 2.0</span>
           </div>

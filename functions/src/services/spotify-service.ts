@@ -468,8 +468,6 @@ export class SpotifyService {
    */
   public async performSmartUpdate(
     playlistId: string,
-    _tracksToRemove: string[],
-    _tracksToAdd: string[],
     targetOrderedUris: string[],
     dryRun: boolean = false,
     vipUris: string[] = []

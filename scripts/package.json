@@ -10,7 +10,6 @@
   "scripts": {
     "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
     "dry-run-check": "tsx src/dry-run-check.ts",
-    "seed-config": "tsx src/admin/seed-config.ts",
     "run-curator": "tsx src/run-curator.ts",
     "check-playlist": "tsx src/check-playlist.ts",
     "lint": "eslint ."

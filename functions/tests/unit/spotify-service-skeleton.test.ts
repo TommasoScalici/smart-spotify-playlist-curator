@@ -162,14 +162,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
     } as unknown);
 
     // Execute
-    await spotifyService.performSmartUpdate(
-      playlistId,
-      [], // tracksToRemove (legacy, ignored logic)
-      [], // tracksToAdd (legacy, ignored logic)
-      targetOrderedUris,
-      false,
-      vipUris
-    );
+    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
 
     // Assertions
 
@@ -249,7 +242,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
       body: { snapshot_id: 'snap2' }
     } as unknown);
 
-    await spotifyService.performSmartUpdate(playlistId, [], [], targetOrderedUris, false, vipUris);
+    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
 
     // 1. Remove: Nothing to remove.
     expect(mockSpotifyApi.removeTracksFromPlaylist).not.toHaveBeenCalled();

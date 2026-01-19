@@ -1,13 +1,20 @@
 import rootConfig from '../eslint.config.mjs';
+import prettier from 'eslint-config-prettier';
 
 export default [
   ...rootConfig,
   {
     ignores: ['lib/', 'node_modules/'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.json',
+        tsconfigRootDir: import.meta.dirname
+      }
+    },
     rules: {
-      'react-hooks/rules-of-hooks': 'off',
-      'react-refresh/only-export-components': 'off',
-      '@typescript-eslint/no-var-requires': 'off' // if needed for CJS
+      '@typescript-eslint/no-explicit-any': 'error',
+      '@typescript-eslint/no-unused-vars': 'warn'
     }
-  }
+  },
+  prettier
 ];

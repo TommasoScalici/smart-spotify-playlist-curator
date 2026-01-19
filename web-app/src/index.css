@@ -27,7 +27,7 @@
     --tertiary-foreground: 0 0% 100%;
 
     --muted: 40 15% 94%;
-    --muted-foreground: 240 5% 35%;
+    --muted-foreground: 240 5% 30%;
 
     --accent: 40 20% 94%;
     --accent-foreground: 240 6% 10%;
@@ -67,7 +67,7 @@
     --tertiary-foreground: 0 0% 0%;
 
     --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
+    --muted-foreground: 240 5% 70%;
 
     --accent: 240 3.7% 15.9%;
     --accent-foreground: 0 0% 98%;
