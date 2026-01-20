@@ -18,18 +18,21 @@ export class PlaylistOrchestrator {
     private firestoreLogger: FirestoreLogger
   ) {}
 
+  /**
+   * Curates a playlist by applying all configured rules and AI generation.
+   * @param config - Playlist configuration
+   * @param spotifyService - Spotify service instance for API calls
+   */
   public async curatePlaylist(
     config: PlaylistConfig,
-    spotifyService: SpotifyService,
-    runId?: string
+    spotifyService: SpotifyService
   ): Promise<void> {
     const { settings, dryRun } = config;
     const targetTotal = settings.targetTotalTracks;
 
     logger.info(`Starting curation for playlist: ${config.name}`, {
       playlistId: config.id,
-      dryRun,
-      runId
+      dryRun
     });
 
     if (config.ownerId) {
@@ -68,9 +71,6 @@ export class PlaylistOrchestrator {
     ]);
 
     // Update metadata in Firestore (background, don't await blocking)
-    // IMPORTANT: If we are 'usingUserToken', we might have permissions to update metadata on Spotify too if needed.
-    // For now, we update Firestore visual cache.
-    // For now, we update Firestore visual cache.
 
     let docRef;
     if (config.ownerId) {

@@ -34,7 +34,7 @@ describe('ConfigService', () => {
       overfetchRatio: 2.0,
       isInstrumentalOnly: false
     },
-    curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
+    curationRules: { maxTrackAgeDays: 30, removeDuplicates: true, maxTracksPerArtist: 2 },
     mandatoryTracks: []
   };
 

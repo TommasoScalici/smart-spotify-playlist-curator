@@ -20,7 +20,7 @@ import { PlaylistOrchestrator } from './core/orchestrator';
 import { TrackCleaner } from './core/track-cleaner';
 import { SlotManager } from './core/slot-manager';
 import { FirestoreLogger } from './services/firestore-logger';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { PlaylistConfig, OrchestrationResult } from '@smart-spotify-curator/shared';
 import { db } from './config/firebase';
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
@@ -109,7 +109,7 @@ export async function runOrchestrator(
   playlistId?: string,
   callerUid?: string,
   dryRunOverride?: boolean
-) {
+): Promise<OrchestrationResult> {
   const configService = new ConfigService();
   let configs: PlaylistConfig[] = [];
 
@@ -143,7 +143,7 @@ export async function runOrchestrator(
   const slotManager = new SlotManager();
   const firestoreLogger = new FirestoreLogger();
 
-  const results = [];
+  const results: OrchestrationResult['results'] = [];
 
   for (const playlistConfig of configs) {
     // Apply Dry Run Override if present

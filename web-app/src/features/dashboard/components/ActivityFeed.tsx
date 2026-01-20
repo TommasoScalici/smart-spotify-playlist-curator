@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Activity, Clock, Music } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useActivityFeed } from '../hooks/useActivityFeed';
+import { useActivityFeed } from '@/hooks/useActivityFeed';
 
 // Simple time ago formatter
 const formatTimeAgo = (isoString: string) => {

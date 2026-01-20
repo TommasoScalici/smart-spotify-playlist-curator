@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FunctionsService } from '../services/functions-service';
+import { FunctionsService } from '../../../services/functions-service';
 import { Loader2, Music, Disc, Check, ChevronsUpDown } from 'lucide-react';
 import {
   Command,
@@ -40,7 +40,6 @@ export const SpotifySearch = ({
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
 
-  // Debounce logic
   useEffect(() => {
     const timer = setTimeout(async () => {
       if (query && query.trim().length >= 3) {

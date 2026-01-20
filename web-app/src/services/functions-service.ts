@@ -1,11 +1,10 @@
 import { httpsCallable } from 'firebase/functions';
 import { functions } from './firebase';
-import { SpotifyProfile } from '@smart-spotify-curator/shared';
-
-export interface CurationResult {
-  message: string;
-  results: unknown[];
-}
+import {
+  SpotifyProfile,
+  OrchestrationResult,
+  OrchestrationResultSchema
+} from '@smart-spotify-curator/shared';
 
 export interface SpotifySearchResult {
   uri: string;
@@ -19,25 +18,30 @@ export interface SpotifySearchResult {
 export const FunctionsService = {
   /**
    * Triggers the curation orchestration manually.
-   * Calls the 'triggerCuration' Cloud Function.
+   * @param playlistId - Optional specific playlist ID to curate
+   * @param options - Optional configuration including dryRun flag
+   * @returns Curation result with message and results array
    */
   async triggerCuration(
     playlistId?: string,
     options?: { dryRun?: boolean }
-  ): Promise<CurationResult> {
-    const trigger = httpsCallable<{ playlistId?: string; dryRun?: boolean }, CurationResult>(
+  ): Promise<OrchestrationResult> {
+    const trigger = httpsCallable<{ playlistId?: string; dryRun?: boolean }, unknown>(
       functions,
       'triggerCuration'
     );
     const result = await trigger({ playlistId, dryRun: options?.dryRun });
-    return result.data;
+
+    // Validate response using Zod schema
+    const validated = OrchestrationResultSchema.parse(result.data);
+    return validated;
   },
 
   /**
    * Search Spotify for tracks or playlists via Cloud Function Proxy.
-   */
-  /**
-   * Search Spotify for tracks or playlists via Cloud Function Proxy.
+   * @param query - Search query string
+   * @param type - Type of search ('track' or 'playlist')
+   * @returns Array of search results
    */
   async searchSpotify(query: string, type: 'track' | 'playlist'): Promise<SpotifySearchResult[]> {
     const search = httpsCallable<
@@ -50,6 +54,9 @@ export const FunctionsService = {
 
   /**
    * Links a Spotify Account by exchanging the Auth Code.
+   * @param code - Authorization code from Spotify OAuth flow
+   * @param redirectUri - Redirect URI used in OAuth flow
+   * @returns Object with success status and optional profile data
    */
   async linkSpotifyAccount(
     code: string,
@@ -69,6 +76,8 @@ export const FunctionsService = {
 
   /**
    * Fetches real-time metrics for a playlist from Spotify API.
+   * @param playlistId - The Spotify playlist ID
+   * @returns Playlist metrics including followers, tracks, and last updated timestamp
    */
   async getPlaylistMetrics(playlistId: string): Promise<{
     followers: number;

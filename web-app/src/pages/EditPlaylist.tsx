@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FirestoreService } from '../services/firestore-service';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { ConfigEditor } from '../components/ConfigEditor';
+import { ConfigEditor } from '@/features/playlists/components/ConfigEditor';
 import { Loader2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { toast } from 'sonner';

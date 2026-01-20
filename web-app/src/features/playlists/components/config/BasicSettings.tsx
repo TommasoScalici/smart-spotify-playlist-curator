@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { SpotifySearch } from '../SpotifySearch';
+import { SpotifySearch } from '@/features/spotify/components/SpotifySearch';
 import { Music, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 

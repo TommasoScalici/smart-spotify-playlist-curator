@@ -11,8 +11,9 @@ service cloud.firestore {
       }
       
       match /secrets/{secretId} {
-        // SECURITY: Secrets (refresh tokens) are SERVER-ONLY readable.
-        // Clients can only write (link account) or delete (unlink account).
+        // SECURITY: Secrets (refresh tokens) are SERVER-ONLY.
+        // Written by Cloud Functions via Admin SDK (bypasses these rules).
+        // Clients can only delete (unlink account).
         allow read: if false;
         allow delete: if request.auth != null && request.auth.uid == userId;
       }

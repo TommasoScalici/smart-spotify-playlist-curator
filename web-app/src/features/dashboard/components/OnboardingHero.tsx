@@ -10,7 +10,7 @@ import {
   Users,
   ShieldCheck
 } from 'lucide-react';
-import { useSpotifyAuth } from '../hooks/useSpotifyAuth';
+import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
 import { cn } from '@/lib/utils';
 
 export const OnboardingHero = () => {
@@ -129,7 +129,7 @@ export const OnboardingHero = () => {
               className={cn(
                 'h-2 md:h-2.5 rounded-full transition-all duration-500 cursor-pointer hover:scale-110 active:scale-95',
                 idx === currentSlide
-                  ? 'w-8 md:w-10 bg-[#1DB954] shadow-[0_0_20px_rgba(29,185,84,0.8)] ring-2 ring-[#1DB954]/30'
+                  ? 'w-8 md:w-10 bg-primary shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 ring-primary/30'
                   : 'w-2 md:w-2.5 bg-foreground/30 dark:bg-white/40 hover:bg-foreground/50 dark:hover:bg-white/60 shadow-md'
               )}
             />
@@ -140,7 +140,7 @@ export const OnboardingHero = () => {
         <div className="pt-2 md:pt-4 space-y-3 md:space-y-6">
           <Button
             onClick={login}
-            className="group relative w-full sm:w-auto h-9 md:h-11 px-6 md:px-8 text-sm md:text-base font-bold bg-[#1DB954] hover:bg-[#1ed760] text-white shadow-[0_0_20px_rgba(29,185,84,0.3)] hover:shadow-[0_0_30px_rgba(29,185,84,0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
+            className="group relative w-full sm:w-auto h-9 md:h-11 px-6 md:px-8 text-sm md:text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <span className="relative flex items-center justify-center gap-2">

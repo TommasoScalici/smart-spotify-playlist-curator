@@ -79,7 +79,8 @@ export class TrackCleaner {
       }
 
       const count = artistCounts[track.artist] || 0;
-      if (count < 2) {
+      const limit = curationRules.maxTracksPerArtist ?? 2;
+      if (count < limit) {
         artistCounts[track.artist] = count + 1;
         tracksAfterArtistLimit.push(track);
       } else {

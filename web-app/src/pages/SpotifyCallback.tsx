@@ -23,16 +23,11 @@ export default function SpotifyCallback() {
     return code ? '' : 'No authentication code received from Spotify.';
   });
 
-  // Check if we are already linked (useful for manual navigation or race conditions)
   const { data: spotifyData } = useSpotifyStatus(user?.uid);
   const isActuallyLinked = spotifyData?.isLinked;
-
-  // Derived state to avoid sync setStatus in effect
   const effectiveStatus = isActuallyLinked ? 'success' : status;
 
-  // Effect for auto-navigation on success
   useEffect(() => {
-    // Only navigate if we are definitively successful
     if (effectiveStatus !== 'success') return;
 
     const timer = setTimeout(() => navigate('/'), 1200); // FASTER redirection
@@ -57,14 +52,10 @@ export default function SpotifyCallback() {
           import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`;
         const result = await FunctionsService.linkSpotifyAccount(code, redirectUri);
         if (result.success && result.profile) {
-          // Proactively seed the cache so all observers see the change immediately
           queryClient.setQueryData(['spotifyConnection', user.uid], {
             isLinked: true,
             profile: result.profile
           });
-          // NOTE: We do NOT invalidate queries here anymore.
-          // We trust the seeded data from the Cloud Function to be fresh.
-          // Invalidating immediately can race with the Firestore propagation delay.
         }
         setStatus('success');
       } catch (error) {
@@ -129,7 +120,7 @@ export default function SpotifyCallback() {
                 <h2 className="text-2xl font-bold tracking-tight">Successfully Linked!</h2>
                 <p className="text-muted-foreground">
                   Welcome back,{' '}
-                  <span className="text-white font-semibold">
+                  <span className="text-foreground font-semibold">
                     {spotifyData?.profile?.displayName || 'Music Lover'}
                   </span>
                   .

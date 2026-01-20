@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Plus, Trash2, Music, Loader2 } from 'lucide-react';
-import { SpotifySearch } from '../SpotifySearch';
+import { SpotifySearch } from '@/features/spotify/components/SpotifySearch';
 import { useQuery } from '@tanstack/react-query';
-import { FunctionsService } from '../../services/functions-service';
+import { FunctionsService } from '@/services/functions-service';
 
 interface TrackListSettingsProps {
   control: Control<PlaylistConfig>;

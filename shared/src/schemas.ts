@@ -26,6 +26,7 @@ export const AiGenerationConfigSchema = z.object({
 
 export const CurationRulesSchema = z.object({
   maxTrackAgeDays: z.number().min(1).default(30),
+  maxTracksPerArtist: z.number().min(1).default(2),
   removeDuplicates: z.boolean().default(true)
 });
 
@@ -61,8 +62,7 @@ export const PlaylistConfigSchema = z.object({
   name: z.string().min(3, { message: 'Name is too short' }),
   enabled: z.boolean().default(true),
   imageUrl: z.url().optional(),
-  ownerId: z.string().min(1, { message: 'Owner ID is required' }), // Added for Multi-Tenancy
-  owner: z.string().optional(), // Legacy field, consider removing later if redundant
+  ownerId: z.string().min(1, { message: 'Owner ID is required' }),
   dryRun: z.boolean().optional(),
   mandate: z.enum(['exact', 'flexible']).optional(),
   settings: PlaylistSettingsSchema,
@@ -117,3 +117,18 @@ export type PlaylistSettings = z.infer<typeof PlaylistSettingsSchema>;
 export type PositionRange = z.infer<typeof PositionRangeSchema>;
 export type CurationStatus = z.infer<typeof CurationStatusSchema>;
 export type CurationDiff = z.infer<typeof CurationDiffSchema>;
+
+// --- Orchestration Response Schema ---
+
+export const OrchestrationResultSchema = z.object({
+  message: z.string(),
+  results: z.array(
+    z.object({
+      name: z.string(),
+      status: z.enum(['success', 'error']),
+      error: z.string().optional()
+    })
+  )
+});
+
+export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;

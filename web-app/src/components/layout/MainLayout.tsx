@@ -8,10 +8,10 @@ import {
 } from '@/components/ui/sheet';
 import { useState } from 'react';
 import { Outlet, Link } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
-import { ModeToggle } from './mode-toggle';
+import { useAuth } from '../../contexts/AuthContext';
+import { ModeToggle } from '../common/ModeToggle';
 
-import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
+import { useSpotifyStatus } from '../../hooks/useSpotifyStatus';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -42,11 +42,11 @@ import {
   History as HistoryIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { FirestoreService } from '../services/firestore-service';
+import { FirestoreService } from '../../services/firestore-service';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
-export const Layout = () => {
+export const MainLayout = () => {
   const { user, signOut } = useAuth();
   const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
   const isSpotifyLinked = data?.isLinked;
@@ -132,7 +132,7 @@ export const Layout = () => {
                         className={cn(
                           'p-3 rounded-xl border transition-all',
                           isSpotifyLinked
-                            ? 'bg-[#1DB954]/10 border-[#1DB954]/30'
+                            ? 'bg-primary/10 border-primary/30'
                             : 'bg-destructive/10 border-destructive/30'
                         )}
                       >
@@ -142,7 +142,7 @@ export const Layout = () => {
                               className={cn(
                                 'h-8 w-8 rounded-lg flex items-center justify-center',
                                 isSpotifyLinked
-                                  ? 'bg-[#1DB954]/20 text-[#1DB954]'
+                                  ? 'bg-primary/20 text-primary'
                                   : 'bg-destructive/20 text-destructive'
                               )}
                             >
@@ -182,7 +182,7 @@ export const Layout = () => {
                           <Button
                             asChild
                             size="sm"
-                            className="w-full mt-2 bg-[#1DB954] hover:bg-[#1ed760] font-bold text-xs"
+                            className="w-full mt-2 bg-primary hover:bg-primary/90 font-bold text-xs"
                           >
                             <Link to="/" onClick={() => setIsSheetOpen(false)}>
                               Connect Account
@@ -202,7 +202,7 @@ export const Layout = () => {
                       <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
                         <div className="flex items-center gap-2">
                           <img
-                            src={user.photoURL || ''}
+                            src={user.photoURL || undefined}
                             alt="Profile"
                             className="h-8 w-8 rounded-full object-cover ring-1 ring-border"
                           />
@@ -259,7 +259,7 @@ export const Layout = () => {
                         data?.authError
                           ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 ring-1 ring-destructive/20 animate-pulse'
                           : isSpotifyLinked
-                            ? 'bg-[#1DB954]/10 text-[#1DB954] hover:bg-[#1DB954]/20 ring-1 ring-[#1DB954]/20'
+                            ? 'bg-primary/10 text-primary hover:bg-primary/20 ring-1 ring-primary/20'
                             : 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 ring-1 ring-destructive/50'
                       )}
                     >
@@ -274,14 +274,14 @@ export const Layout = () => {
                             <img
                               src={data.profile.avatarUrl}
                               alt="Spotify"
-                              className="h-5 w-5 rounded-full ring-1 ring-[#1DB954]/30"
+                              className="h-5 w-5 rounded-full ring-1 ring-primary/30"
                             />
                           ) : (
                             <CheckCircle2 className="h-4 w-4" />
                           )}
                           <span className="font-semibold text-xs transition-all whitespace-nowrap">
                             Connected:{' '}
-                            <span className="text-white">
+                            <span className="text-foreground">
                               {data?.profile?.displayName || 'Spotify'}
                             </span>
                           </span>
@@ -305,7 +305,7 @@ export const Layout = () => {
                         className="relative h-9 w-9 rounded-full p-0 overflow-hidden border border-input shadow-sm hover:ring-2 hover:ring-primary/20 transition-all"
                       >
                         <img
-                          src={user.photoURL || ''}
+                          src={user.photoURL || undefined}
                           alt="Profile"
                           className="h-full w-full object-cover"
                         />

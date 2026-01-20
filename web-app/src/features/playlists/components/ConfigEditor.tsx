@@ -3,7 +3,7 @@ import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/sha
 import { Save, Loader2 } from 'lucide-react';
 import { useForm, Resolver, useWatch } from 'react-hook-form';
 import { useQuery } from '@tanstack/react-query';
-import { FunctionsService } from '../services/functions-service';
+import { FunctionsService } from '@/services/functions-service';
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { BasicSettings } from './config/BasicSettings';

@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { FirestoreService } from '../services/firestore-service';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { PlaylistCard, PlaylistCardSkeleton } from '../components/PlaylistCard';
-import { RunButton } from '../components/RunButton';
-import { Plus } from 'lucide-react';
+import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
+import { RunButton } from '@/features/playlists/components/RunButton';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
-import { OnboardingHero } from '@/components/OnboardingHero';
-import { TutorialDialog } from '@/components/TutorialDialog';
-import { ActivityDrawer } from '../components/ActivityDrawer';
-import { History } from 'lucide-react';
+import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
+import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
+import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
+import { Plus, RefreshCcw, History } from 'lucide-react';
+import { useCallback } from 'react';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
@@ -25,28 +25,29 @@ export default function Dashboard() {
   const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
   const isSpotifyLinked = data?.isLinked;
 
+  const fetchPlaylists = useCallback(async () => {
+    if (!user?.uid) return;
+    try {
+      setLoading(true);
+      setError('');
+      const data = await FirestoreService.getUserPlaylists(user.uid);
+      setPlaylists(data);
+    } catch (e) {
+      console.error(e);
+      setError('Failed to load playlists.');
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user && isSpotifyLinked) {
-      const loadPlaylists = async (uid: string) => {
-        try {
-          setLoading(true);
-          const data = await FirestoreService.getUserPlaylists(uid);
-          setPlaylists(data);
-        } catch (e) {
-          console.error(e);
-          setError('Failed to load playlists.');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      loadPlaylists(user.uid);
+      fetchPlaylists();
     } else if (!checkingLink && !isSpotifyLinked) {
       setLoading(false);
     }
-  }, [user, isSpotifyLinked, checkingLink]);
+  }, [user, isSpotifyLinked, checkingLink, fetchPlaylists]);
 
-  // Loading state (initial check)
   if (checkingLink || (loading && isSpotifyLinked)) {
     return (
       <div className="container mx-auto p-4 md:p-6 max-w-7xl animate-pulse">
@@ -61,7 +62,6 @@ export default function Dashboard() {
     );
   }
 
-  // Not Connected State: Show Onboarding Hero exclusively
   if (!isSpotifyLinked) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center w-full min-h-full overflow-y-auto">
@@ -103,13 +103,20 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {
-        error && (
-          <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20">
-            {error}
-          </div>
-        ) /* ... hide error and content properly ... */
-      }
+      {error && (
+        <div className="bg-destructive/15 text-destructive p-4 rounded-md mb-6 text-sm font-medium border border-destructive/20 flex items-center justify-between">
+          <span>{error}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchPlaylists}
+            className="border-destructive/20 hover:bg-destructive/20 text-destructive hover:text-destructive"
+          >
+            <RefreshCcw className="h-4 w-4 mr-2" />
+            Retry
+          </Button>
+        </div>
+      )}
 
       {/* Content Area */}
       {playlists.length > 0 ? (

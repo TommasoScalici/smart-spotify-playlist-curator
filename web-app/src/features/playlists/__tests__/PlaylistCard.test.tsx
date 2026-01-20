@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { PlaylistCard } from './PlaylistCard';
+import { PlaylistCard } from '../components/PlaylistCard';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { FirestoreService } from '@/services/firestore-service';
 import { FunctionsService } from '@/services/functions-service';
@@ -20,7 +20,6 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
   _docId: 'doc123', // Firestore Doc ID
   name: 'Chill Vibes',
   ownerId: 'user123',
-  owner: 'Tommaso',
   enabled: true,
   settings: {
     description: 'My cool playlist',
@@ -34,7 +33,8 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
   },
   curationRules: {
     maxTrackAgeDays: 365,
-    removeDuplicates: true
+    removeDuplicates: true,
+    maxTracksPerArtist: 2
   },
   curationStatus: {
     state: 'idle',
@@ -73,15 +73,16 @@ describe('PlaylistCard', () => {
     (FunctionsService.getPlaylistMetrics as Mock).mockResolvedValue({
       followers: 10,
       tracks: 20,
-      lastUpdated: new Date().toISOString()
+      lastUpdated: new Date().toISOString(),
+      owner: 'Tommaso'
     });
   });
 
-  it('renders playlist details correctly', () => {
+  it('renders playlist details correctly', async () => {
     render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
 
     expect(screen.getByText('Chill Vibes')).toBeInTheDocument();
-    expect(screen.getByText('Tommaso')).toBeInTheDocument();
+    expect(await screen.findByText('Tommaso')).toBeInTheDocument();
   });
 
   it('toggles automation enabled state', async () => {

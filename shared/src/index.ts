@@ -9,7 +9,8 @@ export {
   SpotifyProfileSchema,
   PlaylistMetricsSchema,
   CurationStatusSchema,
-  CurationDiffSchema
+  CurationDiffSchema,
+  OrchestrationResultSchema
 } from './schemas';
 
 export type {
@@ -23,5 +24,6 @@ export type {
   SpotifyProfile,
   PlaylistMetrics,
   CurationStatus,
-  CurationDiff
+  CurationDiff,
+  OrchestrationResult
 } from './schemas';

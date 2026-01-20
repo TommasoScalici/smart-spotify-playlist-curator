@@ -22,7 +22,8 @@ describe('Core Logic', () => {
     },
     curationRules: {
       maxTrackAgeDays: 30,
-      removeDuplicates: true
+      removeDuplicates: true,
+      maxTracksPerArtist: 2
     },
     mandatoryTracks: [
       {

@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
-import { ProtectedRoute } from './components/ProtectedRoute';
-import { Layout } from './components/Layout';
+import { ProtectedRoute } from './components/common/ProtectedRoute';
+import { MainLayout } from './components/layout/MainLayout';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import SpotifyCallback from './pages/SpotifyCallback';
@@ -21,7 +21,7 @@ function App() {
           <Route
             element={
               <ProtectedRoute>
-                <Layout />
+                <MainLayout />
               </ProtectedRoute>
             }
           >

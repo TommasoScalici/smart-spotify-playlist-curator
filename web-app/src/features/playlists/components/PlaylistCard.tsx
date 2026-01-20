@@ -39,7 +39,12 @@ interface PlaylistCardProps {
   config: PlaylistConfig & { _docId: string };
 }
 
-// Deterministic gradient generator based on string ID
+/**
+ * Generates a deterministic gradient class based on playlist ID and enabled state.
+ * @param id - Playlist ID for deterministic color selection
+ * @param enabled - Whether the playlist is enabled
+ * @returns Tailwind gradient class string
+ */
 const getMoodGradient = (id: string, enabled: boolean) => {
   if (!enabled) return 'from-gray-500/10 to-gray-900/10';
 
@@ -62,7 +67,6 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
-  // Fetch real metrics from Spotify API
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['playlistMetrics', config.id],
     queryFn: () => FunctionsService.getPlaylistMetrics(config.id),
@@ -70,7 +74,6 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     retry: 1
   });
 
-  // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user?.uid) throw new Error('User not authenticated');
@@ -91,7 +94,6 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     }
   });
 
-  // Toggle enabled mutation
   const toggleEnabledMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       if (!user?.uid) throw new Error('User not authenticated');
@@ -116,7 +118,6 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     [config.id, config.enabled]
   );
 
-  // Format last updated timestamp
   const lastUpdatedText = metrics?.lastUpdated
     ? formatDistanceToNow(new Date(metrics.lastUpdated), { addSuffix: true })
     : '—';
@@ -184,7 +185,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
 
           <p className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider flex items-center gap-1.5">
             <Radio className="h-3 w-3" />
-            {config.owner || metrics?.owner || 'Smart Curator'}
+            {metrics?.owner || 'Smart Curator'}
           </p>
 
           <TooltipProvider>
@@ -207,7 +208,10 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
+                {toggleEnabledMutation.isPending && (
+                  <div className="animate-spin h-3 w-3 rounded-full border-2 border-primary border-t-transparent" />
+                )}
                 <Switch
                   checked={config.enabled}
                   onCheckedChange={(checked) => toggleEnabledMutation.mutate(checked)}

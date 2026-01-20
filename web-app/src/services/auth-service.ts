@@ -34,9 +34,9 @@ const MOCK_USER: FirebaseUser = {
 
 export const AuthService = {
   /**
-   * Sign in with Google Popup
-   * - Authenticates user
-   * - Syncs user profile to Firestore
+   * Sign in with Google Popup.
+   * Authenticates user and syncs profile to Firestore.
+   * @returns Promise resolving to the authenticated Firebase user
    */
   async signInWithGoogle(): Promise<FirebaseUser> {
     if (IS_DEBUG_MODE) {
@@ -58,12 +58,11 @@ export const AuthService = {
   },
 
   /**
-   * Sign Out
+   * Sign out the current user.
+   * @returns Promise that resolves when sign-out is complete
    */
   async signOut(): Promise<void> {
     if (IS_DEBUG_MODE) {
-      // In debug mode, we just let the state change handle it or we could use a custom event
-      // For now, reload the page to clear the mock state if needed, or just let onAuthStateChanged handle it
       return;
     }
     await signOut(auth);
@@ -72,6 +71,7 @@ export const AuthService = {
   /**
    * Sync Firebase Auth User to Firestore 'users' collection.
    * Creates doc if missing, updates 'lastLoginAt' always.
+   * @param user - The Firebase user to sync
    */
   async syncUserToFirestore(user: FirebaseUser): Promise<void> {
     if (!user) return;
@@ -82,10 +82,8 @@ export const AuthService = {
     const now = new Date();
 
     if (userSnap.exists()) {
-      // Update lastLoginAt
       await setDoc(userRef, { lastLoginAt: now }, { merge: true });
     } else {
-      // Create new User Profile
       const newProfile: UserProfile = {
         uid: user.uid,
         email: user.email || '',
@@ -96,19 +94,19 @@ export const AuthService = {
         theme: 'system'
       };
 
-      // Validate with Zod before writing
       const validProfile = UserSchema.parse(newProfile);
       await setDoc(userRef, validProfile);
     }
   },
 
   /**
-   * Observe Auth State
+   * Observe Auth State changes.
+   * @param callback - Function to call when auth state changes
+   * @returns Unsubscribe function
    */
   onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
     if (IS_DEBUG_MODE) {
       console.warn('[AUTH] Debug Mode Active: Triggering Mock Auth State');
-      // Delay slightly to simulate async check
       const timeout = setTimeout(() => callback(MOCK_USER), 100);
       return () => clearTimeout(timeout);
     }

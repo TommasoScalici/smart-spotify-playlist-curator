@@ -20,14 +20,11 @@ const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 export const FirestoreService = {
   /**
-   * Fetch all playlists from Firestore.
-   * Returns an array of PlaylistConfig objects with their Firestore Document ID attached.
-   */
-  /**
    * Fetch all playlists for a specific user.
+   * @param uid - The user ID
+   * @returns Array of playlist configurations with Firestore document IDs
    */
   async getUserPlaylists(uid: string): Promise<(PlaylistConfig & { _docId: string })[]> {
-    // Debug Mode: Return mock playlists
     if (IS_DEBUG_MODE) {
       console.warn('[FIRESTORE] Debug Mode: Returning Mock Playlists');
       return MOCK_PLAYLISTS;
@@ -50,6 +47,9 @@ export const FirestoreService = {
 
   /**
    * Create or Update a playlist configuration for a user.
+   * @param uid - The user ID
+   * @param config - Playlist configuration to save
+   * @param docId - Optional Firestore document ID for updates
    */
   async saveUserPlaylist(uid: string, config: PlaylistConfig, docId?: string): Promise<void> {
     const validatedData = PlaylistConfigSchema.parse(config);
@@ -59,7 +59,6 @@ export const FirestoreService = {
       targetDocRef = doc(db, 'users', uid, 'playlists', docId);
     } else {
       const playlistsRef = collection(db, 'users', uid, 'playlists');
-      // optional: check for dupes by config.id?
       const q = query(playlistsRef, where('id', '==', config.id));
       const snap = await getDocs(q);
 
@@ -75,6 +74,9 @@ export const FirestoreService = {
 
   /**
    * Fetch a single playlist by its ID for a user.
+   * @param uid - The user ID
+   * @param docId - The Firestore document ID
+   * @returns The playlist configuration or null if not found
    */
   async getUserPlaylistById(uid: string, docId: string): Promise<PlaylistConfig | null> {
     const docRef = doc(db, 'users', uid, 'playlists', docId);
@@ -92,6 +94,8 @@ export const FirestoreService = {
 
   /**
    * Delete a playlist configuration for a user.
+   * @param uid - The user ID
+   * @param docId - The Firestore document ID to delete
    */
   async deleteUserPlaylist(uid: string, docId: string): Promise<void> {
     const docRef = doc(db, 'users', uid, 'playlists', docId);
@@ -99,13 +103,11 @@ export const FirestoreService = {
   },
 
   /**
-   * Check if user has linked Spotify account.
-   */
-  /**
    * Check if user has linked Spotify account, and if it's valid.
+   * @param uid - The user ID
+   * @returns Object with isLinked status and optional authError
    */
   async checkSpotifyConnection(uid: string): Promise<{ isLinked: boolean; authError?: string }> {
-    // Debug Mode: Always return linked
     if (IS_DEBUG_MODE) {
       console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Connection');
       return { isLinked: true };
@@ -131,6 +133,7 @@ export const FirestoreService = {
 
   /**
    * Unlinks Spotify account by deleting the credentials and clearing profile info.
+   * @param uid - The user ID
    */
   async unlinkSpotifyAccount(uid: string): Promise<void> {
     const secretRef = doc(db, 'users', uid, 'secrets', 'spotify');
@@ -144,9 +147,10 @@ export const FirestoreService = {
 
   /**
    * Fetches the public Spotify Profile info stored on the user document.
+   * @param uid - The user ID
+   * @returns The Spotify profile or null if not found
    */
   async getSpotifyProfile(uid: string): Promise<SpotifyProfile | null> {
-    // Debug Mode: Return mock profile
     if (IS_DEBUG_MODE) {
       console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Profile');
       return {
@@ -166,8 +170,6 @@ export const FirestoreService = {
       const data = snapshot.data();
       const rawProfile = data.spotifyProfile;
       if (!rawProfile) return null;
-
-      // Handle Firestore Timestamp conversion without 'any'
       const linkedAt =
         rawProfile.linkedAt && typeof rawProfile.linkedAt.toDate === 'function'
           ? rawProfile.linkedAt.toDate()
