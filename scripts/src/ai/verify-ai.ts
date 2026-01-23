@@ -8,10 +8,11 @@ async function main() {
 
     const prompt = 'Suggest 3 upbeat pop songs from the 80s';
     const promptConfig = {
+      enabled: true,
+      tracksToAdd: 3,
       isInstrumentalOnly: false,
       model: 'gemini-2.5-flash',
-      temperature: 0.7,
-      overfetchRatio: 1.5
+      temperature: 0.7
     };
 
     console.log('Sending request to Gemini AI...');

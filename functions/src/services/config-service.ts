@@ -8,6 +8,7 @@ export class ConfigService {
   /**
    * Fetches all enabled playlist configurations from Firestore.
    * Validates each config against the Zod schema.
+   * @returns Array of validated PlaylistConfig objects
    */
   async getEnabledPlaylists(): Promise<PlaylistConfig[]> {
     try {
@@ -60,6 +61,8 @@ export class ConfigService {
 
   /**
    * Fetches a specific playlist configuration by ID.
+   * @param playlistId - The Spotify ID of the playlist
+   * @returns The validated configuration or null if not found
    */
   async getPlaylistConfig(playlistId: string): Promise<PlaylistConfig | null> {
     try {

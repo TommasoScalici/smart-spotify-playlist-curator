@@ -15,16 +15,17 @@ export interface ActivityLog {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Hook to fetch and stream real-time activity logs for the current user from Firestore.
+ * Handles conditional subscription based on user authentication status.
+ * @returns Object containing activities array and loading state
+ */
 export const useActivityFeed = () => {
   const { user } = useAuth();
 
-  // Ensure hooks are called unconditionally
-  // We use "internal" state to hold the data, but expose "derived" state consistent with the user presence.
   const [internalActivities, setInternalActivities] = useState<ActivityLog[]>([]);
   const [internalLoading, setInternalLoading] = useState(true);
 
-  // Derived state: If no user, we are effectively "not loading" and have "no activities".
-  // This avoids setting state synchronously in useEffect to clear data on logout.
   const activities = user ? internalActivities : [];
   const loading = user ? internalLoading : false;
 
@@ -32,11 +33,6 @@ export const useActivityFeed = () => {
     if (!user) {
       return;
     }
-
-    // Reset loading state for new user interaction?
-    // Note: Setting this here might trigger the same lint if done synchronously.
-    // However, usually we want to start loading.
-    // Let's rely on the subscription to update state quickly.
 
     const logsRef = collection(db, 'users', user.uid, 'logs');
     const q = query(logsRef, orderBy('timestamp', 'desc'), limit(50));

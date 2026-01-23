@@ -4,6 +4,11 @@ import { ProcessingResult, TrackWithMeta } from './types-internal';
 export class TrackCleaner {
   /**
    * Processes current tracks to apply VIP protection, age cleanup, and size limits.
+   * Steps:
+   * 1. Map to internal format and Identify VIPs
+   * 2. Remove tracks older than maxTrackAgeDays (unless VIP)
+   * 3. Enforce max tracks per artist (unless VIP)
+   * 4. Enforce hard size limit (removing oldest non-VIPs first)
    * @param currentTracks List of track objects from Spotify (must contain uri and added_at)
    * @param config The playlist configuration
    * @param vipUris Set or array of VIP track URIs
@@ -27,7 +32,6 @@ export class TrackCleaner {
 
     const now = new Date();
 
-    // 1. Map to internal format and Identify VIPs
     let tracks: TrackWithMeta[] = currentTracks.map((t, index) => {
       const addedAt = new Date(t.added_at);
       const isVip = vipUris.includes(t.track.uri);
@@ -47,7 +51,6 @@ export class TrackCleaner {
 
     const removedUris: string[] = [];
 
-    // 2. Age Cleanup
     tracks = tracks.filter((track) => {
       if (track.isVip) return true;
 
@@ -61,16 +64,11 @@ export class TrackCleaner {
       return true;
     });
 
-    // 3. Artist Limit (Max 2 per artist)
     // Group by artist
     const artistCounts: { [key: string]: number } = {};
     const tracksAfterArtistLimit: TrackWithMeta[] = [];
 
-    // Sort by age (newest first) to keep recent tracks when limiting?
-    // Or oldest first? Usually checking duplicates we keep oldest to respect "addedAt".
-    // But for "too many tracks", maybe we keep the ones that fit?
-    // Let's stick to standard order (usually oldest first from API) and filter.
-    // Actually, Spotify API returns oldest first usually.
+    // Process in order (oldest first)
 
     for (const track of tracks) {
       if (track.isVip) {
@@ -89,7 +87,6 @@ export class TrackCleaner {
     }
     tracks = tracksAfterArtistLimit;
 
-    // 4. Size Cleanup (Hard Limit)
     if (tracks.length > effectiveTarget) {
       const vips = tracks.filter((t) => t.isVip);
       let nonVips = tracks.filter((t) => !t.isVip);

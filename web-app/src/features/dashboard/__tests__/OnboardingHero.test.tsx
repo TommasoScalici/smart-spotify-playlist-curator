@@ -47,8 +47,10 @@ describe('OnboardingHero', () => {
   it('triggers login when connect button is clicked', () => {
     render(<OnboardingHero />);
 
-    const button = screen.getByTestId('connect-btn');
-    fireEvent.click(button);
+    const buttons = screen.getAllByRole('button');
+    // The last button should be the "Connect Spotify Account" button
+    const connectButton = buttons[buttons.length - 1];
+    fireEvent.click(connectButton);
 
     expect(mockLogin).toHaveBeenCalledTimes(1);
   });
@@ -56,8 +58,9 @@ describe('OnboardingHero', () => {
   it('auto-advances slides periodically', () => {
     render(<OnboardingHero />);
 
-    // Initial slide
-    const dots = screen.getAllByLabelText(/Go to slide/);
+    // Get all buttons - first 4 are pagination dots
+    const allButtons = screen.getAllByRole('button');
+    const dots = allButtons.slice(0, 4); // First 4 are pagination dots
     expect(dots[0]).toHaveClass('w-8'); // Active class check (simplified)
 
     // Advance time by 5s
@@ -72,7 +75,8 @@ describe('OnboardingHero', () => {
   it('allows manual navigation via pagination dots', () => {
     render(<OnboardingHero />);
 
-    const dots = screen.getAllByLabelText(/Go to slide/);
+    const allButtons = screen.getAllByRole('button');
+    const dots = allButtons.slice(0, 4); // First 4 are pagination dots
 
     fireEvent.click(dots[2]); // Click 3rd dot
 

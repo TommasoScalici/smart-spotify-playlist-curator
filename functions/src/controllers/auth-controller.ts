@@ -10,6 +10,10 @@ const ExchangeTokenSchema = z.object({
   redirectUri: z.string().url()
 });
 
+/**
+ * Cloud Function to exchange an OAuth2 Authorization Code for Spotify Tokens.
+ * Safely handles secret storage and profile syncing.
+ */
 export const exchangeSpotifyToken = functions.https.onCall(
   {
     cors: true,

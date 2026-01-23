@@ -15,6 +15,7 @@ export interface SearchResult {
   artist?: string; // For tracks
   owner?: string; // For playlists (display name)
   ownerId?: string; // For playlist ownership checking
+  description?: string; // For playlists
   imageUrl?: string;
   type: 'track' | 'playlist' | 'artist';
 }
@@ -24,7 +25,6 @@ export class SpotifyService {
   private spotifyApi: SpotifyWebApi;
   private tokenExpirationEpoch: number = 0;
 
-  // Make constructor public to allow per-user instantiation
   public constructor(userRefreshToken?: string) {
     this.spotifyApi = new SpotifyWebApi({
       clientId: config.SPOTIFY_CLIENT_ID,
@@ -42,6 +42,9 @@ export class SpotifyService {
 
   /**
    * Creates a new service instance for a specific user.
+   * @param refreshToken - The user's refresh token
+   * @param accessToken - Optional existing access token
+   * @returns A new SpotifyService instance configured for the user
    */
   public static createForUser(refreshToken: string, accessToken?: string): SpotifyService {
     const service = new SpotifyService(refreshToken);
@@ -53,6 +56,8 @@ export class SpotifyService {
 
   /**
    * Manually sets the access token and its expiration.
+   * @param token - The new access token
+   * @param expiresInSeconds - Time in seconds until token expires
    */
   public setAccessToken(token: string, expiresInSeconds: number): void {
     this.spotifyApi.setAccessToken(token);
@@ -145,6 +150,9 @@ export class SpotifyService {
 
   /**
    * Exchanges an authorization code for an Access Token and Refresh Token.
+   * @param code - The authorization code from the callback
+   * @param redirectUri - The redirect URI used in the auth request
+   * @returns Object containing the new access and refresh tokens
    */
   public async exchangeCode(
     code: string,
@@ -165,6 +173,7 @@ export class SpotifyService {
 
   /**
    * Fetches the current user's profile.
+   * @returns The user's Spotify profile
    */
   public async getMe(): Promise<SpotifyApi.CurrentUsersProfileResponse> {
     return this.executeWithRetry(async () => {
@@ -178,7 +187,7 @@ export class SpotifyService {
    */
   private async ensureAccessToken(): Promise<void> {
     const now = Date.now();
-    // Refresh if token is missing or expires in less than 5 minutes
+
     if (now + 5 * 60 * 1000 > this.tokenExpirationEpoch) {
       try {
         logger.info('Refreshing Spotify access token...');
@@ -250,7 +259,6 @@ export class SpotifyService {
   ): Promise<string | null> {
     if (totalTracks === 0) return null;
 
-    // Get the very last track added (if possible)
     // Spotify API allows offset up to totalTracks - 1
     const offset = Math.max(0, totalTracks - 1);
 
@@ -272,7 +280,6 @@ export class SpotifyService {
     const trackIds = uris.map((uri) => uri.replace('spotify:track:', ''));
     const allTracks: TrackInfo[] = [];
 
-    // Batch requests (limit 50 per call)
     for (let i = 0; i < trackIds.length; i += 50) {
       const batch = trackIds.slice(i, i + 50);
       await this.executeWithRetry(async () => {
@@ -290,6 +297,33 @@ export class SpotifyService {
       });
     }
     return allTracks;
+  }
+
+  /**
+   * Fetches complete track metadata including album art.
+   * Used for displaying track details in UI.
+   */
+  public async getTrackMetadata(trackUri: string): Promise<{
+    uri: string;
+    name: string;
+    artist: string;
+    imageUrl?: string;
+  } | null> {
+    const trackId = trackUri.replace('spotify:track:', '');
+
+    return this.executeWithRetry(async () => {
+      const response = await this.spotifyApi.getTrack(trackId);
+      const track = response.body;
+
+      if (!track) return null;
+
+      return {
+        uri: track.uri,
+        name: track.name,
+        artist: track.artists.map((a) => a.name).join(', '),
+        imageUrl: track.album.images[0]?.url
+      };
+    });
   }
 
   public async getPlaylistMetadata(
@@ -362,43 +396,98 @@ export class SpotifyService {
       const results: SearchResult[] = [];
 
       if (response.body.tracks) {
-        response.body.tracks.items.forEach((t) => {
-          results.push({
-            uri: t.uri,
-            name: t.name,
-            artist: t.artists.map((a) => a.name).join(', '),
-            imageUrl: t.album.images[0]?.url,
-            type: 'track'
+        response.body.tracks.items
+          .filter((t) => t !== null && t !== undefined)
+          .forEach((t) => {
+            results.push({
+              uri: t.uri,
+              name: t.name,
+              artist: t.artists.map((a) => a.name).join(', '),
+              imageUrl: t.album.images[0]?.url,
+              type: 'track'
+            });
           });
-        });
       }
 
       if (response.body.playlists) {
-        response.body.playlists.items.forEach((p) => {
-          results.push({
-            uri: p.uri,
-            name: p.name,
-            owner: p.owner.display_name,
-            ownerId: p.owner.id,
-            imageUrl: p.images[0]?.url,
-            type: 'playlist'
+        response.body.playlists.items
+          .filter((p) => p !== null && p !== undefined)
+          .forEach((p) => {
+            results.push({
+              uri: p.uri,
+              name: p.name,
+              owner: p.owner.display_name,
+              ownerId: p.owner.id,
+              description: p.description || '',
+              imageUrl: p.images[0]?.url,
+              type: 'playlist'
+            });
           });
-        });
       }
 
       if (response.body.artists) {
-        response.body.artists.items.forEach((a) => {
-          results.push({
-            uri: a.uri,
-            name: a.name,
-            imageUrl: a.images[0]?.url,
-            type: 'artist'
+        response.body.artists.items
+          .filter((a) => a !== null && a !== undefined)
+          .forEach((a) => {
+            results.push({
+              uri: a.uri,
+              name: a.name,
+              imageUrl: a.images[0]?.url,
+              type: 'artist'
+            });
           });
-        });
       }
 
       return results;
     });
+  }
+
+  /**
+   * Fetches all playlists owned by the current user.
+   * Filters out saved/followed playlists to only return playlists created by the user.
+   */
+  public async getUserPlaylists(): Promise<SearchResult[]> {
+    const results: SearchResult[] = [];
+    let offset = 0;
+    const limit = 50;
+    let hasMore = true;
+
+    // Get current user's ID first
+    const userProfile = await this.getMe();
+    const currentUserId = userProfile.id;
+
+    await this.executeWithRetry(async () => {
+      while (hasMore) {
+        const response = await this.spotifyApi.getUserPlaylists({ offset, limit });
+        const items = response.body.items;
+
+        items.forEach((p) => {
+          // Only include playlists owned by the current user
+          if (p.owner.id === currentUserId) {
+            results.push({
+              uri: p.uri,
+              name: p.name,
+              owner: p.owner.display_name,
+              ownerId: p.owner.id,
+              description: p.description || '',
+              imageUrl: p.images[0]?.url,
+              type: 'playlist'
+            });
+          }
+        });
+
+        if (items.length < limit) {
+          hasMore = false;
+        } else {
+          offset += limit;
+        }
+
+        // Safety cap to avoid excessive memory usage in serverless
+        if (offset >= 500) hasMore = false;
+      }
+    });
+
+    return results;
   }
 
   public async removeTracks(

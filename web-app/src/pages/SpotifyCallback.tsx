@@ -30,7 +30,8 @@ export default function SpotifyCallback() {
   useEffect(() => {
     if (effectiveStatus !== 'success') return;
 
-    const timer = setTimeout(() => navigate('/'), 1200); // FASTER redirection
+    const timer = setTimeout(() => navigate('/'), 1200);
+
     return () => clearTimeout(timer);
   }, [effectiveStatus, navigate]);
 
@@ -39,8 +40,6 @@ export default function SpotifyCallback() {
       return;
     }
 
-    // CRITICAL: If data confirms we are already linked, DON'T attempt to exchange code again.
-    // This prevents the "Link FAILED" error on page refresh if the link was actually successful.
     if (!code || !user || linkingRef.current || isActuallyLinked) {
       return;
     }

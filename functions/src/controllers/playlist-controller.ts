@@ -14,14 +14,16 @@ const PlaylistMetricsSchema = z.object({
   tracks: z.number(),
   lastUpdated: z.string(), // ISO 8601 timestamp
   imageUrl: z.string().url().optional().nullable(),
-  owner: z.string().optional()
+  owner: z.string().optional(),
+  description: z.string().optional()
 });
 
 import { db } from '../config/firebase';
 
 /**
  * Cloud Function: getPlaylistMetrics
- * Fetches real-time metrics for a playlist from Spotify API
+ * Fetches real-time metrics for a playlist from Spotify API.
+ * Handles token refresh and metadata repair if needed.
  */
 export const getPlaylistMetrics = onCall(
   {
@@ -96,7 +98,8 @@ export const getPlaylistMetrics = onCall(
         tracks: playlistData.totalTracks || 0,
         lastUpdated: latestActivity,
         imageUrl: playlistData.imageUrl,
-        owner: playlistData.owner
+        owner: playlistData.owner,
+        description: playlistData.description
       };
 
       // Validate response

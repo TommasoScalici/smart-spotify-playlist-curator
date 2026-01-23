@@ -27,9 +27,10 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
   },
   mandatoryTracks: [],
   aiGeneration: {
+    enabled: true,
+    tracksToAdd: 10,
     model: 'gemini-1.5-flash',
-    temperature: 0.7,
-    overfetchRatio: 1.5
+    temperature: 0.7
   },
   curationRules: {
     maxTrackAgeDays: 365,

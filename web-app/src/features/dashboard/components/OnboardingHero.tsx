@@ -64,29 +64,29 @@ export const OnboardingHero = () => {
   }, [features.length]);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl w-full max-w-4xl bg-card/80 dark:bg-card/95 backdrop-blur-3xl border-2 border-border/50 shadow-2xl flex flex-col items-center p-4 sm:p-6 md:p-8 text-center animate-in fade-in zoom-in-95 duration-1000 transition-all min-h-fit mx-auto my-auto ring-1 ring-black/5 dark:ring-white/5">
+    <div className="relative overflow-hidden rounded-3xl w-full max-w-4xl bg-card/80 dark:bg-card/95 backdrop-blur-3xl border-2 border-border/50 shadow-2xl flex flex-col items-center p-6 sm:p-8 md:p-10 text-center animate-in fade-in zoom-in-95 duration-1000 transition-all min-h-[500px] sm:min-h-fit mx-4 sm:mx-auto my-auto ring-1 ring-black/5 dark:ring-white/5">
       {/* Dynamic Ambient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 z-0" />
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 z-0 pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-2xl space-y-3 md:space-y-6">
-        <div className="space-y-1.5 md:space-y-3">
-          <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-primary/10 text-primary mb-0.5 ring-1 ring-primary/20 shadow-2xl shadow-primary/20 backdrop-blur-xl animate-bounce-subtle">
-            <Music className="h-5 w-5 md:h-7 md:w-7" />
+      <div className="relative z-10 w-full max-w-2xl space-y-6 md:space-y-8">
+        <div className="space-y-3 md:space-y-4">
+          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 text-primary mb-1 ring-1 ring-primary/20 shadow-2xl shadow-primary/20 backdrop-blur-xl animate-bounce-subtle">
+            <Music className="h-7 w-7 md:h-8 md:w-8" />
           </div>
-          <div className="space-y-1 px-2">
-            <h1 className="text-xl sm:text-2xl md:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
+          <div className="space-y-2 px-2">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
               Elevate Your <span className="text-primary">Spotify Experience</span>
             </h1>
-            <p className="text-[11px] sm:text-sm md:text-base text-foreground/70 max-w-md mx-auto leading-relaxed font-medium">
+            <p className="text-sm sm:text-base md:text-lg text-foreground/70 max-w-md mx-auto leading-relaxed font-medium">
               Connect to unleash professional-grade playlist automation powered by AI.
             </p>
           </div>
         </div>
 
-        {/* Feature Slideshow - Ultra Compact */}
-        <div className="relative min-h-[80px] md:min-h-[120px] w-full max-w-xl mx-auto flex items-center justify-center">
+        {/* Feature Slideshow */}
+        <div className="relative min-h-[120px] md:min-h-[140px] w-full max-w-xl mx-auto flex items-center justify-center">
           {features.map((feature, idx) => (
             <div
               key={idx}
@@ -99,19 +99,19 @@ export const OnboardingHero = () => {
             >
               <div
                 className={cn(
-                  'p-2 md:p-3 rounded-full ring-1 shadow-lg shrink-0',
+                  'p-3 md:p-4 rounded-full ring-1 shadow-lg shrink-0',
                   feature.bg,
                   feature.color,
                   feature.border
                 )}
               >
-                <feature.icon className="h-3.5 w-3.5 md:h-5 md:w-5" />
+                <feature.icon className="h-5 w-5 md:h-6 md:w-6" />
               </div>
-              <div className="space-y-0.5 px-4">
-                <h3 className="text-sm md:text-lg font-bold tracking-tight text-foreground">
+              <div className="space-y-1 px-4">
+                <h3 className="text-base md:text-xl font-bold tracking-tight text-foreground">
                   {feature.title}
                 </h3>
-                <p className="hidden xs:block text-foreground/60 text-[10px] md:text-sm max-w-sm mx-auto italic leading-tight">
+                <p className="text-foreground/60 text-xs md:text-sm max-w-sm mx-auto italic leading-tight">
                   "{feature.description}"
                 </p>
               </div>
@@ -122,12 +122,14 @@ export const OnboardingHero = () => {
         {/* Pagination Dots */}
         <div className="flex justify-center gap-2.5 md:gap-3">
           {features.map((_, idx) => (
-            <button
+            <Button
               key={idx}
+              variant="ghost"
+              size="sm"
               onClick={() => setCurrentSlide(idx)}
               aria-label={`Go to slide ${idx + 1}`}
               className={cn(
-                'h-2 md:h-2.5 rounded-full transition-all duration-500 cursor-pointer hover:scale-110 active:scale-95',
+                'p-0 h-2 md:h-2.5 rounded-full transition-all duration-500 hover:scale-110 active:scale-95',
                 idx === currentSlide
                   ? 'w-8 md:w-10 bg-primary shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 ring-primary/30'
                   : 'w-2 md:w-2.5 bg-foreground/30 dark:bg-white/40 hover:bg-foreground/50 dark:hover:bg-white/60 shadow-md'
@@ -137,10 +139,10 @@ export const OnboardingHero = () => {
         </div>
 
         {/* CTA */}
-        <div className="pt-2 md:pt-4 space-y-3 md:space-y-6">
+        <div className="pt-4 md:pt-6 space-y-4 md:space-y-6">
           <Button
             onClick={login}
-            className="group relative w-full sm:w-auto h-9 md:h-11 px-6 md:px-8 text-sm md:text-base font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
+            className="group relative w-full sm:w-auto h-12 md:h-13 px-8 md:px-10 text-base md:text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <span className="relative flex items-center justify-center gap-2">
@@ -149,15 +151,15 @@ export const OnboardingHero = () => {
             </span>
           </Button>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-3 md:gap-x-5 gap-y-1.5 text-[8px] md:text-[10px] text-foreground/50 uppercase tracking-widest font-bold px-4">
-            <span className="flex items-center gap-1 whitespace-nowrap">
-              <Zap className="h-2.5 w-2.5" /> Fully Automated
+          <div className="flex flex-wrap items-center justify-center gap-x-4 md:gap-x-6 gap-y-2 text-[10px] md:text-xs text-foreground/50 uppercase tracking-widest font-bold px-4">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Zap className="h-3 w-3" /> Fully Automated
             </span>
-            <span className="flex items-center gap-1 whitespace-nowrap">
-              <ShieldCheck className="h-2.5 w-2.5" /> Secure OAuth
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <ShieldCheck className="h-3 w-3" /> Secure OAuth
             </span>
-            <span className="flex items-center gap-1 whitespace-nowrap">
-              <CheckCircle2 className="h-2.5 w-2.5" /> Multi-Tenant
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <CheckCircle2 className="h-3 w-3" /> Multi-Tenant
             </span>
           </div>
         </div>

@@ -99,7 +99,7 @@ export default function EditPlaylist() {
         <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
         <div className="absolute bottom-0 left-0 p-24 bg-secondary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
 
-        <ConfigEditor initialConfig={config} onSubmit={handleSave} />
+        <ConfigEditor initialConfig={config} onSubmit={handleSave} isAddMode={isNew} />
       </div>
     </div>
   );

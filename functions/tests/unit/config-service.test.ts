@@ -5,7 +5,6 @@ import * as logger from 'firebase-functions/logger';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 // Mock dependencies
-// Mock dependencies
 vi.mock('../../src/config/firebase', () => ({
   db: {
     collection: vi.fn(),
@@ -22,16 +21,17 @@ describe('ConfigService', () => {
   let mockGet: ReturnType<typeof vi.fn>;
 
   const mockConfig: PlaylistConfig = {
-    id: 'spotify:playlist:49NveLmBkE159Zt6g0Novv', // Valid 22-char ID
+    id: 'spotify:playlist:49NveLmBkE159Zt6g0Novv',
     name: 'Test Playlist',
     ownerId: 'test-user',
     enabled: true,
-    dryRun: false, // Defaulted by Zod
+    dryRun: false,
     settings: { targetTotalTracks: 10 },
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 10,
       model: 'gemini-2.5-flash',
       temperature: 0.7,
-      overfetchRatio: 2.0,
       isInstrumentalOnly: false
     },
     curationRules: { maxTrackAgeDays: 30, removeDuplicates: true, maxTracksPerArtist: 2 },

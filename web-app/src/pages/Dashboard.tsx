@@ -64,7 +64,7 @@ export default function Dashboard() {
 
   if (!isSpotifyLinked) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center w-full min-h-full overflow-y-auto">
+      <div className="flex-1 flex flex-col items-center justify-center w-full min-h-full overflow-y-auto p-4 sm:p-6 md:p-8">
         <OnboardingHero />
       </div>
     );

@@ -40,9 +40,10 @@ describe('AiService', () => {
   });
 
   const mockPromptConfig: AiGenerationConfig = {
+    enabled: true,
+    tracksToAdd: 5,
     model: 'gemini-2.5-flash',
     temperature: 0.7,
-    overfetchRatio: 2.0,
     isInstrumentalOnly: false
   };
 

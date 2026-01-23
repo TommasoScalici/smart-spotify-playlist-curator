@@ -3,6 +3,12 @@ import { MandatoryTrack } from '@smart-spotify-curator/shared';
 export class SlotManager {
   /**
    * Arranges tracks into the playlist grid according to VIP rules and filling remaining slots with shuffled content.
+   * Steps:
+   * 1. Grid Initialization
+   * 2. Phase A: Fixed Positions (min == max)
+   * 3. Phase B: Ranged VIPs (min != max)
+   * 4. Phase C: Stratified Fill (Top 30 Priority for AI)
+   * 5. Phase D: Smart Shuffle & Fill Remaining
    * @param mandatoryTracks List of mandatory tracks with position ranges
    * @param survivorTracks URIs of existing tracks that survived cleaning
    * @param newAiTracks URIs of newly generated AI tracks
@@ -15,10 +21,8 @@ export class SlotManager {
     newAiTracks: { uri: string; artist: string }[],
     totalSlots: number
   ): string[] {
-    // 1. Grid Initialization
     const playlist: (string | null)[] = new Array(totalSlots).fill(null);
 
-    // 2. Phase A: Fixed Positions (min == max)
     for (const meta of mandatoryTracks) {
       const { min, max } = meta.positionRange;
       if (min === max) {
@@ -29,7 +33,6 @@ export class SlotManager {
       }
     }
 
-    // 3. Phase B: Ranged VIPs (min != max)
     for (const meta of mandatoryTracks) {
       const { min, max } = meta.positionRange;
       if (min !== max) {
@@ -65,7 +68,6 @@ export class SlotManager {
       }
     }
 
-    // 4. Phase C: Stratified Fill (Top 30 Priority for AI)
     const topSlotsLimit = 30;
     const newAiTracksPool = [...newAiTracks]; // Copy to mutate
 
@@ -76,7 +78,6 @@ export class SlotManager {
       }
     }
 
-    // 5. Phase D: Smart Shuffle & Fill Remaining
     const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
     // Pool = Survivors + Remaining AI (minus mandatory)
     const pool = [...survivorTracks, ...newAiTracksPool].filter((t) => !mandatoryUris.has(t.uri));
@@ -136,5 +137,76 @@ export class SlotManager {
     }
 
     return playlist.filter((uri): uri is string => uri !== null);
+  }
+  /**
+   * Shuffles tracks while enforcing a minimum distance between tracks by the same artist.
+   * Shuffles tracks while enforcing a minimum distance between tracks by the same artist.
+   * Steps:
+   * 1. Bucket by Artist and shuffle internally
+   * 2. Build playlist using "most remaining tracks" heuristic
+   * 3. Update history to enforce minimum distance
+   */
+  public shuffleWithRules(
+    tracks: { uri: string; artist: string; name?: string }[],
+    minArtistDistance = 3
+  ): string[] {
+    const artistBuckets: Record<string, { uri: string; artist: string; name?: string }[]> = {};
+    for (const t of tracks) {
+      if (!artistBuckets[t.artist]) artistBuckets[t.artist] = [];
+      artistBuckets[t.artist].push(t);
+    }
+
+    // Shuffle each bucket internally to randomize track order for that artist
+    for (const artist in artistBuckets) {
+      this.shuffleArray(artistBuckets[artist]);
+    }
+
+    const playlist: string[] = [];
+    const history: string[] = []; // Track recent artists
+    const totalTracks = tracks.length;
+
+    for (let i = 0; i < totalTracks; i++) {
+      // Find valid candidates (artists with tracks remaining who are NOT in recent history)
+      const allArtists = Object.keys(artistBuckets).filter((a) => artistBuckets[a].length > 0);
+
+      let validCandidates = allArtists.filter((a) => !history.includes(a));
+
+      // If everyone is on cooldown/restricted, we must break the rule.
+      // In that case, pick from all available artists.
+      if (validCandidates.length === 0) {
+        validCandidates = allArtists;
+      }
+
+      if (validCandidates.length === 0) break; // Should not happen if i < totalTracks
+
+      // Heuristic: Pick the artist with the MOST remaining tracks to avoid running out of "buffer" later.
+      // If ties, pick random among top.
+      validCandidates.sort((a, b) => artistBuckets[b].length - artistBuckets[a].length);
+
+      const bestCount = artistBuckets[validCandidates[0]].length;
+      const topCandidates = validCandidates.filter((a) => artistBuckets[a].length === bestCount);
+      const chosenArtist = topCandidates[Math.floor(Math.random() * topCandidates.length)];
+
+      // Place track
+      const track = artistBuckets[chosenArtist].pop();
+      if (track) {
+        playlist.push(track.uri);
+
+        // Update History
+        history.push(chosenArtist);
+        if (history.length > minArtistDistance) {
+          history.shift();
+        }
+      }
+    }
+
+    return playlist;
+  }
+
+  private shuffleArray<T>(array: T[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
   }
 }

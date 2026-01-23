@@ -36,9 +36,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       }
     ],
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 10,
       model: 'gemini-2.5-flash',
       temperature: 0.7,
-      overfetchRatio: 2.0,
       isInstrumentalOnly: true
     },
     curationRules: {
@@ -62,9 +63,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     },
     mandatoryTracks: [],
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 5,
       model: 'gemini-2.5-flash',
       temperature: 0.8,
-      overfetchRatio: 2.5,
       isInstrumentalOnly: false
     },
     curationRules: {
@@ -101,9 +103,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       }
     ],
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 15,
       model: 'gemini-2.5-flash',
       temperature: 0.9,
-      overfetchRatio: 3.0,
       isInstrumentalOnly: false
     },
     curationRules: {
@@ -127,9 +130,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     },
     mandatoryTracks: [],
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 8,
       model: 'gemini-2.5-flash',
       temperature: 0.6,
-      overfetchRatio: 1.5,
       isInstrumentalOnly: true
     },
     curationRules: {
@@ -160,9 +164,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       }
     ],
     aiGeneration: {
+      enabled: true,
+      tracksToAdd: 12,
       model: 'gemini-2.5-flash',
       temperature: 0.7,
-      overfetchRatio: 2.0,
       isInstrumentalOnly: false
     },
     curationRules: {

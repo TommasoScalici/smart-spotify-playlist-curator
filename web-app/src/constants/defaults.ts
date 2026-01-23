@@ -9,9 +9,10 @@ export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
     referenceArtists: []
   },
   aiGeneration: {
+    enabled: true,
+    tracksToAdd: 10,
     model: 'gemini-2.5-flash',
-    temperature: 0.7,
-    overfetchRatio: 2.0
+    temperature: 0.7
   },
   curationRules: {
     maxTrackAgeDays: 365,

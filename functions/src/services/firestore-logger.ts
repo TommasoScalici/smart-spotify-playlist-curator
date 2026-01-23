@@ -6,6 +6,10 @@ export type ActivityType = 'success' | 'info' | 'warning' | 'error';
 export class FirestoreLogger {
   /**
    * Logs a user-facing activity to Firestore.
+   * @param ownerId - The ID of the user owning the activity
+   * @param type - The severity type of the activity
+   * @param message - The human-readable message to log
+   * @param metadata - Optional key-value metadata to attach
    */
   async logActivity(
     ownerId: string,
@@ -31,12 +35,14 @@ export class FirestoreLogger {
           read: false
         });
     } catch (error) {
-      // Don't fail the curation just because logging failed
       logger.error('Failed to write activity log to Firestore:', error);
     }
   }
   /**
    * Updates the curation status for a specific playlist.
+   * @param ownerId - The ID of the playlist owner
+   * @param playlistId - The ID of the playlist being updated
+   * @param status - The status object containing state, progress, and diff
    */
   async updateCurationStatus(
     ownerId: string,
@@ -62,7 +68,6 @@ export class FirestoreLogger {
         }
       });
     } catch (error) {
-      // Log but don't throw, as status updates shouldn't fail the job
       logger.warn('Failed to update curation status', error);
     }
   }

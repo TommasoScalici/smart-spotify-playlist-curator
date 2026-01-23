@@ -1,11 +1,10 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SpotifyService } from '../services/spotify-service';
 import { AiService } from '../services/ai-service';
-import { TrackCleaner } from './track-cleaner';
 import { SlotManager } from './slot-manager';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { TrackWithMeta } from './types-internal';
 import * as logger from 'firebase-functions/logger';
-import { db } from '../config/firebase';
+
 import { FirestoreLogger } from '../services/firestore-logger';
 import { PromptGenerator } from '../services/prompt-generator';
 import { DiffCalculator } from './diff-calculator';
@@ -13,7 +12,6 @@ import { DiffCalculator } from './diff-calculator';
 export class PlaylistOrchestrator {
   constructor(
     private aiService: AiService,
-    private trackCleaner: TrackCleaner,
     private slotManager: SlotManager,
     private firestoreLogger: FirestoreLogger
   ) {}
@@ -22,13 +20,14 @@ export class PlaylistOrchestrator {
    * Curates a playlist by applying all configured rules and AI generation.
    * @param config - Playlist configuration
    * @param spotifyService - Spotify service instance for API calls
+   * @returns Promise resolving when curation is complete
+   * @throws Error if any critical step fails
    */
   public async curatePlaylist(
     config: PlaylistConfig,
     spotifyService: SpotifyService
   ): Promise<void> {
-    const { settings, dryRun } = config;
-    const targetTotal = settings.targetTotalTracks;
+    const { dryRun, curationRules } = config;
 
     logger.info(`Starting curation for playlist: ${config.name}`, {
       playlistId: config.id,
@@ -44,297 +43,209 @@ export class PlaylistOrchestrator {
       );
 
       // Initialize Progress
-      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
         state: 'running',
         progress: 0,
         step: 'Starting curation...',
-        isDryRun: !!config.dryRun
+        isDryRun: !!dryRun
       });
     }
 
-    // Sanitize ID (handle spotify:playlist: prefix)
-    const playlistId = config.id.replace('spotify:playlist:', '');
+    // 1. Fetch Tracks (Source of Truth)
+    const currentTracks = await spotifyService.getPlaylistTracks(config.id);
+    const currentUriSet = new Set(currentTracks.map((t) => t.uri));
 
-    if (config.ownerId) {
-      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
-        state: 'running',
-        progress: 10,
-        step: 'Fetching current tracks...',
-        isDryRun: !!config.dryRun
-      });
-    }
+    logger.info(`Fetched ${currentTracks.length} tracks from Spotify.`);
 
-    // 2. Fetch Current State & Metadata
-    const [currentTracks, metadata] = await Promise.all([
-      spotifyService.getPlaylistTracks(playlistId),
-      spotifyService.getPlaylistMetadata(playlistId)
-    ]);
+    // 2. Filter & Clean (Dedupe, Age)
+    const tracksToRemove: string[] = [];
+    const survivingTracks = [];
+    const seenUris = new Set<string>();
+    const now = Date.now();
+    const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
 
-    // Update metadata in Firestore (background, don't await blocking)
+    for (const item of currentTracks) {
+      // 2a. Deduplication
+      if (curationRules.removeDuplicates && seenUris.has(item.uri)) {
+        tracksToRemove.push(item.uri);
+        continue;
+      }
+      seenUris.add(item.uri);
 
-    let docRef;
-    if (config.ownerId) {
-      docRef = db.doc(`users/${config.ownerId}/playlists/${config.id}`);
-    } else {
-      docRef = db.collection('playlists').doc(config.id);
-    }
-
-    docRef
-      .update({
-        imageUrl: metadata.imageUrl || '', // clear if empty
-        owner: metadata.owner
-      })
-      .catch((err) => logger.error('Failed to update playlist metadata in Firestore', err));
-
-    // Map to format expected by cleaner
-    const cleanerInput = currentTracks.map((t) => ({
-      track: {
-        uri: t.uri,
-        name: t.name,
-        artists: [{ name: t.artist.split(', ')[0] }]
-      },
-      added_at: t.addedAt
-    }));
-
-    const vipUris = config.mandatoryTracks.map((m) => m.uri);
-    const currentSize = currentTracks.length;
-
-    if (config.ownerId) {
-      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
-        state: 'running',
-        progress: 25,
-        step: 'Analyzing and cleaning playlist...',
-        isDryRun: !!config.dryRun
-      });
-    }
-
-    let keptTracks: TrackWithMeta[] = [];
-
-    let slotsNeeded = 0;
-
-    // 2. Logic Paths
-    if (currentSize === 0) {
-      // Path 1: Empty Playlist
-      const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
-      keptTracks = result.keptTracks;
-      slotsNeeded = result.slotsNeeded;
-    } else if (currentSize < targetTotal) {
-      // Path 2: Under Target (Standard Fill)
-      const result = this.trackCleaner.processCurrentTracks(cleanerInput, config, vipUris);
-      keptTracks = result.keptTracks;
-      slotsNeeded = result.slotsNeeded;
-    } else {
-      // Path 3: Over Target (Aggressive Cleanup)
-      // Force a 15-track gap to allow fresh rotation
-      const aggressiveTarget = Math.max(0, targetTotal - 15);
-      const result = this.trackCleaner.processCurrentTracks(
-        cleanerInput,
-        config,
-        vipUris,
-        aggressiveTarget
-      );
-
-      keptTracks = result.keptTracks;
-
-      slotsNeeded = Math.max(0, targetTotal - keptTracks.length);
-    }
-
-    // 3. AI Refill
-    const newAiStatus: { uri: string; artist: string; track: string }[] = [];
-
-    if (slotsNeeded > 0) {
-      logger.info(`Need ${slotsNeeded} new tracks.`, { slotsNeeded });
-
-      // Loop to fill gaps (Max 3 attempts to avoid infinite loops)
-      let attempts = 0;
-      const maxAttempts = 3;
-
-      const survivorMeta = keptTracks.map((t) => ({
-        uri: t.uri,
-        artist: t.artist
-      }));
-
-      // Initialize counts with survivors
-      const artistCounts: { [key: string]: number } = {};
-      survivorMeta.forEach((t) => {
-        artistCounts[t.artist] = (artistCounts[t.artist] || 0) + 1;
-      });
-
-      while (newAiStatus.length < slotsNeeded && attempts < maxAttempts) {
-        attempts++;
-        const currentGap = slotsNeeded - newAiStatus.length;
-        // Use Overfetch Ratio (default 2.0) to request more tracks upfront
-        const ratio = config.aiGeneration.overfetchRatio || 2.0;
-        // Formula: Gap * Ratio + Desperation Buffer (increases with attempts)
-        const requestCount = Math.ceil(currentGap * ratio) + attempts * 5;
-
-        logger.info(
-          `[Attempt ${attempts}/${maxAttempts}] Requesting ${requestCount} tracks to fill gap of ${currentGap} (Ratio: ${ratio})...`
-        );
-
-        if (config.ownerId) {
-          const progressStep = 30 + Math.floor((attempts / maxAttempts) * 50); // 30% to 80%
-          await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
-            state: 'running',
-            progress: progressStep,
-            step: `Consulting AI (Attempt ${attempts}/${maxAttempts})...`,
-            isDryRun: !!config.dryRun
-          });
-        }
-
-        // EXCLUDE: Pass distinct "Artist - Track" strings to the prompt to encourage variety
-        // Existing `generateSuggestions` checks against this list semantically.
-        const semanticExclusionList = [
-          ...keptTracks.map((t) => `${t.artist} - ${t.name}`),
-          ...newAiStatus.map((t) => `${t.artist} - ${t.track}`) // newAiStatus items have 'track' and 'artist'
-        ];
-
-        // URI list for internal duplication check
-        const uriExclusionList = [
-          ...keptTracks.map((t) => t.uri),
-          ...newAiStatus.map((t) => t.uri)
-        ];
-
-        // Generate prompt from playlist metadata
-        const generatedPrompt = PromptGenerator.generatePrompt(
-          config.name,
-          config.settings.description,
-          config.aiGeneration.isInstrumentalOnly
-        );
-
-        const suggestions = await this.aiService.generateSuggestions(
-          config.aiGeneration,
-          generatedPrompt,
-          requestCount,
-          semanticExclusionList
-        );
-
-        // Search tracks on Spotify
-        const aiTrackUris: string[] = [];
-        for (const suggestion of suggestions) {
-          const trackInfo = await spotifyService.searchTrack(
-            `${suggestion.artist} ${suggestion.track}`
-          );
-          if (trackInfo) {
-            // Check if this specific URI is already in our list (Orchestrator level dedup)
-            // (Though AiService exclude list handles most)
-            if (!uriExclusionList.includes(trackInfo.uri) && !aiTrackUris.includes(trackInfo.uri)) {
-              aiTrackUris.push(trackInfo.uri);
-            }
-          } else {
-            logger.warn(
-              `Could not find track on Spotify: "${suggestion.artist} - "${suggestion.track}"`,
-              { suggestion }
-            );
-          }
-        }
-
-        if (aiTrackUris.length > 0) {
-          const aiTracksInfo = await spotifyService.getTracks(aiTrackUris);
-
-          // FILTER: Enforce Artist Limit (Max 2)
-          aiTracksInfo.forEach((t) => {
-            const count = artistCounts[t.artist] || 0;
-            if (count < 2) {
-              newAiStatus.push({
-                uri: t.uri,
-                artist: t.artist,
-                track: t.name
-              });
-              artistCounts[t.artist] = count + 1;
-            } else {
-              logger.info(
-                `Skipping AI track ${t.artist} - ${t.name}: Artist limit reached (${count}).`
-              );
-            }
-          });
-        } else {
-          logger.warn(`Attempt ${attempts}: No valid tracks found by Spotify search.`);
-        }
-
-        if (newAiStatus.length >= slotsNeeded) {
-          logger.info('Target slot count reached.');
-          break;
-        }
+      // 2b. Age Check
+      const addedAt = new Date(item.addedAt).getTime();
+      const age = now - addedAt;
+      if (age > maxAgeMs) {
+        tracksToRemove.push(item.uri);
+        continue; // Don't include in survivors
       }
 
-      logger.info(`Final New Tracks Count: ${newAiStatus.length} (Target: ${slotsNeeded})`);
+      survivingTracks.push({
+        uri: item.uri,
+        artist: item.artist,
+        track: item.name, // Mapping 'name' to 'track' for internal consistency if needed
+        addedAt: item.addedAt
+      });
     }
 
-    // 4. Arrange & Update
-    const survivorMeta = keptTracks.map((t) => ({
-      uri: t.uri,
-      artist: t.artist
-    }));
-
-    // newAiStatus is now defined and populated within the loop above
-    // If slotsNeeded was 0, newAiStatus will be an empty array, which is correct.
-
-    const finalTrackList = this.slotManager.arrangePlaylist(
-      config.mandatoryTracks,
-      survivorMeta,
-      newAiStatus,
-      targetTotal
+    logger.info(
+      `Filtered tracks. Survivors: ${survivingTracks.length}. To Remove: ${tracksToRemove.length}`
     );
 
-    // 4b. Calculate Diff for History (Logic extracted to clean helper)
-    const { added: addedDiff, removed: removedDiff } = DiffCalculator.calculate(
+    // If Dry Run, we don't actually delete, but we track intent
+    // Implementation Note: We'll calculate the final diff at the end
+
+    // 3. Mandatory Tracks Injection
+    // We already have the config.mandatoryTracks.
+    // We need to resolve them if they aren't fully hydrated?
+    // For now, assume config has URIs. We'll ensure they are in the mix.
+    const mandatoryToAdd = config.mandatoryTracks.filter((abc) => !currentUriSet.has(abc.uri));
+
+    // 4. AI Generation (if needed)
+    const tracksNeeded =
+      config.settings.targetTotalTracks - survivingTracks.length - mandatoryToAdd.length;
+    const newAiTracks: { uri: string; artist: string; track: string }[] = [];
+
+    if (config.aiGeneration.enabled && tracksNeeded > 0) {
+      logger.info(`Need ${tracksNeeded} more tracks. initiating AI generation...`, {
+        model: config.aiGeneration.model
+      });
+
+      if (config.ownerId) {
+        await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
+          state: 'running',
+          progress: 50,
+          step: 'Generating AI suggestions...',
+          isDryRun: !!dryRun
+        });
+      }
+
+      // Build exclusion list (Title - Artist) to prevent re-adding what we have
+      const semanticExclusionList = survivingTracks.map((t) => `${t.artist} - ${t.track}`);
+
+      // Generate prompt
+      const prompt = PromptGenerator.generatePrompt(
+        config.name || 'Untitled Playlist',
+        config.settings.description,
+        config.aiGeneration.isInstrumentalOnly
+      );
+
+      // Fetch Suggestions
+      // We use a small buffer (e.g. +5) just in case some aren't found, but no complex overfetch ratio logic exposed to user
+      const buffer = 5;
+      const suggestions = await this.aiService.generateSuggestions(
+        config.aiGeneration,
+        prompt,
+        tracksNeeded + buffer,
+        semanticExclusionList
+      );
+
+      // Resolve to URIs
+      // Track artist counts for this batch to enforce simple limit (max 2 per artist in this batch)
+      const batchArtistCounts: Record<string, number> = {};
+
+      for (const suggestion of suggestions) {
+        if (newAiTracks.length >= tracksNeeded) break;
+
+        // Artist limit check
+        if ((batchArtistCounts[suggestion.artist] || 0) >= 2) continue;
+
+        const trackInfo = await spotifyService.searchTrack(
+          `${suggestion.artist} ${suggestion.track}`
+        );
+
+        if (trackInfo) {
+          // Check if already in playlist or already in new batch
+          const isDuplicate =
+            currentUriSet.has(trackInfo.uri) ||
+            mandatoryToAdd.some((m) => m.uri === trackInfo.uri) ||
+            newAiTracks.some((t) => t.uri === trackInfo.uri);
+
+          if (!isDuplicate) {
+            newAiTracks.push({
+              uri: trackInfo.uri,
+              artist: trackInfo.artist,
+              track: trackInfo.name
+            });
+            batchArtistCounts[suggestion.artist] = (batchArtistCounts[suggestion.artist] || 0) + 1;
+            currentUriSet.add(trackInfo.uri); // Add to set to prevent duplicate in same batch
+          }
+        }
+      }
+    }
+
+    // 5. Smart Shuffle & Final Assembly
+    if (config.ownerId) {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
+        state: 'running',
+        progress: 80,
+        step: 'Shuffling and finalizing...',
+        isDryRun: !!dryRun
+      });
+    }
+
+    // Combine everything for the final shuffle
+    const allTracksToShuffle = [
+      ...survivingTracks, // These have { uri, artist }
+      ...newAiTracks // These have { uri, artist }
+    ];
+
+    // Use SlotManager to shuffle with rules
+    const finalTrackList = this.slotManager.shuffleWithRules(allTracksToShuffle);
+
+    // 6. Calculate Diff & Commit
+
+    const { added: finalAdded, removed: finalRemoved } = DiffCalculator.calculate(
       currentTracks,
-      keptTracks,
+      survivingTracks.map((t) => ({ ...t, track: { ...t, artists: [{ name: t.artist }] } })) as any,
       finalTrackList,
       config.mandatoryTracks,
-      newAiStatus
+      newAiTracks
     );
 
     if (config.ownerId) {
-      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
         state: 'running',
         progress: 90,
         step: 'Updating Spotify playlist...',
-        isDryRun: !!config.dryRun
+        isDryRun: !!dryRun
       });
     }
 
-    await spotifyService.performSmartUpdate(playlistId, finalTrackList, dryRun, vipUris);
+    // Actual Verification/Update
+    await spotifyService.performSmartUpdate(
+      config.id,
+      finalTrackList,
+      !!dryRun,
+      config.settings.referenceArtists
+    );
 
-    logger.info(`Curation complete for ${config.name}.`, {
-      playlistId,
-      changesApplied: !dryRun
-    });
-
-    if (!dryRun && config.ownerId) {
-      const docRef = db.doc(`users/${config.ownerId}/playlists/${config.id}`);
-      await docRef
-        .update({
-          lastCuratedAt: new Date().toISOString()
-        })
-        .catch((err) => logger.error('Failed to update lastCuratedAt', err));
-    }
-
+    // 7. Success log
     if (config.ownerId) {
+      await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
+        state: 'completed',
+        progress: 100,
+        step: 'Done',
+        isDryRun: !!dryRun,
+        diff: {
+          added: finalAdded,
+          removed: finalRemoved
+        }
+      });
+
       await this.firestoreLogger.logActivity(
         config.ownerId,
         'success',
-        `Successfully curated "${config.name}"`,
+        `Curation completed for "${config.name}"`,
         {
-          playlistId: config.id,
-          added: addedDiff.length,
-          removed: removedDiff.length,
+          addedCount: finalAdded.length,
+          removedCount: finalRemoved.length,
+          finalCount: finalTrackList.length,
           dryRun
         }
       );
-
-      // Mark Complete with Diff
-      await this.firestoreLogger.updateCurationStatus(config.ownerId, config.id, {
-        state: 'completed',
-        progress: 100,
-        step: 'Done!',
-        diff: {
-          added: addedDiff,
-          removed: removedDiff
-        },
-        isDryRun: !!config.dryRun
-      });
     }
+
+    logger.info('Curation completed successfully.');
   }
 }

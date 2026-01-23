@@ -35,6 +35,16 @@ export class AiService {
     this.genAI = new GoogleGenerativeAI(config.GOOGLE_AI_API_KEY);
   }
 
+  /**
+   * Generates track suggestions using Google's Gemini AI.
+   * Uses JSON mode to ensure structured output.
+   * @param config - The AI generation settings (model, temperature, etc.)
+   * @param prompt - The base prompt describing the playlist
+   * @param count - Number of tracks to request
+   * @param excludedTracks - List of "Artist - Track" strings to exclude
+   * @param referenceArtists - Optional list of artists to inspire the selection
+   * @returns Array of structured AiSuggestion objects
+   */
   public async generateSuggestions(
     config: AiGenerationConfig,
     prompt: string,

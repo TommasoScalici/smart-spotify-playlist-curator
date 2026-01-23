@@ -364,7 +364,7 @@ export const MainLayout = () => {
 
       {/* Premium Unlink Confirmation Modal */}
       <AlertDialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
-        <AlertDialogContent className="bg-black/80 backdrop-blur-xl border-white/10 ring-1 ring-white/20 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 rounded-full bg-destructive/10">

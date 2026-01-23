@@ -7,10 +7,16 @@ const SCOPES = [
   'playlist-modify-private'
 ];
 
+/**
+ * Hook for handling Spotify OAuth2 authentication flow.
+ * @returns Object containing the login function
+ */
 export const useSpotifyAuth = () => {
+  /**
+   * Initiates the Spotify login redirect.
+   * Constructs the authorization URL with necessary scopes and redirects the user.
+   */
   const login = () => {
-    // Determine Redirect URI based on environment
-    // Use explicit VITE_ env var if set, otherwise fallback to window origin
     const redirectUri =
       import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`;
 

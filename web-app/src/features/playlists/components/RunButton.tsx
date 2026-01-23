@@ -5,30 +5,74 @@ import { FunctionsService } from '@/services/functions-service';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
+import {
+  ConfirmCurationModal,
+  CurationEstimate
+} from '@/features/playlists/components/ConfirmCurationModal';
 
 interface RunButtonProps {
   playlistId?: string;
+  playlistName?: string;
   iconOnly?: boolean;
   className?: string;
+  disabled?: boolean;
 }
 
-export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunButtonProps) => {
+/**
+ * Button component to trigger the curation automation pipeline.
+ * Handles the pre-flight check flow (Estimate -> Confirm -> Run).
+ * @param playlistId - ID of the playlist to curate
+ * @param playlistName - Display name of the playlist (for modal)
+ * @param iconOnly - Whether to render as an icon-only button
+ * @param className - Additional CSS classes
+ * @param disabled - Disabled state
+ */
+export const RunButton = ({
+  playlistId,
+  playlistName = 'Playlist',
+  iconOnly = false,
+  className = '',
+  disabled = false
+}: RunButtonProps) => {
   const [loading, setLoading] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [estimating, setEstimating] = useState(false);
+  const [estimate, setEstimate] = useState<CurationEstimate | null>(null);
 
-  const handleRun = async (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (loading) return;
+    if (loading || disabled) return;
 
-    const confirmMsg = playlistId
-      ? 'Run curation for this playlist?'
-      : 'Run curation for ALL active playlists?';
+    // If no playlistId, this is a "run all" action - show simple toast
+    if (!playlistId) {
+      toast.info('Running all playlists is not yet supported with the new pre-flight check.');
+      return;
+    }
 
-    if (!window.confirm(confirmMsg)) return;
+    // Show modal and start fetching estimate
+    setShowModal(true);
+    setEstimating(true);
+    setEstimate(null);
 
+    try {
+      const result = await FunctionsService.estimateCuration(playlistId);
+      setEstimate(result);
+    } catch (err) {
+      toast.error('Failed to estimate curation', {
+        description: err instanceof Error ? err.message : 'Unknown error'
+      });
+      setShowModal(false);
+    } finally {
+      setEstimating(false);
+    }
+  };
+
+  const handleConfirm = async () => {
+    setShowModal(false);
     setLoading(true);
     toast.promise(FunctionsService.triggerCuration(playlistId), {
-      loading: 'Triggering curation...',
-      success: 'Curation triggered successfully! Check your Spotify shortly.',
+      loading: 'Running automation...',
+      success: 'Automation completed! Check your Spotify.',
       error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`,
       finally: () => setLoading(false)
     });
@@ -42,54 +86,72 @@ export const RunButton = ({ playlistId, iconOnly = false, className = '' }: RunB
 
   if (iconOnly) {
     return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={handleRun}
-              disabled={loading}
-              aria-label="Run curation"
-              className={cn(
-                'rounded-full border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary hover:scale-105 transition-all duration-200 shadow-sm',
-                className
-              )}
-            >
-              {buttonContent}
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Run Curation</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      <>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="inline-block">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={handleClick}
+                  disabled={loading || disabled}
+                  aria-label="Run curation"
+                  className={cn(
+                    'rounded-full border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary hover:scale-105 transition-all duration-200 shadow-sm',
+                    disabled &&
+                      'opacity-50 cursor-not-allowed hover:bg-primary/10 hover:border-primary/20 hover:scale-100',
+                    className
+                  )}
+                >
+                  {buttonContent}
+                </Button>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {disabled
+                  ? 'Enable playlist to run curation'
+                  : playlistId
+                    ? 'Run Now'
+                    : 'Run All Playlists'}
+              </p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+
+        <ConfirmCurationModal
+          isOpen={showModal}
+          onClose={() => setShowModal(false)}
+          onConfirm={handleConfirm}
+          estimate={estimate}
+          isLoading={estimating}
+          playlistName={playlistName}
+        />
+      </>
     );
   }
 
+  // Fallback for non-icon version
   return (
-    <Button
-      onClick={(e) => {
-        handleRun(e); // Pass the event object
-        e.stopPropagation();
-      }}
-      disabled={loading} // Use 'loading' state
-      variant={playlistId ? 'default' : 'outline'}
-      size={playlistId ? 'sm' : 'default'} // Override this in parent if needed via className
-      className={cn(
-        'gap-2 transition-all font-semibold relative overflow-hidden group border active:scale-95 hover:scale-105 backdrop-blur-sm',
-        playlistId
-          ? 'bg-tertiary text-tertiary-foreground border-transparent hover:bg-tertiary/90 shadow-lg shadow-tertiary/20'
-          : 'bg-tertiary/10 text-tertiary border-tertiary/20 hover:bg-tertiary/20 hover:border-tertiary/40 shadow-[0_0_15px_rgba(var(--tertiary),0.15)] hover:shadow-[0_0_25px_rgba(var(--tertiary),0.3)]',
-        className
-      )}
-    >
-      {loading ? (
-        <Loader2 className="animate-spin h-4 w-4" />
-      ) : (
-        <Zap className="h-4 w-4 transition-all group-hover:fill-current group-hover:scale-110 duration-300" />
-      )}
-      <span>{playlistId ? 'Run' : 'Run Active Rules'}</span>
-    </Button>
+    <>
+      <Button
+        onClick={handleClick}
+        disabled={loading || disabled}
+        className={cn('gap-2', className)}
+      >
+        {buttonContent}
+        <span>Run Curation</span>
+      </Button>
+
+      <ConfirmCurationModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onConfirm={handleConfirm}
+        estimate={estimate}
+        isLoading={estimating}
+        playlistName={playlistName}
+      />
+    </>
   );
 };

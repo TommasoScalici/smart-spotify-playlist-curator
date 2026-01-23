@@ -18,9 +18,10 @@ export const MandatoryTrackSchema = z.object({
 });
 
 export const AiGenerationConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  tracksToAdd: z.number().min(0).max(50).default(10),
   model: z.string().default('gemini-2.5-flash'),
   temperature: z.number().min(0).max(1).default(0.7),
-  overfetchRatio: z.number().min(1).max(5).default(2.0),
   isInstrumentalOnly: z.boolean().default(false).optional()
 });
 
@@ -58,11 +59,12 @@ export const CurationStatusSchema = z.object({
 export const PlaylistConfigSchema = z.object({
   id: z
     .string()
+    .min(1, 'you have to select the target playlist')
     .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
-  name: z.string().min(3, { message: 'Name is too short' }),
+  name: z.string().optional(),
   enabled: z.boolean().default(true),
-  imageUrl: z.url().optional(),
-  ownerId: z.string().min(1, { message: 'Owner ID is required' }),
+  imageUrl: z.string().optional().nullable(),
+  ownerId: z.string().optional(),
   dryRun: z.boolean().optional(),
   mandate: z.enum(['exact', 'flexible']).optional(),
   settings: PlaylistSettingsSchema,

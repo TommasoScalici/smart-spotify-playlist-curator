@@ -12,7 +12,9 @@ export interface SpotifySearchResult {
   type: 'track' | 'playlist' | 'artist';
   imageUrl?: string;
   owner?: string;
+  ownerId?: string;
   artist?: string;
+  description?: string;
 }
 
 export const FunctionsService = {
@@ -85,6 +87,7 @@ export const FunctionsService = {
     lastUpdated: string;
     imageUrl?: string | null;
     owner?: string;
+    description?: string;
   }> {
     const getMetrics = httpsCallable<
       { playlistId: string },
@@ -94,9 +97,63 @@ export const FunctionsService = {
         lastUpdated: string;
         imageUrl?: string | null;
         owner?: string;
+        description?: string;
       }
     >(functions, 'getPlaylistMetrics');
     const result = await getMetrics({ playlistId });
+    return result.data;
+  },
+
+  /**
+   * Fetches complete track metadata by URI including album art.
+   * @param trackUri - The Spotify track URI (e.g., spotify:track:...)
+   * @returns Track metadata with name, artist, and imageUrl
+   */
+  async getTrackDetails(trackUri: string): Promise<{
+    uri: string;
+    name: string;
+    artist: string;
+    imageUrl?: string;
+  }> {
+    const getDetails = httpsCallable<
+      { trackUri: string },
+      {
+        uri: string;
+        name: string;
+        artist: string;
+        imageUrl?: string;
+      }
+    >(functions, 'getTrackDetails');
+    const result = await getDetails({ trackUri });
+    return result.data;
+  },
+
+  /**
+   * Estimates the result of a curation run without making changes.
+   * Used for the pre-flight confirmation modal.
+   * @param playlistId - The playlist config ID to estimate curation for
+   * @returns CurationEstimate with projected changes
+   */
+  async estimateCuration(playlistId: string): Promise<{
+    currentTracks: number;
+    duplicatesToRemove: number;
+    agedOutTracks: number;
+    mandatoryToAdd: number;
+    aiTracksToAdd: number;
+    predictedFinal: number;
+  }> {
+    const estimate = httpsCallable<
+      { playlistId: string },
+      {
+        currentTracks: number;
+        duplicatesToRemove: number;
+        agedOutTracks: number;
+        mandatoryToAdd: number;
+        aiTracksToAdd: number;
+        predictedFinal: number;
+      }
+    >(functions, 'estimateCuration');
+    const result = await estimate({ playlistId });
     return result.data;
   }
 };

@@ -34,6 +34,10 @@ export class PromptGenerator {
   /**
    * Generates an AI prompt from playlist metadata.
    * Extracts meaningful words from title and description as cues.
+   * @param playlistName - Name of the playlist
+   * @param description - Detailed description (optional)
+   * @param isInstrumentalOnly - Whether to restrict to instrumental tracks
+   * @returns Formatted prompt string for AI consumption
    */
   public static generatePrompt(
     playlistName: string,

@@ -18,7 +18,9 @@ interface SearchResult {
   name: string;
   artist?: string;
   owner?: string;
+  ownerId?: string;
   imageUrl?: string;
+  description?: string;
   type: 'track' | 'playlist' | 'artist';
 }
 
@@ -109,9 +111,11 @@ export const SpotifySearch = ({
               {results.map((item) => (
                 <CommandItem
                   key={item.uri}
-                  value={item.uri} // Value must be unique-ish
-                  onSelect={() => handleSelect(item)}
-                  className="cursor-pointer"
+                  value={`${item.name} - ${item.uri}`}
+                  onSelect={() => {
+                    handleSelect(item);
+                  }}
+                  className="cursor-pointer aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:opacity-100 data-[disabled]:pointer-events-auto"
                 >
                   <div className="flex items-center gap-3 w-full overflow-hidden">
                     {item.imageUrl ? (
@@ -129,7 +133,7 @@ export const SpotifySearch = ({
                         )}
                       </div>
                     )}
-                    <div className="flex flex-col overflow-hidden">
+                    <div className="flex flex-col overflow-hidden text-left">
                       <span className="truncate font-medium">{item.name}</span>
                       <span className="truncate text-xs text-muted-foreground">
                         {type === 'track' ? item.artist : `by ${item.owner}`}
@@ -138,7 +142,7 @@ export const SpotifySearch = ({
                   </div>
                   <Check
                     className={cn(
-                      'ml-auto h-4 w-4',
+                      'ml-auto h-4 w-4 text-primary shrink-0',
                       query === item.name ? 'opacity-100' : 'opacity-0'
                     )}
                   />

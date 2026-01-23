@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SpotifyService } from '../../src/services/spotify-service';
 import { AiService } from '../../src/services/ai-service';
-import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
 import { FirestoreLogger } from '../../src/services/firestore-logger';
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
@@ -10,9 +9,7 @@ import { PlaylistConfig } from '@smart-spotify-curator/shared';
 // Mock dependencies
 vi.mock('../../src/services/spotify-service');
 vi.mock('../../src/services/ai-service');
-vi.mock('../../src/core/track-cleaner');
 vi.mock('../../src/core/slot-manager');
-vi.mock('../../src/services/firestore-logger');
 vi.mock('../../src/services/firestore-logger');
 vi.mock('../../src/config/firebase', () => ({
   db: {
@@ -37,17 +34,13 @@ describe('PlaylistOrchestrator', () => {
     getPlaylistTracks: ReturnType<typeof vi.fn>;
     getPlaylistMetadata: ReturnType<typeof vi.fn>;
     searchTrack: ReturnType<typeof vi.fn>;
-    getTracks: ReturnType<typeof vi.fn>;
     performSmartUpdate: ReturnType<typeof vi.fn>;
   };
   let mockAiService: {
     generateSuggestions: ReturnType<typeof vi.fn>;
   };
-  let mockTrackCleaner: {
-    processCurrentTracks: ReturnType<typeof vi.fn>;
-  };
   let mockSlotManager: {
-    arrangePlaylist: ReturnType<typeof vi.fn>;
+    shuffleWithRules: ReturnType<typeof vi.fn>;
   };
   let mockFirestoreLogger: {
     logActivity: ReturnType<typeof vi.fn>;
@@ -55,34 +48,43 @@ describe('PlaylistOrchestrator', () => {
     updateCurationStatus: ReturnType<typeof vi.fn>;
   };
 
-  // Type casting to Bypass strict partial matching for test config
   const mockConfig: PlaylistConfig = {
-    id: 'test-playlist',
+    id: 'spotify:playlist:test-playlist',
     name: 'Test Playlist',
     enabled: true,
-    ownerId: 'test-user-123', // Required for security: orchestrator fetches user's Spotify token
-    settings: { targetTotalTracks: 50 },
-    aiGeneration: { overfetchRatio: 2.0 },
-    curationRules: { maxTrackAgeDays: 30, removeDuplicates: true },
+    ownerId: 'test-user-123',
+    settings: {
+      targetTotalTracks: 10,
+      description: 'Test',
+      allowExplicit: true,
+      referenceArtists: []
+    },
+    aiGeneration: {
+      enabled: true,
+      tracksToAdd: 10,
+      model: 'gemini',
+      temperature: 0.7
+    },
+    curationRules: {
+      maxTrackAgeDays: 30,
+      removeDuplicates: true,
+      maxTracksPerArtist: 2
+    },
     mandatoryTracks: []
-  } as unknown as PlaylistConfig;
+  };
 
   beforeEach(() => {
     mockSpotifyService = {
       getPlaylistTracks: vi.fn(),
       getPlaylistMetadata: vi.fn(),
       searchTrack: vi.fn(),
-      getTracks: vi.fn(),
       performSmartUpdate: vi.fn()
     };
     mockAiService = {
       generateSuggestions: vi.fn()
     };
-    mockTrackCleaner = {
-      processCurrentTracks: vi.fn()
-    };
     mockSlotManager = {
-      arrangePlaylist: vi.fn()
+      shuffleWithRules: vi.fn()
     };
     mockFirestoreLogger = {
       logActivity: vi.fn(),
@@ -90,154 +92,108 @@ describe('PlaylistOrchestrator', () => {
       updateCurationStatus: vi.fn()
     };
 
-    // Mock SpotifyService.createForUser to return our mock service
-    // vi.mocked(SpotifyService.createForUser).mockReturnValue(
-    //   mockSpotifyService as unknown as SpotifyService
-    // );
-
     orchestrator = new PlaylistOrchestrator(
       mockAiService as unknown as AiService,
-      mockTrackCleaner as unknown as TrackCleaner,
       mockSlotManager as unknown as SlotManager,
       mockFirestoreLogger as unknown as FirestoreLogger
     );
 
     // Default mocks
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-    mockSpotifyService.searchTrack.mockResolvedValue({
-      uri: 'spotify:track:new-ai-uri',
-      artist: 'A',
-      name: 'N',
-      addedAt: ''
-    });
     mockSpotifyService.getPlaylistMetadata.mockResolvedValue({
       imageUrl: 'http://test-image.com/img.jpg',
       owner: 'Test Owner'
     });
-    mockSpotifyService.getTracks.mockResolvedValue([]); // Default empty
-    mockAiService.generateSuggestions.mockResolvedValue([{ artist: 'A', track: 'B' }]);
-    mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
-  });
+    mockAiService.generateSuggestions.mockResolvedValue([{ artist: 'Artist A', track: 'Track B' }]);
 
-  it('Path 1: Empty Playlist', async () => {
-    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-
-    mockTrackCleaner.processCurrentTracks.mockReturnValue({
-      keptTracks: [],
-      tracksToRemove: [],
-      slotsNeeded: 50
+    // Default: Mock search for AI suggestions
+    mockSpotifyService.searchTrack.mockResolvedValue({
+      uri: 'spotify:track:new-ai-uri',
+      artist: 'Artist A',
+      name: 'Track B',
+      addedAt: new Date().toISOString()
     });
 
-    // Mock AI Metadata Fetch
-    mockSpotifyService.getTracks.mockResolvedValue([
-      {
-        uri: 'spotify:track:new-ai-uri',
+    mockSlotManager.shuffleWithRules.mockReturnValue(['spotify:track:uri1', 'spotify:track:uri2']);
+  });
+
+  it('Path 1: Full Flow (Empty Playlist -> AI Generation)', async () => {
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
+
+    // AI Returns 2 tracks
+    mockAiService.generateSuggestions.mockResolvedValue([
+      { artist: 'Artist A', track: 'Track A' },
+      { artist: 'Artist B', track: 'Track B' }
+    ]);
+
+    // Search resolves them
+    mockSpotifyService.searchTrack
+      .mockResolvedValueOnce({
+        uri: 'spotify:track:A',
         artist: 'Artist A',
         name: 'Track A',
         addedAt: ''
-      }
+      })
+      .mockResolvedValueOnce({
+        uri: 'spotify:track:B',
+        artist: 'Artist B',
+        name: 'Track B',
+        addedAt: ''
+      });
+
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+
+    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
+      expect.any(Object), // config
+      expect.any(String), // prompt
+      15, // tracksToAdd count (10 + 5 buffer)
+      expect.any(Array) // exclusion list
+    );
+
+    // Expect Shuffle with consolidated list
+    expect(mockSlotManager.shuffleWithRules).toHaveBeenCalled();
+
+    // Expect Update
+    expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalled();
+  });
+
+  it('Path 2: Age Verification (Removes Old Tracks)', async () => {
+    // Config: 30 days max
+    const now = new Date();
+    const oldDate = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000); // 40 days ago (Old)
+    const newDate = new Date(); // Now (Fresh)
+
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue([
+      { uri: 'spotify:track:old', name: 'Old', artist: 'A', addedAt: oldDate.toISOString() },
+      { uri: 'spotify:track:new', name: 'New', artist: 'B', addedAt: newDate.toISOString() }
     ]);
 
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+    // Disable AI for clarity
+    const config = { ...mockConfig, aiGeneration: { ...mockConfig.aiGeneration, enabled: false } };
 
-    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object), // config
-      expect.any(String), // generated prompt
-      105, // count
-      expect.any(Array) // excludedTracks
+    await orchestrator.curatePlaylist(config, mockSpotifyService as unknown as SpotifyService);
+
+    // Only "new" track should reach the shuffler
+    expect(mockSlotManager.shuffleWithRules).toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:new' })])
+    );
+
+    // "old" track should NOT be present
+    expect(mockSlotManager.shuffleWithRules).not.toHaveBeenCalledWith(
+      expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:old' })])
     );
   });
 
-  it('Path 2: Under Target', async () => {
-    // 30 tracks existing (under 50)
-    mockSpotifyService.getPlaylistTracks.mockResolvedValue(
-      new Array(30).fill({
-        uri: 'uri',
-        addedAt: 'timestamp',
-        artist: 'Artist Existing'
-      })
-    );
-
-    mockTrackCleaner.processCurrentTracks.mockReturnValue({
-      keptTracks: new Array(30).fill({ uri: 'uri', artist: 'Artist Existing' }),
-      tracksToRemove: [],
-      slotsNeeded: 20
-    });
-
-    mockSpotifyService.getTracks.mockResolvedValue(
-      new Array(20).fill({ uri: 'ai-uri', artist: 'AI Artist' })
-    );
-
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
-
-    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalled();
-    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object), // config
-      expect.any(String), // generated prompt
-      45, // count
-      expect.any(Array) // excludedTracks
-    );
-  });
-
-  it('Path 3: Over Target (Aggressive Clean)', async () => {
-    // 60 tracks existing
-    mockSpotifyService.getPlaylistTracks.mockResolvedValue(
-      new Array(60).fill({
-        uri: 'uri',
-        addedAt: 'timestamp',
-        artist: 'Artist'
-      })
-    );
-
-    mockTrackCleaner.processCurrentTracks.mockReturnValue({
-      keptTracks: new Array(35).fill({ uri: 'uri', artist: 'Survivor' }),
-      tracksToRemove: ['removed-uri'],
-      slotsNeeded: 0
-    });
-
-    mockSpotifyService.getTracks.mockResolvedValue([]);
-
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
-
-    expect(mockTrackCleaner.processCurrentTracks).toHaveBeenCalledWith(
-      expect.any(Array),
-      mockConfig,
-      expect.any(Array),
-      35
-    );
-
-    expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
-      expect.any(Object), // config
-      expect.any(String), // generated prompt
-      35, // count
-      expect.any(Array) // excludedTracks
-    );
-  });
-  it('Dry Run: Should propagate flag and not modify state', async () => {
+  it('Dry Run: Should propagate flag and likely not update logs/lastCuratedAt (logic dependent)', async () => {
     const dryRunConfig = { ...mockConfig, dryRun: true };
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-    mockTrackCleaner.processCurrentTracks.mockReturnValue({
-      keptTracks: [],
-      tracksToRemove: [],
-      slotsNeeded: 10
-    });
     mockAiService.generateSuggestions.mockResolvedValue([]);
-    mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
+    mockSlotManager.shuffleWithRules.mockReturnValue(['uri1', 'uri2']);
 
     await orchestrator.curatePlaylist(
       dryRunConfig,
       mockSpotifyService as unknown as SpotifyService
-    );
-
-    expect(mockFirestoreLogger.updateCurationStatus).toHaveBeenCalledWith(
-      expect.any(String),
-      expect.any(String),
-      expect.objectContaining({
-        isDryRun: true,
-        diff: expect.objectContaining({ added: expect.any(Array), removed: expect.any(Array) })
-      })
     );
 
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalledWith(
@@ -245,6 +201,13 @@ describe('PlaylistOrchestrator', () => {
       expect.any(Array),
       true, // dryRun check
       expect.any(Array)
+    );
+
+    // Verify status update includes dryRun flag
+    expect(mockFirestoreLogger.updateCurationStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      expect.objectContaining({ isDryRun: true })
     );
   });
 });

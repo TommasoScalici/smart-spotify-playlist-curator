@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 interface RulesSettingsProps {
   control: Control<PlaylistConfig>;
@@ -22,16 +23,45 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Max Age */}
           <div className="space-y-2">
-            <Label htmlFor="maxTrackAgeDays">Max Track Age (Days)</Label>
+            <Label
+              htmlFor="maxTrackAgeDays"
+              className={cn(errors.curationRules?.maxTrackAgeDays && 'text-destructive')}
+            >
+              Max Track Age (Days)
+            </Label>
             <Input
               id="maxTrackAgeDays"
               type="number"
               min="1"
               {...register('curationRules.maxTrackAgeDays', { valueAsNumber: true })}
+              className={cn(errors.curationRules?.maxTrackAgeDays && 'border-destructive')}
             />
             {errors.curationRules?.maxTrackAgeDays && (
-              <p className="text-sm text-destructive">
+              <p className="text-sm text-destructive font-medium">
                 {errors.curationRules.maxTrackAgeDays.message}
+              </p>
+            )}
+          </div>
+
+          {/* Target Track Count */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="targetTotalTracks"
+              className={cn(errors.settings?.targetTotalTracks && 'text-destructive')}
+            >
+              Target Track Count
+            </Label>
+            <Input
+              id="targetTotalTracks"
+              type="number"
+              min="5"
+              max="100"
+              {...register('settings.targetTotalTracks', { valueAsNumber: true })}
+              className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
+            />
+            {errors.settings?.targetTotalTracks && (
+              <p className="text-sm text-destructive font-medium">
+                {errors.settings.targetTotalTracks.message}
               </p>
             )}
           </div>

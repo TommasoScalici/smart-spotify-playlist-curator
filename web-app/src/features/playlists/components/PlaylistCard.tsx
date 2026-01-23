@@ -347,7 +347,11 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
             </div>
           ) : (
             <div className="flex gap-2 w-full">
-              <RunButton playlistId={config.id} className="flex-1 h-10 min-h-[44px]" />
+              <RunButton
+                playlistId={config.id}
+                className="flex-1 h-10 min-h-[44px]"
+                disabled={!config.enabled}
+              />
 
               <TooltipProvider>
                 <Tooltip>
