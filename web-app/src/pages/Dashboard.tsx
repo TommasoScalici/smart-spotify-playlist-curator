@@ -11,13 +11,14 @@ import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
 import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
 import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
 import { Plus, RefreshCcw, History } from 'lucide-react';
-import { useCallback } from 'react';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [tutorialDismissed, setTutorialDismissed] = useState(false);
+  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
+    return localStorage.getItem('tutorial_dismissed') === 'true';
+  });
   const [isActivityDrawerOpen, setIsActivityDrawerOpen] = useState(false);
   const navigate = useNavigate();
 
@@ -25,28 +26,33 @@ export default function Dashboard() {
   const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
   const isSpotifyLinked = data?.isLinked;
 
-  const fetchPlaylists = useCallback(async () => {
-    if (!user?.uid) return;
-    try {
-      setLoading(true);
-      setError('');
-      const data = await FirestoreService.getUserPlaylists(user.uid);
-      setPlaylists(data);
-    } catch (e) {
-      console.error(e);
-      setError('Failed to load playlists.');
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
-
   useEffect(() => {
-    if (user && isSpotifyLinked) {
-      fetchPlaylists();
-    } else if (!checkingLink && !isSpotifyLinked) {
-      setLoading(false);
+    let unsubscribe: (() => void) | undefined;
+
+    if (user?.uid && isSpotifyLinked) {
+      // Use microtask to avoid synchronous state update in effect body
+      queueMicrotask(() => {
+        setLoading(true);
+        setError('');
+      });
+
+      unsubscribe = FirestoreService.subscribeUserPlaylists(user.uid, (data) => {
+        setPlaylists(data);
+        setLoading(false);
+      });
+    } else {
+      queueMicrotask(() => setLoading(false));
     }
-  }, [user, isSpotifyLinked, checkingLink, fetchPlaylists]);
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user?.uid, isSpotifyLinked]);
+
+  const handleDismissTutorial = () => {
+    setTutorialDismissed(true);
+    localStorage.setItem('tutorial_dismissed', 'true');
+  };
 
   if (checkingLink || (loading && isSpotifyLinked)) {
     return (
@@ -109,7 +115,7 @@ export default function Dashboard() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchPlaylists}
+            onClick={() => window.location.reload()}
             className="border-destructive/20 hover:bg-destructive/20 text-destructive hover:text-destructive"
           >
             <RefreshCcw className="h-4 w-4 mr-2" />
@@ -151,7 +157,7 @@ export default function Dashboard() {
       <TutorialDialog
         open={playlists.length === 0 && !error && !tutorialDismissed}
         onOpenChange={(open) => {
-          if (!open) setTutorialDismissed(true);
+          if (!open) handleDismissTutorial();
         }}
       />
     </div>

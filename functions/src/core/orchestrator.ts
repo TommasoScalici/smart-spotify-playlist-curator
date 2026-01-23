@@ -59,8 +59,9 @@ export class PlaylistOrchestrator {
 
     // 2. Filter & Clean (Dedupe, Age)
     const tracksToRemove: string[] = [];
-    const survivingTracks = [];
+    const survivingTracks: { uri: string; artist: string; track: string; addedAt: string }[] = [];
     const seenUris = new Set<string>();
+    const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri)); // Protect VIPs
     const now = Date.now();
     const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
 
@@ -72,10 +73,10 @@ export class PlaylistOrchestrator {
       }
       seenUris.add(item.uri);
 
-      // 2b. Age Check
+      // 2b. Age Check (Protect VIPs)
       const addedAt = new Date(item.addedAt).getTime();
       const age = now - addedAt;
-      if (age > maxAgeMs) {
+      if (!vipUris.has(item.uri) && age > maxAgeMs) {
         tracksToRemove.push(item.uri);
         continue; // Don't include in survivors
       }
@@ -83,7 +84,7 @@ export class PlaylistOrchestrator {
       survivingTracks.push({
         uri: item.uri,
         artist: item.artist,
-        track: item.name, // Mapping 'name' to 'track' for internal consistency if needed
+        track: item.name,
         addedAt: item.addedAt
       });
     }
@@ -92,18 +93,18 @@ export class PlaylistOrchestrator {
       `Filtered tracks. Survivors: ${survivingTracks.length}. To Remove: ${tracksToRemove.length}`
     );
 
-    // If Dry Run, we don't actually delete, but we track intent
-    // Implementation Note: We'll calculate the final diff at the end
+    // 3. AI Generation (if needed)
+    // Calculate how many more tracks we need to hit the target
+    // We count existing survivors (which include already-present VIPs) + non-present VIPs
+    const currentVipUrisInPlaylist = survivingTracks
+      .filter((t) => vipUris.has(t.uri))
+      .map((t) => t.uri);
+    const missingVipsCount = config.mandatoryTracks.filter(
+      (m) => !currentVipUrisInPlaylist.includes(m.uri)
+    ).length;
 
-    // 3. Mandatory Tracks Injection
-    // We already have the config.mandatoryTracks.
-    // We need to resolve them if they aren't fully hydrated?
-    // For now, assume config has URIs. We'll ensure they are in the mix.
-    const mandatoryToAdd = config.mandatoryTracks.filter((abc) => !currentUriSet.has(abc.uri));
-
-    // 4. AI Generation (if needed)
     const tracksNeeded =
-      config.settings.targetTotalTracks - survivingTracks.length - mandatoryToAdd.length;
+      config.settings.targetTotalTracks - survivingTracks.length - missingVipsCount;
     const newAiTracks: { uri: string; artist: string; track: string }[] = [];
 
     if (config.aiGeneration.enabled && tracksNeeded > 0) {
@@ -120,81 +121,63 @@ export class PlaylistOrchestrator {
         });
       }
 
-      // Build exclusion list (Title - Artist) to prevent re-adding what we have
+      // Build exclusion list (Artist - Track) to prevent AI from suggesting what we already have
       const semanticExclusionList = survivingTracks.map((t) => `${t.artist} - ${t.track}`);
 
-      // Generate prompt
       const prompt = PromptGenerator.generatePrompt(
         config.name || 'Untitled Playlist',
         config.settings.description,
         config.aiGeneration.isInstrumentalOnly
       );
 
-      // Fetch Suggestions
-      // We use a small buffer (e.g. +5) just in case some aren't found, but no complex overfetch ratio logic exposed to user
-      const buffer = 5;
       const suggestions = await this.aiService.generateSuggestions(
         config.aiGeneration,
         prompt,
-        tracksNeeded + buffer,
+        tracksNeeded + 5, // Buffer
         semanticExclusionList
       );
 
-      // Resolve to URIs
-      // Track artist counts for this batch to enforce simple limit (max 2 per artist in this batch)
       const batchArtistCounts: Record<string, number> = {};
+      const currentUriSetExtended = new Set([...currentUriSet]);
 
       for (const suggestion of suggestions) {
         if (newAiTracks.length >= tracksNeeded) break;
-
-        // Artist limit check
         if ((batchArtistCounts[suggestion.artist] || 0) >= 2) continue;
 
         const trackInfo = await spotifyService.searchTrack(
           `${suggestion.artist} ${suggestion.track}`
         );
 
-        if (trackInfo) {
-          // Check if already in playlist or already in new batch
-          const isDuplicate =
-            currentUriSet.has(trackInfo.uri) ||
-            mandatoryToAdd.some((m) => m.uri === trackInfo.uri) ||
-            newAiTracks.some((t) => t.uri === trackInfo.uri);
-
-          if (!isDuplicate) {
-            newAiTracks.push({
-              uri: trackInfo.uri,
-              artist: trackInfo.artist,
-              track: trackInfo.name
-            });
-            batchArtistCounts[suggestion.artist] = (batchArtistCounts[suggestion.artist] || 0) + 1;
-            currentUriSet.add(trackInfo.uri); // Add to set to prevent duplicate in same batch
-          }
+        if (trackInfo && !currentUriSetExtended.has(trackInfo.uri)) {
+          newAiTracks.push({
+            uri: trackInfo.uri,
+            artist: trackInfo.artist,
+            track: trackInfo.name
+          });
+          batchArtistCounts[suggestion.artist] = (batchArtistCounts[suggestion.artist] || 0) + 1;
+          currentUriSetExtended.add(trackInfo.uri);
         }
       }
     }
 
-    // 5. Smart Shuffle & Final Assembly
+    // 4. Final Assembly using SlotManager
     if (config.ownerId) {
       await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
         state: 'running',
         progress: 80,
-        step: 'Shuffling and finalizing...',
+        step: 'Arranging tracks and anti-clumping...',
         isDryRun: !!dryRun
       });
     }
 
-    // Combine everything for the final shuffle
-    const allTracksToShuffle = [
-      ...survivingTracks, // These have { uri, artist }
-      ...newAiTracks // These have { uri, artist }
-    ];
+    const finalTrackList = this.slotManager.arrangePlaylist(
+      config.mandatoryTracks,
+      survivingTracks,
+      newAiTracks,
+      config.settings.targetTotalTracks
+    );
 
-    // Use SlotManager to shuffle with rules
-    const finalTrackList = this.slotManager.shuffleWithRules(allTracksToShuffle);
-
-    // 6. Calculate Diff & Commit
-
+    // 5. Calculate Diff & Commit
     const { added: finalAdded, removed: finalRemoved } = DiffCalculator.calculate(
       currentTracks,
       survivingTracks.map((t) => ({ ...t, track: { ...t, artists: [{ name: t.artist }] } })) as any,
@@ -212,12 +195,11 @@ export class PlaylistOrchestrator {
       });
     }
 
-    // Actual Verification/Update
     await spotifyService.performSmartUpdate(
       config.id,
       finalTrackList,
       !!dryRun,
-      config.settings.referenceArtists
+      Array.from(vipUris) // CORRECT: Pass the list of VIP URIs to protect them from removal
     );
 
     // 7. Success log

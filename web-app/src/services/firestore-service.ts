@@ -6,7 +6,8 @@ import {
   doc,
   setDoc,
   query,
-  where
+  where,
+  onSnapshot
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
@@ -43,6 +44,41 @@ export const FirestoreService = {
     });
 
     return playlists;
+  },
+
+  /**
+   * Subscribe to real-time updates for a user's playlists.
+   * @param uid - The user ID
+   * @param callback - Function called with updated playlists array
+   * @returns Unsubscribe function
+   */
+  subscribeUserPlaylists(
+    uid: string,
+    callback: (playlists: (PlaylistConfig & { _docId: string })[]) => void
+  ): () => void {
+    if (IS_DEBUG_MODE) {
+      callback(MOCK_PLAYLISTS);
+      return () => {};
+    }
+
+    const playlistsRef = collection(db, 'users', uid, 'playlists');
+    return onSnapshot(
+      playlistsRef,
+      (snapshot) => {
+        const playlists: (PlaylistConfig & { _docId: string })[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const parseResult = PlaylistConfigSchema.safeParse(data);
+          if (parseResult.success) {
+            playlists.push({ ...parseResult.data, _docId: doc.id });
+          }
+        });
+        callback(playlists);
+      },
+      (error) => {
+        console.error('Error in playlists subscription:', error);
+      }
+    );
   },
 
   /**

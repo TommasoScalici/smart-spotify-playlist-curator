@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { FunctionsService } from '@/services/functions-service';
 import { useEffect } from 'react';
-import { cn } from '@/lib/utils';
+import { cn, decodeHtmlEntities } from '@/lib/utils';
 
 interface BasicSettingsProps {
   control: Control<PlaylistConfig>;
@@ -52,7 +52,9 @@ export const BasicSettings = ({
       const currentDesc = watch('settings.description');
       // Only set if completely empty to avoid overwriting user edits (even if read-only now, logic holds)
       if (!currentDesc) {
-        setValue('settings.description', bgMetrics.description, { shouldDirty: true });
+        setValue('settings.description', decodeHtmlEntities(bgMetrics.description), {
+          shouldDirty: true
+        });
       }
     }
     // Also sync Image/Owner if missing (Self-Repair)
@@ -108,8 +110,9 @@ export const BasicSettings = ({
                       // Set description if available, otherwise fallback to generated one
                       const currentDesc = watch('settings.description');
                       if (!currentDesc) {
+                        const decodedDesc = decodeHtmlEntities(result.description);
                         const newDesc =
-                          result.description ||
+                          decodedDesc ||
                           `Curated version of ${result.name} by ${result.owner || 'Unknown'}`;
                         setValue('settings.description', newDesc);
                       }

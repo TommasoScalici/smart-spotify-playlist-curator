@@ -290,8 +290,12 @@ export const triggerCuration = onCall(
     try {
       return await runOrchestrator(playlistId, uid, dryRun);
     } catch (e) {
-      logger.error('Orchestrator execution failed', e);
-      throw new HttpsError('internal', (e as Error).message);
+      logger.error('Orchestrator execution failed', {
+        uid,
+        playlistId,
+        error: e instanceof Error ? { message: e.message, stack: e.stack } : e
+      });
+      throw new HttpsError('internal', e instanceof Error ? e.message : 'Unknown error');
     }
   }
 );
@@ -303,7 +307,12 @@ export const estimateCuration = onCall(
   {
     timeoutSeconds: 30,
     cors: true,
-    secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'SPOTIFY_REFRESH_TOKEN']
+    secrets: [
+      'SPOTIFY_CLIENT_ID',
+      'SPOTIFY_CLIENT_SECRET',
+      'SPOTIFY_REFRESH_TOKEN',
+      'GOOGLE_AI_API_KEY'
+    ]
   },
   async (request): Promise<CurationEstimate> => {
     if (!request.auth) {
@@ -339,8 +348,12 @@ export const estimateCuration = onCall(
 
       return estimate;
     } catch (e) {
-      logger.error('Estimation failed', e);
-      throw new HttpsError('internal', (e as Error).message);
+      logger.error('Estimation failed', {
+        uid,
+        playlistId,
+        error: e instanceof Error ? { message: e.message, stack: e.stack } : e
+      });
+      throw new HttpsError('internal', e instanceof Error ? e.message : 'Unknown error');
     }
   }
 );

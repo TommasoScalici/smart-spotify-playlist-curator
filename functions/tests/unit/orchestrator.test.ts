@@ -40,7 +40,7 @@ describe('PlaylistOrchestrator', () => {
     generateSuggestions: ReturnType<typeof vi.fn>;
   };
   let mockSlotManager: {
-    shuffleWithRules: ReturnType<typeof vi.fn>;
+    arrangePlaylist: ReturnType<typeof vi.fn>;
   };
   let mockFirestoreLogger: {
     logActivity: ReturnType<typeof vi.fn>;
@@ -84,7 +84,7 @@ describe('PlaylistOrchestrator', () => {
       generateSuggestions: vi.fn()
     };
     mockSlotManager = {
-      shuffleWithRules: vi.fn()
+      arrangePlaylist: vi.fn()
     };
     mockFirestoreLogger = {
       logActivity: vi.fn(),
@@ -114,7 +114,7 @@ describe('PlaylistOrchestrator', () => {
       addedAt: new Date().toISOString()
     });
 
-    mockSlotManager.shuffleWithRules.mockReturnValue(['spotify:track:uri1', 'spotify:track:uri2']);
+    mockSlotManager.arrangePlaylist.mockReturnValue(['spotify:track:uri1', 'spotify:track:uri2']);
   });
 
   it('Path 1: Full Flow (Empty Playlist -> AI Generation)', async () => {
@@ -150,8 +150,8 @@ describe('PlaylistOrchestrator', () => {
       expect.any(Array) // exclusion list
     );
 
-    // Expect Shuffle with consolidated list
-    expect(mockSlotManager.shuffleWithRules).toHaveBeenCalled();
+    // Expect Arrange with consolidated list
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalled();
 
     // Expect Update
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalled();
@@ -173,15 +173,17 @@ describe('PlaylistOrchestrator', () => {
 
     await orchestrator.curatePlaylist(config, mockSpotifyService as unknown as SpotifyService);
 
-    // Only "new" track should reach the shuffler
-    expect(mockSlotManager.shuffleWithRules).toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:new' })])
+    // Only "new" track should reach the arranger
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
+      expect.any(Array), // mandatory
+      expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:new' })]),
+      expect.any(Array), // ai
+      expect.any(Number) // total
     );
 
-    // "old" track should NOT be present
-    expect(mockSlotManager.shuffleWithRules).not.toHaveBeenCalledWith(
-      expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:old' })])
-    );
+    // "old" track should NOT be present in survivors
+    const survivorsArg = mockSlotManager.arrangePlaylist.mock.calls[0][1];
+    expect(survivorsArg).not.toContainEqual(expect.objectContaining({ uri: 'spotify:track:old' }));
   });
 
   it('Dry Run: Should propagate flag and likely not update logs/lastCuratedAt (logic dependent)', async () => {
@@ -189,7 +191,7 @@ describe('PlaylistOrchestrator', () => {
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
     mockAiService.generateSuggestions.mockResolvedValue([]);
-    mockSlotManager.shuffleWithRules.mockReturnValue(['uri1', 'uri2']);
+    mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
 
     await orchestrator.curatePlaylist(
       dryRunConfig,
