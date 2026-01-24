@@ -1,7 +1,19 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Clock, Music } from 'lucide-react';
+import { Activity, Clock, History } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useActivityFeed } from '@/hooks/useActivityFeed';
+import { useActivityFeed, ActivityLog } from '@/hooks/useActivityFeed';
+import { useState } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter
+} from '@/components/ui/dialog';
+import { DiffViewer } from '@/features/playlists/components/DiffViewer';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 // Simple time ago formatter
 const formatTimeAgo = (isoString: string) => {
@@ -23,6 +35,13 @@ interface ActivityFeedProps {
 
 export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
   const { activities, loading } = useActivityFeed();
+  const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
+
+  const handleActivityClick = (activity: ActivityLog) => {
+    if (activity.type === 'success' && activity.metadata?.diff) {
+      setSelectedActivity(activity);
+    }
+  };
 
   const content = (
     <div
@@ -42,7 +61,16 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
       )}
 
       {activities.map((activity) => (
-        <div key={activity.id} className="flex gap-3 items-start group animate-fade-in">
+        <div
+          key={activity.id}
+          className={cn(
+            'flex gap-3 items-start group animate-fade-in p-2 rounded-lg transition-all',
+            activity.type === 'success' && activity.metadata?.diff
+              ? 'cursor-pointer hover:bg-white/5'
+              : ''
+          )}
+          onClick={() => handleActivityClick(activity)}
+        >
           <div
             className={cn(
               'mt-1 h-2 w-2 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card',
@@ -62,7 +90,12 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
               <div className="flex flex-wrap gap-1.5 mt-2">
                 {activity.metadata.addedCount ? (
                   <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
-                    +{activity.metadata.addedCount} Tracks
+                    +{activity.metadata.addedCount} Added
+                  </span>
+                ) : null}
+                {activity.metadata.removedCount ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-red-500/10 text-red-500 border border-red-500/20">
+                    -{activity.metadata.removedCount} Removed
                   </span>
                 ) : null}
                 {activity.metadata.aiTracksAdded ? (
@@ -86,25 +119,93 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
             <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
               <Clock className="h-3 w-3" />
               <span>{formatTimeAgo(activity.timestamp)}</span>
-              {(activity.metadata?.playlistName || activity.metadata?.playlistId) && (
+              {activity.metadata?.triggeredBy && (
                 <>
                   <span>•</span>
-                  <Music className="h-3 w-3" />
-                  <span
-                    className="max-w-[150px] truncate"
-                    title={activity.metadata.playlistName || activity.metadata.playlistId}
-                  >
-                    {activity.metadata.playlistName ||
-                      (typeof activity.metadata.playlistId === 'string'
-                        ? activity.metadata.playlistId
-                        : 'Playlist')}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <div className="h-3 w-3 rounded-full bg-primary/20 flex items-center justify-center">
+                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                    </div>
+                    <span
+                      className="truncate max-w-[120px]"
+                      title={`Triggered by ${activity.metadata.triggeredBy}`}
+                    >
+                      {activity.metadata.triggeredBy}
+                    </span>
+                  </div>
                 </>
               )}
             </div>
           </div>
         </div>
       ))}
+
+      {/* Report Modal */}
+      <Dialog open={!!selectedActivity} onOpenChange={(open) => !open && setSelectedActivity(null)}>
+        <DialogContent className="max-w-7xl h-[85vh] max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>
+              Curation Report: {selectedActivity?.metadata?.playlistName || 'Playlist'}
+            </DialogTitle>
+            <DialogDescription>
+              Changes from {selectedActivity?.metadata?.dryRun ? 'test' : 'automation'} run at{' '}
+              {selectedActivity && new Date(selectedActivity.timestamp).toLocaleString()}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex-1 overflow-y-auto md:overflow-hidden min-h-0 py-4 h-full pr-1">
+            {selectedActivity?.metadata?.diff ? (
+              <div className="flex flex-col h-full">
+                <DiffViewer
+                  diff={selectedActivity.metadata.diff}
+                  isDryRun={selectedActivity.metadata.dryRun}
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <History className="h-10 w-10 mb-2 opacity-50" />
+                <p>No details available for this run.</p>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
+            {selectedActivity?.metadata?.diff?.stats && (
+              <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-muted-foreground">
+                <span>
+                  Target:{' '}
+                  <span className="text-foreground">
+                    {selectedActivity.metadata.diff.stats.target}
+                  </span>
+                </span>
+                <span className="opacity-20 text-lg leading-none">|</span>
+                <span>
+                  Final:{' '}
+                  <span className="text-foreground">
+                    {selectedActivity.metadata.diff.stats.final}
+                  </span>
+                </span>
+                <span className="opacity-20 text-lg leading-none">|</span>
+                <span className="flex items-center gap-1.5">
+                  Success:
+                  {selectedActivity.metadata.diff.stats.success ? (
+                    <Badge className="bg-green-500/20 text-green-500 hover:bg-green-500/30 border-0 h-5 px-1.5">
+                      Yes
+                    </Badge>
+                  ) : (
+                    <Badge variant="destructive" className="h-5 px-1.5">
+                      No
+                    </Badge>
+                  )}
+                </span>
+              </div>
+            )}
+            <Button onClick={() => setSelectedActivity(null)} className="w-full sm:w-auto">
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 

@@ -115,30 +115,17 @@ export async function persistSpotifyTokens(
 
 // Shared logic for both HTTP and onCall (Web App)
 export async function runOrchestrator(
-  playlistId: string,
+  config: PlaylistConfig,
   callerUid: string,
+  callerName?: string,
   dryRunOverride?: boolean
 ): Promise<OrchestrationResult> {
-  const configService = new ConfigService();
-  let config: PlaylistConfig | null = null;
-
-  try {
-    config = await configService.getPlaylistConfig(playlistId);
-    if (!config) {
-      logger.warn(`Playlist config not found for ID: ${playlistId}`);
-      return { message: 'Playlist not found.', results: [] };
-    }
-
-    // SECURITY VERIFICATION
-    if (config.ownerId !== callerUid) {
-      logger.warn(
-        `User ${callerUid} attempted to run playlist ${playlistId} owned by ${config.ownerId}`
-      );
-      throw new Error('Permission denied. You do not own this playlist.');
-    }
-  } catch (e) {
-    logger.error('Failed to load configuration from Firestore', e);
-    throw new Error('Configuration Back-end Error: ' + (e as Error).message);
+  // SECURITY VERIFICATION (Deep check)
+  if (config.ownerId !== callerUid) {
+    logger.warn(
+      `User ${callerUid} attempted to run playlist ${config.id} owned by ${config.ownerId}`
+    );
+    throw new Error('Permission denied. You do not own this playlist.');
   }
 
   // 1. Stateless Services
@@ -166,7 +153,7 @@ export async function runOrchestrator(
     const orchestrator = new PlaylistOrchestrator(aiService, slotManager, firestoreLogger);
 
     // 5. Execute
-    await orchestrator.curatePlaylist(playlistConfig, spotifyService);
+    await orchestrator.curatePlaylist(playlistConfig, spotifyService, callerName);
 
     // 6. Persist any token updates (Important for rotation)
     await persistSpotifyTokens(playlistConfig.ownerId!, spotifyService, originalRefreshToken);
@@ -206,7 +193,8 @@ export async function runOrchestrator(
           playlistId: playlistConfig.id,
           playlistName: playlistConfig.name,
           error: errMsg,
-          dryRun: !!dryRunOverride
+          dryRun: !!dryRunOverride,
+          triggeredBy: callerName
         }
       );
     }
@@ -218,7 +206,8 @@ export async function runOrchestrator(
 export const triggerCuration = onCall(
   {
     timeoutSeconds: 540,
-    cors: true, // Explicitly enable CORS
+    memory: '512MiB', // Increased as per Developer Guide for AI & Large Playlists
+    cors: true,
     secrets: [
       'SPOTIFY_CLIENT_ID',
       'SPOTIFY_CLIENT_SECRET',
@@ -227,40 +216,84 @@ export const triggerCuration = onCall(
     ]
   },
   async (request) => {
-    // Ensure the user is authenticated
+    // 1. Auth Check
     if (!request.auth) {
-      throw new HttpsError('unauthenticated', 'Authentication required.');
+      throw new HttpsError('unauthenticated', 'You must be logged in to curate playlists.');
     }
 
     const uid = request.auth.uid;
     const { playlistId, dryRun } = request.data || {};
 
-    logger.info(`Received triggerCuration from user ${uid}`, { playlistId, dryRun });
-
-    // SECURITY: If specific playlist requested, verify ownership
-    if (playlistId) {
-      const configService = new ConfigService();
-      const config = await configService.getPlaylistConfig(playlistId);
-      if (!config) {
-        throw new HttpsError('not-found', 'Playlist not found.');
-      }
-      if (config.ownerId !== uid) {
-        throw new HttpsError('permission-denied', 'You do not own this playlist.');
-      }
+    if (!playlistId) {
+      throw new HttpsError('invalid-argument', 'Missing playlistId. Please select a playlist.');
     }
 
+    logger.info(`Received triggerCuration from user ${uid}`, { playlistId, dryRun });
+
+    // 2. Load and Verify Config
+    const configService = new ConfigService();
+    let config: PlaylistConfig | null = null;
+
     try {
-      if (!playlistId) {
-        throw new HttpsError('invalid-argument', 'Playlist ID is required');
-      }
-      return await runOrchestrator(playlistId, uid, dryRun);
+      config = await configService.getPlaylistConfig(playlistId);
     } catch (e) {
-      logger.error('Orchestrator execution failed', {
+      logger.error('Config fetch failed', e);
+      throw new HttpsError(
+        'internal',
+        `Failed to load playlist configuration: ${(e as Error).message}`
+      );
+    }
+
+    if (!config) {
+      throw new HttpsError(
+        'not-found',
+        'The requested playlist configuration was not found in our database.'
+      );
+    }
+
+    if (config.ownerId !== uid) {
+      throw new HttpsError(
+        'permission-denied',
+        'Security Alert: You do not have permission to curate this playlist.'
+      );
+    }
+
+    // 2.5 Fetch Caller Name
+    let callerName = '';
+    try {
+      const userSnap = await db.doc(`users/${uid}`).get();
+      const userData = userSnap.data();
+      callerName = userData?.spotifyProfile?.displayName || userData?.displayName || 'User';
+    } catch (e) {
+      logger.warn(`Failed to fetch caller name for ${uid}`, e);
+    }
+
+    // 3. Execute Orchestration
+    try {
+      return await runOrchestrator(config, uid, callerName, dryRun);
+    } catch (e) {
+      logger.error('Orchestrator reached terminal error', {
         uid,
         playlistId,
         error: e instanceof Error ? { message: e.message, stack: e.stack } : e
       });
-      throw new HttpsError('internal', e instanceof Error ? e.message : 'Unknown error');
+
+      // Map common errors to friendly messages
+      const msg = (e as Error).message;
+      if (msg.includes('rate limit')) {
+        throw new HttpsError(
+          'resource-exhausted',
+          'Spotify is limiting our requests. Please try again in a few minutes.'
+        );
+      }
+      if (msg.includes('quota')) {
+        throw new HttpsError(
+          'resource-exhausted',
+          'AI generation quota exceeded. Try a different model or wait.'
+        );
+      }
+
+      throw new HttpsError('internal', `Curation failed: ${msg}`);
     }
   }
 );
@@ -366,16 +399,8 @@ export const searchSpotify = onCall(
       let results: SearchResult[];
 
       if (searchTypes.includes('playlist')) {
-        // Fetch ALL user playlists and filter locally by name/description
-        // This is MUCH more reliable for finding specific owned playlists than global search
-        const userPlaylists = await spotifyService.getUserPlaylists();
-        results = userPlaylists.filter((p: SearchResult) => {
-          const searchStr = `${p.name} ${p.description || ''}`.toLowerCase();
-          return searchStr.includes(query.toLowerCase());
-        });
-
-        // Limit to requested limit or 20
-        results = results.slice(0, limit || 20);
+        // Optimized Service-level search (Parallel fetching + Owned filter)
+        results = await spotifyService.searchUserPlaylists(query, limit || 20);
       } else {
         // For tracks/artists, global search is appropriate
         results = await spotifyService.search(query, searchTypes, limit || 20);

@@ -8,9 +8,14 @@ export interface DiffItem {
   artist: string;
 }
 
+export interface RemovedDiffItem extends DiffItem {
+  reason?: 'duplicate' | 'expired' | 'other';
+}
+
 export interface DiffResult {
   added: DiffItem[];
-  removed: DiffItem[];
+  removed: RemovedDiffItem[];
+  keptMandatory: DiffItem[];
 }
 
 export class DiffCalculator {
@@ -23,7 +28,8 @@ export class DiffCalculator {
     keptTracks: TrackWithMeta[], // Survivors (Internal Model)
     finalTrackListUris: string[], // The final ordered list of URIs
     mandatoryTracks: MandatoryTrack[], // Setup config (source of truth for VIPs)
-    newAiTracks: { uri: string; artist: string; track: string }[] // AI selections
+    newAiTracks: { uri: string; artist: string; track: string }[], // AI selections
+    removalReasons?: Map<string, 'duplicate' | 'expired' | 'other'>
   ): DiffResult {
     // 1. Identify Added URIs
     const survivorUris = new Set(keptTracks.map((t) => t.uri));
@@ -49,19 +55,51 @@ export class DiffCalculator {
       return { uri, name: 'Unknown Track', artist: 'Unknown Artist' };
     });
 
-    // 3. Identify Removed URIs
-    // Tracks that were in currentTracks but NOT in finalTrackListUris
-    // (Note: tracksToRemove passed from cleaner logic is also valid, but checking against final list is more robust/truthful)
-    const finalSet = new Set(finalTrackListUris);
-    const removedUris = currentTracks.filter((t) => !finalSet.has(t.uri)).map((t) => t.uri);
+    // 3. Identify Removed URIs (Accounting for Duplicates)
+    // We compare counts in the original vs final list
+    const finalCounts = new Map<string, number>();
+    finalTrackListUris.forEach((uri) => finalCounts.set(uri, (finalCounts.get(uri) || 0) + 1));
 
-    // 4. Resolve Removed Metadata
-    const removed = removedUris.map((uri) => {
-      const original = currentTracks.find((t) => t.uri === uri);
-      if (original) return { uri, name: original.name, artist: original.artist };
-      return { uri, name: 'Unknown Track', artist: 'Unknown Artist' };
+    const currentCounts = new Map<string, number>();
+    currentTracks.forEach((t) => currentCounts.set(t.uri, (currentCounts.get(t.uri) || 0) + 1));
+
+    const removed: RemovedDiffItem[] = [];
+    const processedUris = new Set<string>();
+
+    currentTracks.forEach((t) => {
+      if (processedUris.has(t.uri)) return;
+      processedUris.add(t.uri);
+
+      const cCount = currentCounts.get(t.uri) || 0;
+      const fCount = finalCounts.get(t.uri) || 0;
+      const removedCount = Math.max(0, cCount - fCount);
+
+      if (removedCount > 0) {
+        const reason = removalReasons?.get(t.uri) || 'other';
+        for (let i = 0; i < removedCount; i++) {
+          removed.push({
+            uri: t.uri,
+            name: t.name,
+            artist: t.artist,
+            reason
+          });
+        }
+      }
     });
 
-    return { added, removed };
+    // 5. Identify Kept Mandatory Tracks
+    const finalSet = new Set(finalTrackListUris);
+    const keptMandatoryUris = mandatoryTracks.map((m) => m.uri).filter((uri) => finalSet.has(uri));
+
+    const keptMandatory = keptMandatoryUris.map((uri) => {
+      const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
+      return {
+        uri,
+        name: vipMatch?.name || 'Unknown Track',
+        artist: vipMatch?.artist || 'Unknown Artist'
+      };
+    });
+
+    return { added, removed, keptMandatory };
   }
 }

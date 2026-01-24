@@ -45,7 +45,6 @@ describe('PlaylistOrchestrator', () => {
   let mockFirestoreLogger: {
     logActivity: ReturnType<typeof vi.fn>;
     pruneOldLogs: ReturnType<typeof vi.fn>;
-    updateCurationStatus: ReturnType<typeof vi.fn>;
   };
 
   const mockConfig: PlaylistConfig = {
@@ -87,9 +86,8 @@ describe('PlaylistOrchestrator', () => {
       arrangePlaylist: vi.fn()
     };
     mockFirestoreLogger = {
-      logActivity: vi.fn(),
-      pruneOldLogs: vi.fn(),
-      updateCurationStatus: vi.fn()
+      logActivity: vi.fn().mockResolvedValue('mock-log-id'),
+      pruneOldLogs: vi.fn()
     };
 
     orchestrator = new PlaylistOrchestrator(
@@ -205,11 +203,12 @@ describe('PlaylistOrchestrator', () => {
       expect.any(Array)
     );
 
-    // Verify status update includes dryRun flag
-    expect(mockFirestoreLogger.updateCurationStatus).toHaveBeenCalledWith(
+    // Verify status update includes dryRun flag via logActivity
+    expect(mockFirestoreLogger.logActivity).toHaveBeenCalledWith(
       expect.any(String),
+      'running',
       expect.any(String),
-      expect.objectContaining({ isDryRun: true })
+      expect.objectContaining({ dryRun: true })
     );
   });
 });

@@ -441,45 +441,94 @@ export class SpotifyService {
     });
   }
 
+  /**
+   * Optimized Parallel Fetch for User Playlists.
+   * Fetches first page to get total, then fetches remaining pages in parallel.
+   * Hard limit: 500 playlists (10 requests max) to prevent abuse.
+   */
   public async getUserPlaylists(): Promise<SearchResult[]> {
-    const results: SearchResult[] = [];
-    let offset = 0;
     const limit = 50;
-    let hasMore = true;
+    const maxPlaylists = 500;
+    const results: SearchResult[] = [];
 
     const userProfile = await this.getMe();
     const currentUserId = userProfile.id;
 
-    await this.executeWithRetry(async () => {
-      while (hasMore) {
-        // currentUser.playlists.playlists returns Page<SimplifiedPlaylist>
-        const response = await this.spotify.currentUser.playlists.playlists(limit, offset);
-        const items = response.items;
+    // 1. Fetch First Page (Sequential)
+    const firstPage = await this.executeWithRetry(() =>
+      this.spotify.currentUser.playlists.playlists(limit, 0)
+    );
 
-        items.forEach((p) => {
-          if (p.owner.id === currentUserId) {
-            results.push({
-              uri: p.uri,
-              name: p.name,
-              owner: p.owner.display_name || undefined,
-              ownerId: p.owner.id,
-              description: p.description || '',
-              imageUrl: p.images[0]?.url,
-              type: 'playlist'
-            });
-          }
+    const total = firstPage.total;
+    const items = firstPage.items;
+
+    // Process first page
+    items.forEach((p) => {
+      if (p.owner.id === currentUserId) {
+        results.push({
+          uri: p.uri,
+          name: p.name,
+          owner: p.owner.display_name || undefined,
+          ownerId: p.owner.id,
+          description: p.description || '',
+          imageUrl: p.images[0]?.url,
+          type: 'playlist'
         });
-
-        if (items.length < limit) {
-          hasMore = false;
-        } else {
-          offset += limit;
-        }
-
-        if (offset >= 500) hasMore = false;
       }
     });
+
+    // 2. Calculate remaining pages
+    // Math.min(total, maxPlaylists) to respect hard limit
+    const totalToFetch = Math.min(total, maxPlaylists);
+    const promises: Promise<void>[] = [];
+
+    // Start from offset 50
+    for (let offset = 50; offset < totalToFetch; offset += limit) {
+      promises.push(
+        (async () => {
+          await this.executeWithRetry(async () => {
+            const response = await this.spotify.currentUser.playlists.playlists(limit, offset);
+            response.items.forEach((p) => {
+              if (p.owner.id === currentUserId) {
+                results.push({
+                  uri: p.uri,
+                  name: p.name,
+                  owner: p.owner.display_name || undefined,
+                  ownerId: p.owner.id,
+                  description: p.description || '',
+                  imageUrl: p.images[0]?.url,
+                  type: 'playlist'
+                });
+              }
+            });
+          });
+        })()
+      );
+    }
+
+    if (promises.length > 0) {
+      logger.info(`Fetching ${promises.length} additional playlist pages in parallel...`);
+      await Promise.all(promises);
+    }
+
     return results;
+  }
+
+  /**
+   * Searches within the user's OWNED playlists using the optimized fetch.
+   */
+  public async searchUserPlaylists(query: string, limit: number = 20): Promise<SearchResult[]> {
+    // 1. Fetch ALL owned playlists (optimized)
+    const allUserPlaylists = await this.getUserPlaylists();
+
+    // 2. Filter locally
+    const filtered = allUserPlaylists.filter((p) => {
+      const searchStr = `${p.name} ${p.description || ''}`.toLowerCase();
+      return searchStr.includes(query.toLowerCase());
+    });
+
+    // 3. Return top N
+    return filtered.slice(0, limit);
   }
 
   public async removeTracks(

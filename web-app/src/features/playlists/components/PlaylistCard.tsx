@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { PlaylistConfig, ActivityLog } from '@smart-spotify-curator/shared';
 import { Edit2, Music, Calendar, Users, Radio, Trash2, History, FlaskConical } from 'lucide-react';
 import { RunButton } from './RunButton';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
@@ -11,8 +11,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FunctionsService } from '@/services/functions-service';
 import { FirestoreService } from '@/services/firestore-service';
 import { formatDistanceToNow } from 'date-fns';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import {
   AlertDialog,
@@ -74,6 +75,21 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     retry: 1
   });
 
+  const [latestLog, setLatestLog] = useState<ActivityLog | null>(null);
+  const [isLoadingLog, setIsLoadingLog] = useState(true);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // Subscription for real-time progress and status
+    const unsubscribe = FirestoreService.subscribeLatestLog(user.uid, config.id, (log) => {
+      setLatestLog(log);
+      setIsLoadingLog(false);
+    });
+
+    return () => unsubscribe();
+  }, [user?.uid, config.id]);
+
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user?.uid) throw new Error('User not authenticated');
@@ -105,7 +121,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         description: `"${config.name}" automation is now ${enabled ? 'active' : 'paused'}.`
       });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       console.error('Toggle failed:', error);
       toast.error('Failed to update playlist', {
         description: 'Please try again later.'
@@ -311,7 +327,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
           size="icon"
           aria-label="Edit playlist settings"
           className="group/btn border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             navigate(`/playlist/${config._docId}`);
           }}
@@ -324,7 +340,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
           size="icon"
           aria-label="Delete playlist"
           className="group/del border-white/10 bg-white/5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
-          onClick={(e) => {
+          onClick={(e: React.MouseEvent) => {
             e.stopPropagation();
             setShowDeleteDialog(true);
           }}
@@ -333,22 +349,23 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         </Button>
 
         <div className="flex-1 flex flex-col justify-center min-h-[44px]">
-          {config.curationStatus?.state === 'running' ? (
+          {latestLog?.metadata?.state === 'running' ? (
             <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex justify-between text-[10px] items-center px-0.5">
                 <span className="font-semibold text-primary animate-pulse uppercase tracking-wider">
-                  {config.curationStatus.step || 'Curating...'}
+                  {latestLog.metadata.step || 'Curating...'}
                 </span>
                 <span className="font-mono text-muted-foreground">
-                  {config.curationStatus.progress}%
+                  {latestLog.metadata.progress}%
                 </span>
               </div>
-              <Progress value={config.curationStatus.progress} className="h-1.5 bg-secondary/50" />
+              <Progress value={latestLog.metadata.progress} className="h-1.5 bg-secondary/50" />
             </div>
           ) : (
             <div className="flex gap-2 w-full">
               <RunButton
                 playlistId={config.id}
+                playlistName={config.name}
                 className="flex-1 h-10 min-h-[44px]"
                 disabled={!config.enabled}
               />
@@ -370,7 +387,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                             dryRun: true
                           });
 
-                          // Check for functional errors (the cloud function completed, but returned an error status)
+                          // Check for functional errors
                           const errorResult = result.results.find((r) => r.status === 'error');
 
                           if (errorResult) {
@@ -402,19 +419,18 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                 </Tooltip>
               </TooltipProvider>
 
-              {config.curationStatus?.diff && (
+              {latestLog?.metadata?.diff && (
                 <Button
                   variant="outline"
                   size="icon"
                   aria-label="View curation history"
                   className={cn(
                     'border-white/10 bg-white/5 text-muted-foreground transition-all h-10 w-10 min-h-[44px] min-w-[44px]',
-                    // Highlight history button if it was a dry run to encourage checking results
-                    config.curationStatus.isDryRun
+                    latestLog.metadata.dryRun
                       ? 'hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 text-amber-500/80'
                       : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10'
                   )}
-                  onClick={(e) => {
+                  onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     setShowHistory(true);
                   }}
@@ -453,25 +469,70 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
       </AlertDialog>
 
       {/* History / Diff Dialog */}
-      {config.curationStatus?.diff && (
+      {latestLog?.metadata?.diff && (
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogContent className="max-w-7xl h-[85vh] max-h-[90vh] flex flex-col">
             <DialogHeader>
               <DialogTitle>Curation History: {config.name}</DialogTitle>
               <DialogDescription>
-                Changes applied during the last run (
-                {metrics?.lastUpdated ? new Date(metrics.lastUpdated).toLocaleString() : 'Just now'}
+                Changes from the latest {latestLog?.metadata?.dryRun ? 'test' : 'automation'} run ({' '}
+                {latestLog?.timestamp
+                  ? new Date(latestLog.timestamp).toLocaleString()
+                  : metrics?.lastUpdated
+                    ? new Date(metrics.lastUpdated).toLocaleString()
+                    : 'Just now'}
                 )
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 overflow-hidden min-h-0 py-4">
-              <DiffViewer
-                diff={config.curationStatus.diff}
-                isDryRun={config.curationStatus.isDryRun}
-              />
+            <div className="flex-1 overflow-y-auto md:overflow-hidden min-h-0 py-4 h-full pr-1">
+              {isLoadingLog ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin h-8 w-8 rounded-full border-2 border-primary border-t-transparent" />
+                </div>
+              ) : latestLog?.metadata?.diff ? (
+                <div className="flex flex-col h-full">
+                  <DiffViewer diff={latestLog.metadata.diff} isDryRun={latestLog.metadata.dryRun} />
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                  <History className="h-10 w-10 mb-2 opacity-50" />
+                  <p>No details available for this run.</p>
+                  <p className="text-xs text-muted-foreground/60">
+                    Log entry may have been deleted.
+                  </p>
+                </div>
+              )}
             </div>
-            <DialogFooter>
-              <Button onClick={() => setShowHistory(false)}>Close</Button>
+            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
+              {latestLog?.metadata?.diff?.stats && (
+                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-muted-foreground">
+                  <span>
+                    Target:{' '}
+                    <span className="text-foreground">{latestLog.metadata.diff.stats.target}</span>
+                  </span>
+                  <span className="opacity-20 text-lg leading-none">|</span>
+                  <span>
+                    Final:{' '}
+                    <span className="text-foreground">{latestLog.metadata.diff.stats.final}</span>
+                  </span>
+                  <span className="opacity-20 text-lg leading-none">|</span>
+                  <span className="flex items-center gap-1.5">
+                    Success:
+                    {latestLog.metadata.diff.stats.success ? (
+                      <Badge className="bg-green-500/20 text-green-500 hover:bg-green-500/30 border-0 h-5 px-1.5">
+                        Yes
+                      </Badge>
+                    ) : (
+                      <Badge variant="destructive" className="h-5 px-1.5">
+                        No
+                      </Badge>
+                    )}
+                  </span>
+                </div>
+              )}
+              <Button onClick={() => setShowHistory(false)} className="w-full sm:w-auto">
+                Close
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>

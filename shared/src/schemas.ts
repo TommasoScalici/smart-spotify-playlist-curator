@@ -12,7 +12,7 @@ export const MandatoryTrackSchema = z.object({
   name: z.string().optional(),
   artist: z.string().optional(),
   imageUrl: z.string().optional(),
-  positionRange: PositionRangeSchema,
+  positionRange: PositionRangeSchema.default({ min: 1, max: 1 }),
   note: z.string().optional(),
   comment: z.string().optional()
 });
@@ -32,7 +32,7 @@ export const CurationRulesSchema = z.object({
 });
 
 export const PlaylistSettingsSchema = z.object({
-  targetTotalTracks: z.number().min(5).max(100),
+  targetTotalTracks: z.number().min(5).max(999),
   description: z.string().optional(),
   allowExplicit: z.boolean().optional(),
   referenceArtists: z.array(z.string()).optional()
@@ -42,7 +42,24 @@ export const PlaylistSettingsSchema = z.object({
 
 export const CurationDiffSchema = z.object({
   added: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() })),
-  removed: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() }))
+  removed: z.array(
+    z.object({
+      uri: z.string(),
+      name: z.string(),
+      artist: z.string(),
+      reason: z.enum(['duplicate', 'expired', 'other']).optional()
+    })
+  ),
+  keptMandatory: z
+    .array(z.object({ uri: z.string(), name: z.string(), artist: z.string() }))
+    .optional(),
+  stats: z
+    .object({
+      target: z.number(),
+      final: z.number(),
+      success: z.boolean()
+    })
+    .optional()
 });
 
 export const ActivityMetadataSchema = z.object({
@@ -55,7 +72,19 @@ export const ActivityMetadataSchema = z.object({
   expiredRemoved: z.number().optional(),
   finalCount: z.number().optional(),
   dryRun: z.boolean().optional(),
-  error: z.string().optional()
+  error: z.string().optional(),
+  progress: z.number().optional(),
+  step: z.string().optional(),
+  triggeredBy: z.string().optional(),
+  state: z.enum(['idle', 'running', 'completed', 'error']).optional(),
+  diff: CurationDiffSchema.optional()
+});
+
+export const ActivityLogSchema = z.object({
+  id: z.string().optional(),
+  timestamp: z.any().optional(), // Firestore Timestamp
+  type: z.string().optional(),
+  metadata: ActivityMetadataSchema
 });
 
 export const CurationStatusSchema = z.object({
@@ -80,11 +109,21 @@ export const PlaylistConfigSchema = z.object({
   ownerId: z.string().optional(),
   dryRun: z.boolean().optional(),
   mandate: z.enum(['exact', 'flexible']).optional(),
-  settings: PlaylistSettingsSchema,
-  mandatoryTracks: z.array(MandatoryTrackSchema),
-  aiGeneration: AiGenerationConfigSchema,
-  curationRules: CurationRulesSchema,
-  curationStatus: CurationStatusSchema.optional()
+  settings: PlaylistSettingsSchema.default({
+    targetTotalTracks: 20
+  }),
+  mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
+  aiGeneration: AiGenerationConfigSchema.default({
+    enabled: true,
+    tracksToAdd: 10,
+    model: 'gemini-2.5-flash',
+    temperature: 0.7
+  }),
+  curationRules: CurationRulesSchema.default({
+    maxTrackAgeDays: 30,
+    maxTracksPerArtist: 2,
+    removeDuplicates: true
+  })
 });
 
 // --- User Schema ---
@@ -133,6 +172,7 @@ export type PositionRange = z.infer<typeof PositionRangeSchema>;
 export type CurationStatus = z.infer<typeof CurationStatusSchema>;
 export type CurationDiff = z.infer<typeof CurationDiffSchema>;
 export type ActivityMetadata = z.infer<typeof ActivityMetadataSchema>;
+export type ActivityLog = z.infer<typeof ActivityLogSchema>;
 
 // --- Orchestration Response Schema ---
 

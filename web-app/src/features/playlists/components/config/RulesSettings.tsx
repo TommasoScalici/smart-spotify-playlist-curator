@@ -55,7 +55,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               id="targetTotalTracks"
               type="number"
               min="5"
-              max="100"
+              max="999"
               {...register('settings.targetTotalTracks', { valueAsNumber: true })}
               className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
             />

@@ -36,8 +36,13 @@ export class ConfigService {
       if (parseResult.success) {
         return parseResult.data as PlaylistConfig;
       } else {
-        logger.error(`Invalid configuration for playlist ${playlistId}:`, parseResult.error);
-        throw new Error(`Invalid configuration stored for ${playlistId}`);
+        logger.error(`Invalid configuration for playlist ${playlistId}:`, {
+          issues: parseResult.error.issues,
+          receivedData: configWithUser
+        });
+        throw new Error(
+          `Invalid configuration stored for ${playlistId}. Details: ${parseResult.error.issues.map((e) => `${e.path.join('.')}: ${e.message}`).join(', ')}`
+        );
       }
     } catch (error) {
       logger.error(`Error fetching playlist ${playlistId}:`, error);

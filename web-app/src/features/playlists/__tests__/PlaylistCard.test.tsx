@@ -38,10 +38,6 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
     maxTrackAgeDays: 365,
     removeDuplicates: true,
     maxTracksPerArtist: 2
-  },
-  curationStatus: {
-    state: 'idle',
-    progress: 100
   }
 };
 
@@ -79,6 +75,9 @@ describe('PlaylistCard', () => {
       lastUpdated: new Date().toISOString(),
       owner: 'Tommaso'
     });
+
+    // Mock subscribeLatestLog to return a no-op unsubscribe function
+    (FirestoreService.subscribeLatestLog as Mock).mockReturnValue(vi.fn());
   });
 
   it('renders playlist details correctly', async () => {

@@ -79,12 +79,15 @@ export const MainLayout = () => {
 
       <header className="layout-header border-b bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="layout-header__content container mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="brand-logo flex items-center gap-2">
+          <Link
+            to="/"
+            className="brand-logo flex items-center gap-2 hover:opacity-80 transition-opacity"
+          >
             <span className="brand-logo__icon text-2xl">🎧</span>
             <span className="font-bold text-lg">
               Smart <span className="text-primary">Curator</span>
             </span>
-          </div>
+          </Link>
 
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2">

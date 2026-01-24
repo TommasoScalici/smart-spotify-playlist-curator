@@ -7,13 +7,17 @@ import {
   setDoc,
   query,
   where,
-  onSnapshot
+  onSnapshot,
+  orderBy,
+  limit
 } from 'firebase/firestore';
 import { db } from './firebase';
 import {
   PlaylistConfig,
   PlaylistConfigSchema,
-  SpotifyProfile
+  SpotifyProfile,
+  ActivityLog,
+  ActivityLogSchema
 } from '@smart-spotify-curator/shared';
 import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
 
@@ -224,5 +228,40 @@ export const FirestoreService = {
       } as SpotifyProfile;
     }
     return null;
+  },
+
+  /**
+   * Subscribe to the latest log entry for a specific playlist.
+   * Useful for real-time progress and status tracking.
+   * @param uid - The user ID
+   * @param playlistId - The Spotify Playlist URI
+   * @param callback - Function called with the latest log entry
+   */
+  subscribeLatestLog(
+    uid: string,
+    playlistId: string,
+    callback: (log: ActivityLog | null) => void
+  ): () => void {
+    const activityRef = collection(db, 'users', uid, 'logs');
+    const q = query(
+      activityRef,
+      where('metadata.playlistId', '==', playlistId),
+      orderBy('timestamp', 'desc'),
+      limit(1)
+    );
+
+    return onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        const data = snapshot.docs[0].data();
+        const parseResult = ActivityLogSchema.safeParse(data);
+        if (parseResult.success) {
+          callback({ ...parseResult.data, id: snapshot.docs[0].id });
+        } else {
+          console.error('Invalid log data:', parseResult.error);
+        }
+      } else {
+        callback(null);
+      }
+    });
   }
 };

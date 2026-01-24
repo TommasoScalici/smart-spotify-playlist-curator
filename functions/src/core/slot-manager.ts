@@ -68,6 +68,20 @@ export class SlotManager {
       }
     }
 
+    // Phase C: Fallback Placement for Unplaced Mandatory Tracks
+    // If ranges were invalid or full, force place them in ANY empty slot.
+    const placedUris = new Set(playlist.filter((uri): uri is string => uri !== null));
+    for (const meta of mandatoryTracks) {
+      if (!placedUris.has(meta.uri)) {
+        // Find first empty slot
+        const emptyIndex = playlist.indexOf(null);
+        if (emptyIndex !== -1) {
+          playlist[emptyIndex] = meta.uri;
+          placedUris.add(meta.uri);
+        }
+      }
+    }
+
     const topSlotsLimit = 30;
     const newAiTracksPool = [...newAiTracks]; // Copy to mutate
 

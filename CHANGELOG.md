@@ -1,5 +1,15 @@
 # Changelog
 
+# [1.4.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.3.2...v1.4.0) (2026-01-24)
+
+### Bug Fixes
+
+- resolve lint errors, fix unit tests and optimize CI/CD pipeline ([7429b69](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/7429b69caa9c1d35a212129b29655e1c1cc434d0))
+
+### Features
+
+- implement real-time dashboard updates and fix curation logic bugs ([b2215b3](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/b2215b356203e410b80cd5c37ca156d596ca1ddc))
+
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
 ### [1.3.2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.3.1...v1.3.2) (2026-01-23)

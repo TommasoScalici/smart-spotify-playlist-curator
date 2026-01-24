@@ -84,7 +84,8 @@ describe('DiffCalculator', () => {
     expect(result.removed[0]).toEqual({
       uri: 'spotify:track:2',
       name: 'Delete Me',
-      artist: 'A2'
+      artist: 'A2',
+      reason: 'other'
     });
     expect(result.added).toHaveLength(0);
   });
@@ -102,5 +103,40 @@ describe('DiffCalculator', () => {
       name: 'Unknown Track',
       artist: 'Unknown Artist'
     });
+  });
+
+  it('should identify kept mandatory tracks', () => {
+    const current = [createSpotifyTrack('1', 'VIP Song', 'VIP Artist')];
+    const kept = [createKeptTrack('1', 'VIP Song', 'VIP Artist')];
+    const mandatory: MandatoryTrack[] = [
+      {
+        uri: 'spotify:track:1',
+        name: 'VIP Song',
+        artist: 'VIP Artist',
+        positionRange: { min: 1, max: 1 }
+      }
+    ];
+    const finalUris = ['spotify:track:1'];
+
+    const result = DiffCalculator.calculate(current, kept, finalUris, mandatory, []);
+
+    expect(result.keptMandatory).toHaveLength(1);
+    expect(result.keptMandatory[0]).toEqual({
+      uri: 'spotify:track:1',
+      name: 'VIP Song',
+      artist: 'VIP Artist'
+    });
+  });
+
+  it('should use explicit removal reasons when provided', () => {
+    const current = [createSpotifyTrack('1', 'Duplicate', 'A1')];
+    const kept: TrackWithMeta[] = [];
+    const finalUris: string[] = [];
+    const reasons = new Map<string, 'duplicate' | 'expired' | 'other'>();
+    reasons.set('spotify:track:1', 'duplicate');
+
+    const result = DiffCalculator.calculate(current, kept, finalUris, [], [], reasons);
+
+    expect(result.removed[0].reason).toBe('duplicate');
   });
 });

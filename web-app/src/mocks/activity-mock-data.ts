@@ -42,7 +42,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       removedCount: 3,
       duplicatesRemoved: 2,
       finalCount: 50,
-      aiTracksAdded: 10
+      aiTracksAdded: 10,
+      triggeredBy: 'Developer Admin'
     }
   },
   {
@@ -55,7 +56,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
       duplicatesRemoved: 5,
-      finalCount: 30
+      finalCount: 30,
+      triggeredBy: 'System Auto'
     }
   },
   {
@@ -68,7 +70,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       playlistId: 'spotify:playlist:37i9dQZF1DX1s9knjP51Oa',
       playlistName: '☕ Morning Coffee',
       addedCount: 8,
-      finalCount: 25
+      finalCount: 25,
+      triggeredBy: 'Tommaso'
     }
   },
   {
@@ -81,7 +84,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
       duplicatesRemoved: 3,
-      finalCount: 75
+      finalCount: 75,
+      triggeredBy: 'Health Monitor'
     }
   },
   {
@@ -93,7 +97,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO',
       playlistName: '🌙 Late Night Jazz',
-      finalCount: 0
+      finalCount: 0,
+      triggeredBy: 'Developer Admin'
     }
   },
   {
@@ -105,7 +110,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
-      error: 'Spotify API rate limit exceeded'
+      error: 'Spotify API rate limit exceeded',
+      triggeredBy: 'System Auto'
     }
   },
   {
@@ -117,7 +123,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
-      addedCount: 5
+      addedCount: 5,
+      triggeredBy: 'Tommaso'
     }
   },
   {
@@ -130,7 +137,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       playlistId: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
       playlistName: '🎧 Chill Vibes',
       removedCount: 4,
-      finalCount: 50
+      finalCount: 50,
+      triggeredBy: 'Developer Admin'
     }
   },
   {
@@ -153,7 +161,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       addedCount: 15,
       removedCount: 0,
       duplicatesRemoved: 0,
-      finalCount: 40
+      finalCount: 40,
+      triggeredBy: 'Scheduler'
     }
   },
   {
@@ -164,7 +173,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     message: 'Updated configuration for "☕ Morning Coffee"',
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX1s9knjP51Oa',
-      playlistName: '☕ Morning Coffee'
+      playlistName: '☕ Morning Coffee',
+      triggeredBy: 'Tommaso'
     }
   },
   {
@@ -175,7 +185,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     message: 'Started curation for "💪 Workout Energy"',
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
-      playlistName: '💪 Workout Energy'
+      playlistName: '💪 Workout Energy',
+      triggeredBy: 'Developer Admin'
     }
   }
 ];
