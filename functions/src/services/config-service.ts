@@ -6,60 +6,6 @@ const PLAYLISTS_COLLECTION = 'playlists';
 
 export class ConfigService {
   /**
-   * Fetches all enabled playlist configurations from Firestore.
-   * Validates each config against the Zod schema.
-   * @returns Array of validated PlaylistConfig objects
-   */
-  async getEnabledPlaylists(): Promise<PlaylistConfig[]> {
-    try {
-      // Use Collection Group query to search across all users' 'playlists' subcollections
-      const snapshot = await db
-        .collectionGroup(PLAYLISTS_COLLECTION)
-        .where('enabled', '==', true)
-        .get();
-
-      if (snapshot.empty) {
-        logger.info('No enabled playlists found in Firestore.');
-        return [];
-      }
-
-      const validConfigs: PlaylistConfig[] = [];
-
-      for (const doc of snapshot.docs) {
-        const data = doc.data();
-
-        // CRITICAL: Extract ownerId from the document path (users/{uid}/playlists/{playlistId})
-        // doc.ref.parent is 'playlists' collection
-        // doc.ref.parent.parent is 'users/{uid}' document
-        const ownerId = doc.ref.parent.parent?.id;
-
-        if (!ownerId) {
-          logger.warn(
-            `Skipping playlist ${doc.id} because it has no parent user (orphan document).`
-          );
-          continue;
-        }
-
-        // Inject/Overwrite ownerId from path to ensure truth
-        const configWithUser = { ...data, ownerId };
-
-        const parseResult = PlaylistConfigSchema.safeParse(configWithUser);
-
-        if (parseResult.success) {
-          validConfigs.push(parseResult.data as PlaylistConfig);
-        } else {
-          logger.error(`Invalid configuration for playlist ${doc.id}:`, parseResult.error);
-        }
-      }
-
-      return validConfigs;
-    } catch (error) {
-      logger.error('Error fetching playlists from Firestore:', error);
-      throw new Error('Failed to load configuration from database.');
-    }
-  }
-
-  /**
    * Fetches a specific playlist configuration by ID.
    * @param playlistId - The Spotify ID of the playlist
    * @returns The validated configuration or null if not found

@@ -8,7 +8,11 @@ describe('Spotify Integration: Service Logic', () => {
   let service: SpotifyService;
 
   beforeAll(() => {
-    service = SpotifyService.getInstance();
+    if (process.env.SPOTIFY_REFRESH_TOKEN) {
+      service = new SpotifyService(process.env.SPOTIFY_REFRESH_TOKEN);
+    } else {
+      service = new SpotifyService('dummy-token-for-skip');
+    }
   });
 
   // Skip if credentials are missing

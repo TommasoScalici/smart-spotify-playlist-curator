@@ -3,6 +3,7 @@ import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestor
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
+import { ActivityMetadata } from '@smart-spotify-curator/shared';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
@@ -12,7 +13,7 @@ export interface ActivityLog {
   message: string;
   timestamp: string; // ISO string
   read: boolean;
-  metadata?: Record<string, unknown>;
+  metadata?: ActivityMetadata;
 }
 
 /**
@@ -55,7 +56,7 @@ export const useActivityFeed = () => {
       activities: MOCK_ACTIVITIES.map((activity) => ({
         ...activity,
         read: false
-      })),
+      })) as ActivityLog[],
       loading: false
     };
   }

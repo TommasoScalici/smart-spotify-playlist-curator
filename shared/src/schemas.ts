@@ -45,6 +45,19 @@ export const CurationDiffSchema = z.object({
   removed: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() }))
 });
 
+export const ActivityMetadataSchema = z.object({
+  playlistId: z.string().optional(),
+  playlistName: z.string().optional(),
+  addedCount: z.number().optional(),
+  removedCount: z.number().optional(),
+  aiTracksAdded: z.number().optional(),
+  duplicatesRemoved: z.number().optional(),
+  expiredRemoved: z.number().optional(),
+  finalCount: z.number().optional(),
+  dryRun: z.boolean().optional(),
+  error: z.string().optional()
+});
+
 export const CurationStatusSchema = z.object({
   state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
   progress: z.number().min(0).max(100).default(0),
@@ -119,6 +132,7 @@ export type PlaylistSettings = z.infer<typeof PlaylistSettingsSchema>;
 export type PositionRange = z.infer<typeof PositionRangeSchema>;
 export type CurationStatus = z.infer<typeof CurationStatusSchema>;
 export type CurationDiff = z.infer<typeof CurationDiffSchema>;
+export type ActivityMetadata = z.infer<typeof ActivityMetadataSchema>;
 
 // --- Orchestration Response Schema ---
 

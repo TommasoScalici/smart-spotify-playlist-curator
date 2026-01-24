@@ -18,12 +18,7 @@ export const exchangeSpotifyToken = functions.https.onCall(
   {
     cors: true,
     invoker: 'public',
-    secrets: [
-      'SPOTIFY_CLIENT_ID',
-      'SPOTIFY_CLIENT_SECRET',
-      'SPOTIFY_REFRESH_TOKEN',
-      'GOOGLE_AI_API_KEY'
-    ]
+    secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'GOOGLE_AI_API_KEY']
   },
   async (request) => {
     // 1. Verify User Authentication
@@ -47,7 +42,9 @@ export const exchangeSpotifyToken = functions.https.onCall(
 
     try {
       // 3. Exchange Code for Tokens
-      const spotifyService = SpotifyService.getInstance();
+      // We init with a placeholder because we don't have a token yet,
+      // but we need the client ID/Secret configured in the instance.
+      const spotifyService = new SpotifyService('initial-auth-flow');
       const { refreshToken, accessToken } = await spotifyService.exchangeCode(
         input.code,
         input.redirectUri
@@ -55,7 +52,8 @@ export const exchangeSpotifyToken = functions.https.onCall(
 
       // 4. Fetch Public Profile Info IMMEDIATELY (Before writing anything)
       // Use the *new* tokens to fetch user profile
-      const userClient = SpotifyService.createForUser(refreshToken, accessToken);
+      const userClient = new SpotifyService(refreshToken);
+      userClient.setAccessToken(accessToken, 3600);
       const me = await userClient.getMe();
 
       const spotifyProfile = {

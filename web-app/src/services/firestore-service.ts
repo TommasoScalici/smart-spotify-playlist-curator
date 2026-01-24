@@ -95,13 +95,20 @@ export const FirestoreService = {
       targetDocRef = doc(db, 'users', uid, 'playlists', docId);
     } else {
       const playlistsRef = collection(db, 'users', uid, 'playlists');
-      const q = query(playlistsRef, where('id', '==', config.id));
-      const snap = await getDocs(q);
-
-      if (!snap.empty) {
-        targetDocRef = doc(playlistsRef, snap.docs[0].id);
+      // Enforce deterministic ID based on Spotify URI if available
+      if (config.id && config.id.startsWith('spotify:playlist:')) {
+        const deterministicId = config.id.replace(/:/g, '_');
+        targetDocRef = doc(playlistsRef, deterministicId);
       } else {
-        targetDocRef = doc(playlistsRef);
+        // Fallback or legacy check (optional, but good for safety)
+        const q = query(playlistsRef, where('id', '==', config.id));
+        const snap = await getDocs(q);
+
+        if (!snap.empty) {
+          targetDocRef = doc(playlistsRef, snap.docs[0].id);
+        } else {
+          targetDocRef = doc(playlistsRef); // Random as last resort
+        }
       }
     }
 

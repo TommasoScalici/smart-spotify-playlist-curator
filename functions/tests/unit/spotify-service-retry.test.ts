@@ -1,111 +1,122 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { SpotifyService } from '../../src/services/spotify-service';
 
-// Auto-mock the library (class)
-vi.mock('spotify-web-api-node');
-
-// Mock config
+// Mock Config
 vi.mock('../../src/config/env', () => ({
   config: {
-    SPOTIFY_CLIENT_ID: 'test',
-    SPOTIFY_CLIENT_SECRET: 'test',
-    SPOTIFY_REFRESH_TOKEN: 'test'
+    SPOTIFY_CLIENT_ID: 'test-client',
+    SPOTIFY_CLIENT_SECRET: 'test-secret',
+    SPOTIFY_REFRESH_TOKEN: 'test-refresh'
   }
 }));
 
+// Create a shared mock instance
+const mockSpotifyInstance = {
+  playlists: {
+    getPlaylistItems: vi.fn(),
+    movePlaylistItems: vi.fn(),
+    addItemsToPlaylist: vi.fn(),
+    removeItemsFromPlaylist: vi.fn()
+  },
+  currentUser: {
+    profile: vi.fn(),
+    playlists: { playlists: vi.fn() }
+  },
+  tracks: { get: vi.fn() },
+  search: vi.fn()
+};
+
+vi.mock('@spotify/web-api-ts-sdk', () => {
+  return {
+    SpotifyApi: {
+      withAccessToken: vi.fn(() => mockSpotifyInstance)
+    }
+  };
+});
+
 describe('SpotifyService Retry Logic', () => {
   let service: SpotifyService;
-  let mockSpotifyApi: {
-    refreshAccessToken: ReturnType<typeof vi.fn>;
-    getPlaylistTracks: ReturnType<typeof vi.fn>;
-    setAccessToken: ReturnType<typeof vi.fn>;
-  };
 
   beforeEach(() => {
-    // Reset singleton
-    (SpotifyService as unknown as { instance: SpotifyService | undefined }).instance = undefined;
     vi.clearAllMocks();
 
-    service = SpotifyService.getInstance();
+    // Mock successful refresh logic by default to avoid EnsureAccessToken failing tests
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        access_token: 'refreshed-token',
+        expires_in: 3600,
+        refresh_token: 'new-refresh'
+      })
+    } as unknown as Response);
 
-    // Access the private spotifyApi instance which is now a mock
-    mockSpotifyApi = (
-      service as unknown as {
-        spotifyApi: {
-          refreshAccessToken: ReturnType<typeof vi.fn>;
-          getPlaylistTracks: ReturnType<typeof vi.fn>;
-          setAccessToken: ReturnType<typeof vi.fn>;
-        };
-      }
-    ).spotifyApi;
+    service = new SpotifyService('mock-refresh-token');
 
-    // Mock delay helper to avoid timer issues
-    vi.spyOn(service as unknown as { delay: () => Promise<void> }, 'delay').mockResolvedValue(
-      undefined
-    );
+    // Stub delay to avoid waiting
+    // We can't spyOn private delay easily, but we can rely on Vitest timers or just let it promise-resolve fast?
+    // The service has `private delay(ms)`.
+    // Tests might be slow if we don't mock timers.
+    // Hack: override delay on the instance
+    // Use a type cast to access the private delay method for testing purposes
+    (service as unknown as { delay: (ms: number) => Promise<void> }).delay = vi
+      .fn()
+      .mockResolvedValue(undefined);
+
+    // Force token expiration to 0 to trigger ensureAccessToken -> refresh
+    // Or set it to valid to skip refresh?
+    // Retry tests usually check "refresh on 401" so we need control.
+    // By default, constructor sets expiration to 0? No, sets to 0 epoch?
+    // Constructor: this.tokenExpirationEpoch = 0 (implied init).
+    // So first call triggers refresh.
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should retry on 429 Rate Limit', async () => {
-    // Setup success for token check (if needed)
-    // Since we mock the instance methods, we need to ensure refreshAccessToken returns something valid if called
-    // or ensureAccessToken logic passes.
-    // Initially token is expired (epoch 0).
-    // So ensureAccessToken calls refreshAccessToken.
+    // 1. First call (ensureAccessToken) -> Refresh (succeeds via global.fetch mock)
 
-    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      body: { access_token: 'valid-token', expires_in: 3600 }
-    });
+    // 2. getPlaylistTracks -> 429
+    const error429 = { status: 429, headers: { get: () => '1' } };
+    mockSpotifyInstance.playlists.getPlaylistItems.mockRejectedValueOnce(error429);
 
-    // Mock getPlaylistTracks to fail once with 429, then succeed
-    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>)
-      .mockRejectedValueOnce({
-        statusCode: 429,
-        headers: { 'retry-after': 1 }
-      })
-      .mockResolvedValueOnce({
-        body: { items: [] }
-      });
-
-    const result = await service.getPlaylistTracks('test-playlist');
-
-    expect(result).toEqual([]);
-    expect(mockSpotifyApi.getPlaylistTracks).toHaveBeenCalledTimes(2);
-  });
-
-  it('should refresh token and retry on 401 Unauthorized', async () => {
-    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      body: { access_token: 'initial-token', expires_in: 3600 }
-    });
-
-    // getPlaylistTracks -> 401 -> refresh -> retry -> success
-    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>)
-      .mockRejectedValueOnce({ statusCode: 401 })
-      .mockResolvedValueOnce({ body: { items: [] } });
+    // 3. Retry -> Success
+    mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValueOnce({ items: [] });
 
     await service.getPlaylistTracks('test-playlist');
 
-    // Should call refresh twice (once at start, once on 401)
-    expect(mockSpotifyApi.refreshAccessToken).toHaveBeenCalledTimes(2);
-    // Should call setAccessToken with new token?
-    expect(mockSpotifyApi.setAccessToken).toHaveBeenCalled();
-    expect(mockSpotifyApi.getPlaylistTracks).toHaveBeenCalledTimes(2);
+    expect(mockSpotifyInstance.playlists.getPlaylistItems).toHaveBeenCalledTimes(2);
+    expect(global.fetch).toHaveBeenCalled(); // Initial refresh
+  });
+
+  it('should refresh token and retry on 401 Unauthorized', async () => {
+    // 1. Initial refresh success (constructor epoch 0)
+
+    // 2. Call fails with 401
+    const error401 = { status: 401 };
+    mockSpotifyInstance.playlists.getPlaylistItems.mockRejectedValueOnce(error401);
+
+    // 3. Code should trigger REFRESH (ensureAccessToken) again
+    // 4. Retry -> Success
+    mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValueOnce({ items: [] });
+
+    await service.getPlaylistTracks('test-playlist');
+
+    expect(global.fetch).toHaveBeenCalledTimes(2); // Initial init + 401 recovery
+    expect(mockSpotifyInstance.playlists.getPlaylistItems).toHaveBeenCalledTimes(2);
   });
 
   it('should fail after max retries', async () => {
-    (mockSpotifyApi.refreshAccessToken as unknown as ReturnType<typeof vi.fn>).mockResolvedValue({
-      body: { access_token: 'valid-token', expires_in: 3600 }
-    });
+    // 1. Initial refresh success
 
-    (mockSpotifyApi.getPlaylistTracks as unknown as ReturnType<typeof vi.fn>).mockRejectedValue({
-      statusCode: 429,
-      headers: { 'retry-after': 1 }
-    });
+    // 2. Fail consistently
+    const error500 = { status: 500, message: 'Server Error' };
+    mockSpotifyInstance.playlists.getPlaylistItems.mockRejectedValue(error500);
 
-    const promise = service.getPlaylistTracks('test-playlist');
+    await expect(service.getPlaylistTracks('test-playlist')).rejects.toMatchObject({ status: 500 });
 
-    await expect(promise).rejects.toMatchObject({ statusCode: 429 });
-
-    // Initial call + 3 retries = 4 calls total
-    expect(mockSpotifyApi.getPlaylistTracks).toHaveBeenCalledTimes(4);
+    // Initial + 3 retries = 4
+    expect(mockSpotifyInstance.playlists.getPlaylistItems).toHaveBeenCalledTimes(4);
   });
 });

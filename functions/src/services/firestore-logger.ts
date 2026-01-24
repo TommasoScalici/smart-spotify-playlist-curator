@@ -60,8 +60,11 @@ export class FirestoreLogger {
   ): Promise<void> {
     if (!ownerId || !playlistId) return;
 
+    // Sanitize ID to match frontend's underscore-based deterministic ID
+    const sanitizedId = playlistId.replace(/:/g, '_');
+
     try {
-      await db.doc(`users/${ownerId}/playlists/${playlistId}`).update({
+      await db.doc(`users/${ownerId}/playlists/${sanitizedId}`).update({
         curationStatus: {
           ...status,
           lastUpdated: new Date().toISOString()

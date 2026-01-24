@@ -1,81 +1,51 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-
 import { SpotifyService } from '../../src/services/spotify-service';
-import SpotifyWebApi from 'spotify-web-api-node';
 
-// Mock SpotifyWebApi
-vi.mock('spotify-web-api-node', () => {
-  return {
-    default: vi.fn(function () {
-      return {
-        refreshAccessToken: vi.fn(),
-        setAccessToken: vi.fn(),
-        getPlaylist: vi.fn(),
-        getPlaylistTracks: vi.fn(),
-        removeTracksFromPlaylist: vi.fn(),
-        reorderTracksInPlaylist: vi.fn(),
-        addTracksToPlaylist: vi.fn()
-      };
-    })
-  };
-});
-
-// Mock config
+// Mock Config
 vi.mock('../../src/config/env', () => ({
   config: {
-    SPOTIFY_CLIENT_ID: 'test',
-    SPOTIFY_CLIENT_SECRET: 'test',
-    SPOTIFY_REFRESH_TOKEN: 'test'
+    SPOTIFY_CLIENT_ID: 'test-client',
+    SPOTIFY_CLIENT_SECRET: 'test-secret',
+    SPOTIFY_REFRESH_TOKEN: 'test-refresh'
+  }
+}));
+
+const mockSpotifyInstance = {
+  playlists: {
+    getPlaylistItems: vi.fn(),
+    removeItemsFromPlaylist: vi.fn(),
+    movePlaylistItems: vi.fn(),
+    addItemsToPlaylist: vi.fn(),
+    getPlaylist: vi.fn()
+  }
+};
+
+vi.mock('@spotify/web-api-ts-sdk', () => ({
+  SpotifyApi: {
+    withAccessToken: vi.fn(() => mockSpotifyInstance)
   }
 }));
 
 describe('SpotifyService - Skeleton Strategy', () => {
   let spotifyService: SpotifyService;
-  let mockSpotifyApi: {
-    refreshAccessToken: ReturnType<typeof vi.fn>;
-    setAccessToken: ReturnType<typeof vi.fn>;
-    getPlaylist: ReturnType<typeof vi.fn>;
-    getPlaylistTracks: ReturnType<typeof vi.fn>;
-    removeTracksFromPlaylist: ReturnType<typeof vi.fn>;
-    reorderTracksInPlaylist: ReturnType<typeof vi.fn>;
-    addTracksToPlaylist: ReturnType<typeof vi.fn>;
-  };
 
   beforeEach(() => {
-    // Clear instance to force new creation with mock
-    // @ts-expect-error - Clearing private instance for testing
-    SpotifyService.instance = undefined;
+    vi.clearAllMocks();
 
-    const MockSpotifyWebApi = vi.fn();
-    mockSpotifyApi = {
-      refreshAccessToken: vi.fn(),
-      setAccessToken: vi.fn(),
-      getPlaylist: vi.fn(),
-      getPlaylistTracks: vi.fn(),
-      removeTracksFromPlaylist: vi.fn(),
-      reorderTracksInPlaylist: vi.fn(),
-      addTracksToPlaylist: vi.fn()
-    };
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ access_token: 'refreshed-token', expires_in: 3600 })
+    } as unknown as Response);
 
-    (MockSpotifyWebApi as unknown as ReturnType<typeof vi.fn>).mockReturnValue(mockSpotifyApi);
-    vi.mocked(SpotifyWebApi).mockImplementation(function () {
-      return mockSpotifyApi as unknown;
-    });
-
-    // Default Mocks
-    mockSpotifyApi.refreshAccessToken.mockResolvedValue({
-      body: { access_token: 'new-token', expires_in: 3600 }
-    } as unknown);
-    mockSpotifyApi.setAccessToken.mockReturnValue(undefined);
-    mockSpotifyApi.getPlaylist.mockResolvedValue({
-      body: { snapshot_id: 'snap1' }
-    } as unknown);
-
-    spotifyService = SpotifyService.getInstance();
+    spotifyService = new SpotifyService('mock-refresh-token');
+    // Use a type cast to access the private delay method for testing purposes
+    (spotifyService as unknown as { delay: (ms: number) => Promise<void> }).delay = vi
+      .fn()
+      .mockResolvedValue(undefined);
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should execute Skeleton Strategy: Remove Non-VIPs -> Reorder VIPs -> Insert Blocks', async () => {
@@ -124,7 +94,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           type: 'track'
         },
         added_at: '2023-01-01'
-      }, // VIP
+      },
       {
         track: {
           uri: 'spotify:track:E',
@@ -137,12 +107,9 @@ describe('SpotifyService - Skeleton Strategy', () => {
       }
     ];
 
-    mockSpotifyApi.getPlaylistTracks.mockResolvedValue({
-      body: { items: currentTracks }
-    } as unknown);
+    mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValue({ items: currentTracks });
 
     // Target Order: [A(vip), X, Y, D(vip), Z]
-    // X, Y, Z are new. B, C, E are removed.
     const targetOrderedUris = [
       'spotify:track:A',
       'spotify:track:X',
@@ -151,73 +118,47 @@ describe('SpotifyService - Skeleton Strategy', () => {
       'spotify:track:Z'
     ];
 
-    mockSpotifyApi.removeTracksFromPlaylist.mockResolvedValue({
-      body: { snapshot_id: 'snap2' }
-    } as unknown);
-    mockSpotifyApi.reorderTracksInPlaylist.mockResolvedValue({
-      body: { snapshot_id: 'snap3' }
-    } as unknown);
-    mockSpotifyApi.addTracksToPlaylist.mockResolvedValue({
-      body: { snapshot_id: 'snap4' }
-    } as unknown);
+    mockSpotifyInstance.playlists.removeItemsFromPlaylist.mockResolvedValue({
+      snapshot_id: 'snap2'
+    });
+    mockSpotifyInstance.playlists.movePlaylistItems.mockResolvedValue({ snapshot_id: 'snap3' });
+    mockSpotifyInstance.playlists.addItemsToPlaylist.mockResolvedValue({ snapshot_id: 'snap4' });
 
     // Execute
     await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
 
-    // Assertions
-
-    // 1. Remove Logic
-    // Should remove B, C, E. (Tracks not in Target AND not in VIP)
-    // Actually logic is: Remove if NOT (in VIP AND in Target).
-    // B -> Not VIP. Remove.
-    // C -> Not VIP. Remove.
-    // E -> Not VIP. Remove.
-    // A -> VIP & Target. Keep.
-    // D -> VIP & Target. Keep.
-
+    // 1. Remove Logic: B, C, E
     const expectedRemove = [
       { uri: 'spotify:track:B' },
       { uri: 'spotify:track:C' },
       { uri: 'spotify:track:E' }
     ];
-    expect(mockSpotifyApi.removeTracksFromPlaylist).toHaveBeenCalledWith(
-      playlistId,
-      expectedRemove
-    );
+    expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(playlistId, {
+      tracks: expectedRemove
+    });
 
-    // 2. Reorder Logic
-    // Remaining Skeleton: [A, D].
-    // Target Backbone: [A, D].
-    // Already sorted. Should NOT call reorder.
-    expect(mockSpotifyApi.reorderTracksInPlaylist).not.toHaveBeenCalled();
+    // 2. Reorder Logic: [A, D] -> Sorted already. No call.
+    expect(mockSpotifyInstance.playlists.movePlaylistItems).not.toHaveBeenCalled();
 
     // 3. Insert Logic
-    // Insert [X, Y] at index 1 (After A).
-    // Insert [Z] after D.
-    // Logic:
-    // i=0: A (VIP). Pointer 0 -> 1.
-    // i=1: X (Non). Pending [X].
-    // i=2: Y (Non). Pending [X, Y].
-    // i=3: D (VIP). Flush [X, Y] at 1. Pointer 1 -> 3. Pointer 3 -> 4.
-    // i=4: Z (Non). Pending [Z].
-    // End. Flush [Z] at 4.
-
-    expect(mockSpotifyApi.addTracksToPlaylist).toHaveBeenNthCalledWith(
+    // Insert [X, Y] at index 1
+    // Insert [Z] at index 4
+    expect(mockSpotifyInstance.playlists.addItemsToPlaylist).toHaveBeenNthCalledWith(
       1,
       playlistId,
       ['spotify:track:X', 'spotify:track:Y'],
-      { position: 1 }
+      1
     );
-    expect(mockSpotifyApi.addTracksToPlaylist).toHaveBeenNthCalledWith(
+
+    expect(mockSpotifyInstance.playlists.addItemsToPlaylist).toHaveBeenNthCalledWith(
       2,
       playlistId,
       ['spotify:track:Z'],
-      { position: 4 }
+      4
     );
   });
 
   it('should reorder VIPs if they are out of order in skeleton', async () => {
-    // Setup: Current [D(vip), A(vip)]. Target [A(vip), D(vip)].
     const playlistId = 'test-playlist-reorder';
     const vipUris = ['spotify:track:A', 'spotify:track:D'];
 
@@ -232,30 +173,28 @@ describe('SpotifyService - Skeleton Strategy', () => {
       }
     ];
 
-    mockSpotifyApi.getPlaylistTracks.mockResolvedValue({
-      body: { items: currentTracks }
-    } as unknown);
+    mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValue({ items: currentTracks });
+
+    // Explicitly mocking getPlaylist if the code calls it for snapshot_id?
+    // In my previous fix I REMOVED the getPlaylist call for snapshot_id.
+    // So no need to mock getPlaylist return value for that purpose.
 
     const targetOrderedUris = ['spotify:track:A', 'spotify:track:D'];
 
-    mockSpotifyApi.reorderTracksInPlaylist.mockResolvedValue({
-      body: { snapshot_id: 'snap2' }
-    } as unknown);
+    mockSpotifyInstance.playlists.movePlaylistItems.mockResolvedValue({ snapshot_id: 'snap2' });
 
     await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
 
-    // 1. Remove: Nothing to remove.
-    expect(mockSpotifyApi.removeTracksFromPlaylist).not.toHaveBeenCalled();
+    // Reorder: Skeleton [D, A]. Target [A, D].
+    // D is at 0. Target is A.
+    // A is at 1. Move A (idx 1) to 0.
+    // movePlaylistItems(id, start, insert, 1) -> move(id, 1, 0, 1)
 
-    // 2. Reorder: Skeleton [D, A]. Target [A, D].
-    // i=0. Target A. Skeleton[0] = D. Mismatch.
-    // Index of A in skeleton is 1.
-    // Move 1 -> 0.
-    expect(mockSpotifyApi.reorderTracksInPlaylist).toHaveBeenCalledWith(
+    expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenCalledWith(
       playlistId,
       1,
       0,
-      expect.any(Object)
+      1
     );
   });
 });

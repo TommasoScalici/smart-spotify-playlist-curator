@@ -1,7 +1,8 @@
 /**
- * Activity Log Entry for Playlist Automation
  * Tracks all meaningful events in the playlist curation lifecycle
  */
+import { ActivityMetadata } from '@smart-spotify-curator/shared';
+
 export interface ActivityLogEntry {
   id: string;
   timestamp: string; // ISO 8601
@@ -21,18 +22,7 @@ export interface ActivityLogEntry {
     | 'spotify_disconnected'
     | 'manual_run';
   message: string;
-  metadata?: {
-    playlistId?: string;
-    playlistName?: string;
-    tracksAdded?: number;
-    tracksRemoved?: number;
-    duplicatesFound?: number;
-    totalTracks?: number;
-    duration?: number; // milliseconds
-    errorMessage?: string;
-    aiModel?: string;
-    vibe?: string;
-  };
+  metadata?: ActivityMetadata;
 }
 
 /**
@@ -48,13 +38,11 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
       playlistName: '🎧 Chill Vibes',
-      tracksAdded: 12,
-      tracksRemoved: 3,
-      duplicatesFound: 2,
-      totalTracks: 50,
-      duration: 4500,
-      aiModel: 'gemini-2.5-flash',
-      vibe: 'Relaxing instrumental music perfect for focus and productivity'
+      addedCount: 12,
+      removedCount: 3,
+      duplicatesRemoved: 2,
+      finalCount: 50,
+      aiTracksAdded: 10
     }
   },
   {
@@ -66,8 +54,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
-      duplicatesFound: 5,
-      totalTracks: 30
+      duplicatesRemoved: 5,
+      finalCount: 30
     }
   },
   {
@@ -79,8 +67,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX1s9knjP51Oa',
       playlistName: '☕ Morning Coffee',
-      tracksAdded: 8,
-      totalTracks: 25
+      addedCount: 8,
+      finalCount: 25
     }
   },
   {
@@ -92,8 +80,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
-      duplicatesFound: 3,
-      totalTracks: 75
+      duplicatesRemoved: 3,
+      finalCount: 75
     }
   },
   {
@@ -105,7 +93,7 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO',
       playlistName: '🌙 Late Night Jazz',
-      totalTracks: 0
+      finalCount: 0
     }
   },
   {
@@ -117,7 +105,7 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
-      errorMessage: 'Spotify API rate limit exceeded'
+      error: 'Spotify API rate limit exceeded'
     }
   },
   {
@@ -129,8 +117,7 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
-      tracksAdded: 5,
-      duration: 3200
+      addedCount: 5
     }
   },
   {
@@ -142,8 +129,8 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
       playlistName: '🎧 Chill Vibes',
-      tracksRemoved: 4,
-      totalTracks: 50
+      removedCount: 4,
+      finalCount: 50
     }
   },
   {
@@ -163,12 +150,10 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     metadata: {
       playlistId: 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO',
       playlistName: '🌙 Late Night Jazz',
-      tracksAdded: 15,
-      tracksRemoved: 0,
-      duplicatesFound: 0,
-      totalTracks: 40,
-      duration: 5800,
-      aiModel: 'gemini-2.5-flash'
+      addedCount: 15,
+      removedCount: 0,
+      duplicatesRemoved: 0,
+      finalCount: 40
     }
   },
   {

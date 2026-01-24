@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { SpotifyService } from '../services/spotify-service';
 import { AiService } from '../services/ai-service';
 import { SlotManager } from './slot-manager';
@@ -8,6 +7,7 @@ import * as logger from 'firebase-functions/logger';
 import { FirestoreLogger } from '../services/firestore-logger';
 import { PromptGenerator } from '../services/prompt-generator';
 import { DiffCalculator } from './diff-calculator';
+import { TrackWithMeta } from './types-internal';
 
 export class PlaylistOrchestrator {
   constructor(
@@ -29,8 +29,12 @@ export class PlaylistOrchestrator {
   ): Promise<void> {
     const { dryRun, curationRules } = config;
 
+    // Spotify API generally expects IDs, not URIs. Sanitize just in case.
+    const playlistId = config.id.replace('spotify:playlist:', '');
+
     logger.info(`Starting curation for playlist: ${config.name}`, {
-      playlistId: config.id,
+      playlistId,
+      originalId: config.id,
       dryRun
     });
 
@@ -52,23 +56,27 @@ export class PlaylistOrchestrator {
     }
 
     // 1. Fetch Tracks (Source of Truth)
-    const currentTracks = await spotifyService.getPlaylistTracks(config.id);
+    const currentTracks = await spotifyService.getPlaylistTracks(playlistId);
     const currentUriSet = new Set(currentTracks.map((t) => t.uri));
 
     logger.info(`Fetched ${currentTracks.length} tracks from Spotify.`);
 
     // 2. Filter & Clean (Dedupe, Age)
     const tracksToRemove: string[] = [];
-    const survivingTracks: { uri: string; artist: string; track: string; addedAt: string }[] = [];
+    const survivingTracks: TrackWithMeta[] = [];
     const seenUris = new Set<string>();
     const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri)); // Protect VIPs
     const now = Date.now();
     const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
 
+    let duplicatesRemoved = 0;
+    let expiredRemoved = 0;
+
     for (const item of currentTracks) {
       // 2a. Deduplication
       if (curationRules.removeDuplicates && seenUris.has(item.uri)) {
         tracksToRemove.push(item.uri);
+        duplicatesRemoved++;
         continue;
       }
       seenUris.add(item.uri);
@@ -78,19 +86,21 @@ export class PlaylistOrchestrator {
       const age = now - addedAt;
       if (!vipUris.has(item.uri) && age > maxAgeMs) {
         tracksToRemove.push(item.uri);
+        expiredRemoved++;
         continue; // Don't include in survivors
       }
 
       survivingTracks.push({
         uri: item.uri,
         artist: item.artist,
-        track: item.name,
-        addedAt: item.addedAt
+        name: item.name,
+        addedAt: new Date(item.addedAt),
+        isVip: vipUris.has(item.uri)
       });
     }
 
     logger.info(
-      `Filtered tracks. Survivors: ${survivingTracks.length}. To Remove: ${tracksToRemove.length}`
+      `Filtered tracks. Survivors: ${survivingTracks.length}. Duplicates: ${duplicatesRemoved}. Expired: ${expiredRemoved}`
     );
 
     // 3. AI Generation (if needed)
@@ -122,7 +132,7 @@ export class PlaylistOrchestrator {
       }
 
       // Build exclusion list (Artist - Track) to prevent AI from suggesting what we already have
-      const semanticExclusionList = survivingTracks.map((t) => `${t.artist} - ${t.track}`);
+      const semanticExclusionList = survivingTracks.map((t) => `${t.artist} - ${t.name}`);
 
       const prompt = PromptGenerator.generatePrompt(
         config.name || 'Untitled Playlist',
@@ -180,7 +190,7 @@ export class PlaylistOrchestrator {
     // 5. Calculate Diff & Commit
     const { added: finalAdded, removed: finalRemoved } = DiffCalculator.calculate(
       currentTracks,
-      survivingTracks.map((t) => ({ ...t, track: { ...t, artists: [{ name: t.artist }] } })) as any,
+      survivingTracks,
       finalTrackList,
       config.mandatoryTracks,
       newAiTracks
@@ -196,7 +206,7 @@ export class PlaylistOrchestrator {
     }
 
     await spotifyService.performSmartUpdate(
-      config.id,
+      playlistId,
       finalTrackList,
       !!dryRun,
       Array.from(vipUris) // CORRECT: Pass the list of VIP URIs to protect them from removal
@@ -204,6 +214,10 @@ export class PlaylistOrchestrator {
 
     // 7. Success log
     if (config.ownerId) {
+      const aiTracksAdded = newAiTracks.length;
+      const removedCount = finalRemoved.length;
+      const addedCount = finalAdded.length;
+
       await this.firestoreLogger.updateCurationStatus(config.ownerId as string, config.id, {
         state: 'completed',
         progress: 100,
@@ -218,12 +232,17 @@ export class PlaylistOrchestrator {
       await this.firestoreLogger.logActivity(
         config.ownerId,
         'success',
-        `Curation completed for "${config.name}"`,
+        `Curation completed for "${config.name || 'Untitled Playlist'}"`,
         {
-          addedCount: finalAdded.length,
-          removedCount: finalRemoved.length,
+          playlistId: config.id,
+          playlistName: config.name,
+          addedCount,
+          removedCount,
+          aiTracksAdded,
+          duplicatesRemoved,
+          expiredRemoved,
           finalCount: finalTrackList.length,
-          dryRun
+          dryRun: !!dryRun
         }
       );
     }

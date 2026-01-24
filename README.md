@@ -52,12 +52,12 @@ Since this is a private tool using the Spotify API in Development Mode:
 
 ## 📦 Project Structure (Monorepo)
 
-| Workspace        | Description                                                        |
-| :--------------- | :----------------------------------------------------------------- |
-| **`functions/`** | Backend Business Logic. Triggers, Schedulers, and API Integration. |
-| **`web-app/`**   | React Frontend. The "Command Center" for users.                    |
-| **`shared/`**    | Shared Types and Zod Schemas. Single source of truth.              |
-| **`scripts/`**   | Maintenance and Automation scripts (Seeding, Tokens).              |
+| Workspace        | Description                                           |
+| :--------------- | :---------------------------------------------------- |
+| **`functions/`** | Backend Business Logic and API Integration.           |
+| **`web-app/`**   | React Frontend. The "Command Center" for users.       |
+| **`shared/`**    | Shared Types and Zod Schemas. Single source of truth. |
+| **`scripts/`**   | Maintenance and Automation scripts (Seeding, Tokens). |
 
 ---
 
@@ -89,7 +89,8 @@ You need **Firestore** enabled in your Firebase Project.
     - **Development**: Copy `.env.example` to `.env` in `functions/` and `web-app/`.
     - **Production**: Use Google Cloud Secret Manager.
 
-2.  **Generate Spotify Refresh Token** (for local scripts):
+2.  **Generate Spotify Refresh Token** (Optional helper):
+    _Use this if you need to manually inspect tokens, otherwise the Web App handles auth._
 
     ```bash
     cd scripts

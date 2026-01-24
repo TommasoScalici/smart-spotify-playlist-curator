@@ -1,10 +1,11 @@
 import express from 'express';
-import SpotifyWebApi from 'spotify-web-api-node';
 import open from 'open';
 import dotenv from 'dotenv';
 
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { randomBytes } from 'crypto';
+import type { Request, Response } from 'express';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -31,25 +32,33 @@ async function main() {
     process.exit(1);
   }
 
-  const spotifyApi = new SpotifyWebApi({
-    clientId,
-    clientSecret,
-    redirectUri
-  });
-
   const app = express();
   const PORT = 8888;
+  const state = randomBytes(16).toString('hex');
 
-  app.get('/login', (_req, res) => {
-    res.redirect(spotifyApi.createAuthorizeURL(scopes, 'state'));
+  app.get('/login', (_req: Request, res: Response) => {
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      scope: scopes.join(' '),
+      redirect_uri: redirectUri,
+      state: state
+    });
+    res.redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
   });
 
-  app.get('/callback', async (req, res) => {
+  app.get('/callback', async (req: Request, res: Response) => {
     const error = req.query.error;
     const code = req.query.code as string;
+    const returnedState = req.query.state as string;
 
     if (error) {
       res.send(`Callback Error: ${error}`);
+      return;
+    }
+
+    if (state !== returnedState) {
+      res.send(`Callback Error: State mismatch.`);
       return;
     }
 
@@ -59,10 +68,36 @@ async function main() {
     }
 
     try {
-      const data = await spotifyApi.authorizationCodeGrant(code);
-      const accessToken = data.body['access_token'];
-      const refreshToken = data.body['refresh_token'];
-      const expiresIn = data.body['expires_in'];
+      // Exchange code for tokens
+      const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+      const params = new URLSearchParams({
+        grant_type: 'authorization_code',
+        code: code,
+        redirect_uri: redirectUri
+      });
+
+      const response = await fetch('https://accounts.spotify.com/api/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Basic ${authHeader}`
+        },
+        body: params
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Token exchange failed: ${response.status} ${errText}`);
+      }
+
+      const data = (await response.json()) as {
+        access_token: string;
+        refresh_token: string;
+        expires_in: number;
+      };
+      const accessToken = data.access_token;
+      const refreshToken = data.refresh_token;
+      const expiresIn = data.expires_in;
 
       console.log('\n--- TOKENS GENERATED ---\n');
       console.log(`Access Token: ${accessToken}`);
@@ -77,6 +112,7 @@ async function main() {
       }, 1000);
     } catch (err) {
       res.send(`Error getting Tokens: ${err}`);
+      console.error(err);
     }
   });
 

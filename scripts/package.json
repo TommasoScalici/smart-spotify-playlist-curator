@@ -9,18 +9,15 @@
   },
   "scripts": {
     "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
-    "dry-run-check": "tsx src/dry-run-check.ts",
-    "run-curator": "tsx src/run-curator.ts",
-    "check-playlist": "tsx src/check-playlist.ts",
     "lint": "eslint ."
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@spotify/web-api-ts-sdk": "^1.2.0",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
     "firebase-admin": "^13.6.0",
     "open": "^11.0.0",
-    "spotify-web-api-node": "^5.0.2",
     "zod": "^4.3.4"
   },
   "devDependencies": {
@@ -28,7 +25,6 @@
     "@types/express": "^5.0.6",
     "@types/node": "^25.0.3",
     "@types/open": "^6.1.0",
-    "@types/spotify-web-api-node": "^5.0.11",
     "esbuild": "^0.27.2",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",

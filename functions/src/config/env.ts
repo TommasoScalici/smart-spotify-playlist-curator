@@ -3,7 +3,6 @@ import { z } from 'zod';
 const envSchema = z.object({
   SPOTIFY_CLIENT_ID: z.string().min(1, 'SPOTIFY_CLIENT_ID is missing'),
   SPOTIFY_CLIENT_SECRET: z.string().min(1, 'SPOTIFY_CLIENT_SECRET is missing'),
-  SPOTIFY_REFRESH_TOKEN: z.string().min(1, 'SPOTIFY_REFRESH_TOKEN is missing'),
   GOOGLE_AI_API_KEY: z.string().optional(),
   SPOTIFY_REDIRECT_URI: z.string().optional()
 });
@@ -43,9 +42,6 @@ export const config = {
   },
   get SPOTIFY_CLIENT_SECRET() {
     return getConfig().SPOTIFY_CLIENT_SECRET;
-  },
-  get SPOTIFY_REFRESH_TOKEN() {
-    return getConfig().SPOTIFY_REFRESH_TOKEN;
   },
   get GOOGLE_AI_API_KEY() {
     return getConfig().GOOGLE_AI_API_KEY;

@@ -17,6 +17,10 @@ service cloud.firestore {
         allow read: if false;
         allow delete: if request.auth != null && request.auth.uid == userId;
       }
+
+      match /logs/{logId} {
+        allow read: if request.auth != null && request.auth.uid == userId;
+      }
     }
   }
 }

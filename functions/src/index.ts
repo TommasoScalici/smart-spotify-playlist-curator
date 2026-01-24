@@ -1,5 +1,4 @@
 import { setGlobalOptions } from 'firebase-functions';
-import { onRequest } from 'firebase-functions/https';
 import * as logger from 'firebase-functions/logger';
 import * as dotenv from 'dotenv';
 import { resolve } from 'path';
@@ -52,7 +51,7 @@ export async function getAuthorizedSpotifyService(uid: string) {
   }
 
   // Create Spotify Service
-  const spotifyService = SpotifyService.createForUser(refreshToken);
+  const spotifyService = new SpotifyService(refreshToken);
 
   // Check if we have a cached access token that's still valid (not expiring within 5 minutes)
   const cachedAccessToken = data?.accessToken;
@@ -114,33 +113,28 @@ export async function persistSpotifyTokens(
   }
 }
 
-// Shared logic for both onRequest (Cron/HTTP) and onCall (Web App)
+// Shared logic for both HTTP and onCall (Web App)
 export async function runOrchestrator(
-  playlistId?: string,
-  callerUid?: string,
+  playlistId: string,
+  callerUid: string,
   dryRunOverride?: boolean
 ): Promise<OrchestrationResult> {
   const configService = new ConfigService();
-  let configs: PlaylistConfig[] = [];
+  let config: PlaylistConfig | null = null;
 
   try {
-    if (playlistId) {
-      const config = await configService.getPlaylistConfig(playlistId);
-      if (!config) {
-        logger.warn(`Playlist config not found for ID: ${playlistId}`);
-        return { message: 'Playlist not found.', results: [] };
-      }
-      configs = [config];
-    } else {
-      configs = await configService.getEnabledPlaylists();
-      // SECURITY: If called by a user, only process THEIR playlists
-      if (callerUid) {
-        configs = configs.filter((c) => c.ownerId === callerUid);
-      }
-      if (configs.length === 0) {
-        logger.info('No enabled playlists found to update.');
-        return { message: 'No enabled playlists found.', results: [] };
-      }
+    config = await configService.getPlaylistConfig(playlistId);
+    if (!config) {
+      logger.warn(`Playlist config not found for ID: ${playlistId}`);
+      return { message: 'Playlist not found.', results: [] };
+    }
+
+    // SECURITY VERIFICATION
+    if (config.ownerId !== callerUid) {
+      logger.warn(
+        `User ${callerUid} attempted to run playlist ${playlistId} owned by ${config.ownerId}`
+      );
+      throw new Error('Permission denied. You do not own this playlist.');
     }
   } catch (e) {
     logger.error('Failed to load configuration from Firestore', e);
@@ -154,104 +148,72 @@ export async function runOrchestrator(
 
   const results: OrchestrationResult['results'] = [];
 
-  for (const playlistConfig of configs) {
-    // Apply Dry Run Override if present
-    if (dryRunOverride !== undefined) {
-      playlistConfig.dryRun = dryRunOverride;
-    }
+  // Single Playlist Execution
+  const playlistConfig = config;
 
-    try {
-      // 2. Multi-Tenancy Check
-      if (!playlistConfig.ownerId) {
-        throw new Error(`Playlist ${playlistConfig.name} is orphaned (no ownerId).`);
-      }
+  // Apply Dry Run Override if present
+  if (dryRunOverride !== undefined) {
+    playlistConfig.dryRun = dryRunOverride;
+  }
 
-      // 3. Fetch User's Spotify Token & Create Orchestrator
-      const { service: spotifyService, originalRefreshToken } = await getAuthorizedSpotifyService(
-        playlistConfig.ownerId
-      );
+  try {
+    // 3. Fetch User's Spotify Token & Create Orchestrator
+    const { service: spotifyService, originalRefreshToken } = await getAuthorizedSpotifyService(
+      playlistConfig.ownerId!
+    );
 
-      // 4. Create Orchestrator (handles Spotify auth internally)
-      const orchestrator = new PlaylistOrchestrator(aiService, slotManager, firestoreLogger);
+    // 4. Create Orchestrator (handles Spotify auth internally)
+    const orchestrator = new PlaylistOrchestrator(aiService, slotManager, firestoreLogger);
 
-      // 5. Execute
-      await orchestrator.curatePlaylist(playlistConfig, spotifyService);
+    // 5. Execute
+    await orchestrator.curatePlaylist(playlistConfig, spotifyService);
 
-      // 6. Persist any token updates (Important for rotation)
-      await persistSpotifyTokens(playlistConfig.ownerId!, spotifyService, originalRefreshToken);
+    // 6. Persist any token updates (Important for rotation)
+    await persistSpotifyTokens(playlistConfig.ownerId!, spotifyService, originalRefreshToken);
 
-      results.push({ name: playlistConfig.name || 'Unnamed Playlist', status: 'success' });
-    } catch (error) {
-      const errMsg = (error as Error).message;
-      logger.error(`Error processing playlist ${playlistConfig.name}`, error);
+    results.push({ name: playlistConfig.name || 'Unnamed Playlist', status: 'success' });
+  } catch (error) {
+    const errMsg = (error as Error).message;
+    logger.error(`Error processing playlist ${playlistConfig.name}`, error);
 
-      // Handle Critical Auth Failures (Revoked access, deleted account)
-      if (
-        (errMsg.includes('invalid_grant') || errMsg.includes('unauthorized')) &&
-        playlistConfig.ownerId
-      ) {
-        await db
-          .doc(`users/${playlistConfig.ownerId}/secrets/spotify`)
-          .set({ status: 'invalid', error: errMsg }, { merge: true });
+    // Handle Critical Auth Failures (Revoked access, deleted account)
+    if (
+      (errMsg.includes('invalid_grant') || errMsg.includes('unauthorized')) &&
+      playlistConfig.ownerId
+    ) {
+      await db
+        .doc(`users/${playlistConfig.ownerId}/secrets/spotify`)
+        .set({ status: 'invalid', error: errMsg }, { merge: true });
 
-        await db.doc(`users/${playlistConfig.ownerId}`).update({
-          'spotifyProfile.status': 'invalid',
-          'spotifyProfile.authError': errMsg
-        });
-
-        await firestoreLogger.logActivity(
-          playlistConfig.ownerId,
-          'error',
-          'Spotify connection lost. Please re-link your account in the Dashboard.',
-          { playlistId: playlistConfig.id, error: errMsg }
-        );
-      } else if (playlistConfig.ownerId) {
-        // Log other errors as well
-        await firestoreLogger.logActivity(
-          playlistConfig.ownerId,
-          'error',
-          `Failed to curate "${playlistConfig.name}"`,
-          { playlistId: playlistConfig.id, error: errMsg }
-        );
-      }
-
-      results.push({
-        name: playlistConfig.name || 'Unnamed Playlist',
-        status: 'error',
-        error: errMsg
+      await db.doc(`users/${playlistConfig.ownerId}`).update({
+        'spotifyProfile.status': 'invalid',
+        'spotifyProfile.authError': errMsg
       });
     }
 
-    // Rate Limit Defense: Wait 2s between playlists to avoid spiking the API
-    const sleepTime = process.env.NODE_ENV === 'test' ? 0 : 2000;
-    if (sleepTime > 0) {
-      await new Promise((resolve) => setTimeout(resolve, sleepTime));
+    results.push({
+      name: playlistConfig.name || 'Unnamed Playlist',
+      status: 'error',
+      error: errMsg
+    });
+
+    if (playlistConfig.ownerId) {
+      await firestoreLogger.logActivity(
+        playlistConfig.ownerId,
+        'error',
+        `Failed to curate "${playlistConfig.name || 'Untitled Playlist'}"`,
+        {
+          playlistId: playlistConfig.id,
+          playlistName: playlistConfig.name,
+          error: errMsg,
+          dryRun: !!dryRunOverride
+        }
+      );
     }
   }
 
   return { message: 'Playlist update completed', results };
 }
-
-export const updatePlaylists = onRequest(
-  {
-    timeoutSeconds: 540,
-    secrets: [
-      'SPOTIFY_CLIENT_ID',
-      'SPOTIFY_CLIENT_SECRET',
-      'SPOTIFY_REFRESH_TOKEN',
-      'GOOGLE_AI_API_KEY'
-    ]
-  },
-  async (_request, response) => {
-    logger.info('Received request to update playlists (HTTP).');
-    try {
-      const result = await runOrchestrator();
-      response.json(result);
-    } catch (e) {
-      response.status(500).send((e as Error).message);
-    }
-  }
-);
 
 export const triggerCuration = onCall(
   {
@@ -288,6 +250,9 @@ export const triggerCuration = onCall(
     }
 
     try {
+      if (!playlistId) {
+        throw new HttpsError('invalid-argument', 'Playlist ID is required');
+      }
       return await runOrchestrator(playlistId, uid, dryRun);
     } catch (e) {
       logger.error('Orchestrator execution failed', {
@@ -404,7 +369,7 @@ export const searchSpotify = onCall(
         // Fetch ALL user playlists and filter locally by name/description
         // This is MUCH more reliable for finding specific owned playlists than global search
         const userPlaylists = await spotifyService.getUserPlaylists();
-        results = userPlaylists.filter((p) => {
+        results = userPlaylists.filter((p: SearchResult) => {
           const searchStr = `${p.name} ${p.description || ''}`.toLowerCase();
           return searchStr.includes(query.toLowerCase());
         });

@@ -7,8 +7,11 @@ describe('Spotify Integration: Search', () => {
   beforeAll(() => {
     if (!process.env.SPOTIFY_CLIENT_ID || !process.env.SPOTIFY_REFRESH_TOKEN) {
       console.warn('Skipping integration tests: No credentials found');
+      // Create with dummy token to avoid crash, tests will skip anyway due to conditionalDescribe
+      service = new SpotifyService('dummy-token-for-skip');
+      return;
     }
-    service = SpotifyService.getInstance();
+    service = new SpotifyService(process.env.SPOTIFY_REFRESH_TOKEN);
   });
 
   const conditionalDescribe = process.env.SPOTIFY_CLIENT_ID ? describe : describe.skip;

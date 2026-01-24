@@ -361,16 +361,36 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                       size="icon"
                       aria-label="Start test run"
                       className="border-white/10 bg-white/5 text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
-                      onClick={(e) => {
+                      onClick={async (e) => {
                         e.stopPropagation();
-                        toast.promise(
-                          FunctionsService.triggerCuration(config.id, { dryRun: true }),
-                          {
-                            loading: 'Starting test run...',
-                            success: 'Test run started! Watch the progress bar.',
-                            error: 'Failed to start test run.'
+
+                        const toastId = toast.loading('Running test curation...');
+                        try {
+                          const result = await FunctionsService.triggerCuration(config.id, {
+                            dryRun: true
+                          });
+
+                          // Check for functional errors (the cloud function completed, but returned an error status)
+                          const errorResult = result.results.find((r) => r.status === 'error');
+
+                          if (errorResult) {
+                            toast.error('Test run failed', {
+                              id: toastId,
+                              description:
+                                errorResult.error || 'Unknown error occurred during curation.'
+                            });
+                          } else {
+                            toast.success('Test run complete!', {
+                              id: toastId,
+                              description: 'Check the "History" button to see the proposed changes.'
+                            });
                           }
-                        );
+                        } catch (err) {
+                          toast.error('Failed to start test run', {
+                            id: toastId,
+                            description: (err as Error).message
+                          });
+                        }
                       }}
                     >
                       <FlaskConical className="h-4 w-4" />

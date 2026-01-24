@@ -27,7 +27,7 @@ async function build() {
       external: [
         'firebase-admin',
         'firebase-functions',
-        'spotify-web-api-node',
+        '@spotify/web-api-ts-sdk',
         'zod',
         '@google/generative-ai',
         'dotenv'

@@ -52,18 +52,53 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
               activity.type === 'error' && 'bg-red-500 ring-red-500/20'
             )}
           />
-          <div className="space-y-1">
+          <div className="space-y-1 flex-1">
             <p className="text-sm font-medium leading-none group-hover:text-primary transition-colors">
               {activity.message}
             </p>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+
+            {/* Rich Metadata Badges */}
+            {activity.type === 'success' && activity.metadata && (
+              <div className="flex flex-wrap gap-1.5 mt-2">
+                {activity.metadata.addedCount ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-green-500/10 text-green-500 border border-green-500/20">
+                    +{activity.metadata.addedCount} Tracks
+                  </span>
+                ) : null}
+                {activity.metadata.aiTracksAdded ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                    {activity.metadata.aiTracksAdded} AI
+                  </span>
+                ) : null}
+                {activity.metadata.duplicatesRemoved ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20">
+                    -{activity.metadata.duplicatesRemoved} Duplicates
+                  </span>
+                ) : null}
+                {activity.metadata.expiredRemoved ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/10 text-rose-500 border border-rose-500/20">
+                    -{activity.metadata.expiredRemoved} Expired
+                  </span>
+                ) : null}
+              </div>
+            )}
+
+            <div className="flex items-center gap-2 text-xs text-muted-foreground pt-1">
               <Clock className="h-3 w-3" />
               <span>{formatTimeAgo(activity.timestamp)}</span>
-              {typeof activity.metadata?.playlistId === 'string' && (
+              {(activity.metadata?.playlistName || activity.metadata?.playlistId) && (
                 <>
                   <span>•</span>
                   <Music className="h-3 w-3" />
-                  <span className="max-w-[120px] truncate">{activity.metadata.playlistId}</span>
+                  <span
+                    className="max-w-[150px] truncate"
+                    title={activity.metadata.playlistName || activity.metadata.playlistId}
+                  >
+                    {activity.metadata.playlistName ||
+                      (typeof activity.metadata.playlistId === 'string'
+                        ? activity.metadata.playlistId
+                        : 'Playlist')}
+                  </span>
                 </>
               )}
             </div>

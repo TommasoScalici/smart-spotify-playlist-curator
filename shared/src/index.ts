@@ -10,7 +10,8 @@ export {
   PlaylistMetricsSchema,
   CurationStatusSchema,
   CurationDiffSchema,
-  OrchestrationResultSchema
+  OrchestrationResultSchema,
+  ActivityMetadataSchema
 } from './schemas';
 
 export type {
@@ -25,5 +26,6 @@ export type {
   PlaylistMetrics,
   CurationStatus,
   CurationDiff,
-  OrchestrationResult
+  OrchestrationResult,
+  ActivityMetadata
 } from './schemas';

@@ -12,7 +12,9 @@ import { BrowserRouter } from 'react-router-dom';
 // Mocks
 vi.mock('@/services/firestore-service');
 vi.mock('@/services/functions-service');
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn(), promise: vi.fn() } }));
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: vi.fn(), promise: vi.fn(), loading: vi.fn() }
+}));
 
 // Mock Data
 const mockConfig: PlaylistConfig & { _docId: string } = {
