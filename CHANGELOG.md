@@ -1,5 +1,17 @@
 # Changelog
 
+# [1.5.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.3.2...v1.5.0) (2026-01-25)
+
+### Bug Fixes
+
+- fixed some bugs in orchestrator, diff-calculator and DiffView ([4ee1375](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/4ee1375425397d427b317975637407c7b0c35fd0))
+- resolve lint errors, fix unit tests and optimize CI/CD pipeline ([7429b69](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/7429b69caa9c1d35a212129b29655e1c1cc434d0))
+
+### Features
+
+- added shuffleAtEnd, artistLimit and referenceArtists as configurable options in the ConfigEditor. Bug fixes and other improvements. ([9024a8d](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/9024a8d59e3329168c15061ed8b301d339c89a26))
+- implement real-time dashboard updates and fix curation logic bugs ([b2215b3](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/b2215b356203e410b80cd5c37ca156d596ca1ddc))
+
 # [1.4.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.3.2...v1.4.0) (2026-01-24)
 
 ### Bug Fixes

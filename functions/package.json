@@ -1,6 +1,6 @@
 {
   "name": "smart-spotify-playlist-curator",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Firebase Cloud Functions for Smart Spotify Playlist Curator, powering AI-driven playlist generation and management.",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
