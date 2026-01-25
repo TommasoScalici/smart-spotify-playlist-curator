@@ -17,7 +17,8 @@ export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
   curationRules: {
     maxTrackAgeDays: 365,
     removeDuplicates: true,
-    maxTracksPerArtist: 2
+    maxTracksPerArtist: 2,
+    shuffleAtEnd: true
   },
   mandatoryTracks: []
 };

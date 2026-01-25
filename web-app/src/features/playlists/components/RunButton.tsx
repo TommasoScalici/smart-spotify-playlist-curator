@@ -5,10 +5,8 @@ import { FunctionsService } from '@/services/functions-service';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
-import {
-  ConfirmCurationModal,
-  CurationEstimate
-} from '@/features/playlists/components/ConfirmCurationModal';
+import { ConfirmCurationModal } from '@/features/playlists/components/ConfirmCurationModal';
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 
 interface RunButtonProps {
   playlistId?: string;

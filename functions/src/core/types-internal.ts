@@ -3,6 +3,7 @@ export interface TrackWithMeta {
   uri: string;
   name: string; // Added for semantic exclusion
   artist: string; // Added for smart filtering
+  album: string;
   addedAt: Date;
   isVip: boolean;
   originalIndex?: number;

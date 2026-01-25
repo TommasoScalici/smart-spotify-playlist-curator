@@ -6,6 +6,7 @@ export interface TrackInfo {
   uri: string;
   name: string;
   artist: string;
+  album: string;
   addedAt: string;
 }
 
@@ -237,39 +238,34 @@ export class SpotifyService {
 
     let hasMore = true;
 
-    await this.executeWithRetry(async () => {
-      while (hasMore) {
-        const response = await this.spotify.playlists.getPlaylistItems(
-          playlistId,
-          undefined,
-          undefined,
-          limit,
-          offset
-        );
-        const items = response.items;
+    while (hasMore) {
+      const response = await this.executeWithRetry(() =>
+        this.spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, offset)
+      );
 
-        for (const item of items) {
-          if (item.track && item.track.type === 'track') {
-            const t = item.track;
-            // t is Track | Episode. Use type guard or check type
-            if ('artists' in t) {
-              allTracks.push({
-                uri: t.uri,
-                name: t.name,
-                artist: t.artists.map((a) => a.name).join(', '),
-                addedAt: item.added_at
-              });
-            }
+      const items = response.items;
+
+      for (const item of items) {
+        if (item.track && item.track.type === 'track') {
+          const t = item.track;
+          if ('artists' in t) {
+            allTracks.push({
+              uri: t.uri,
+              name: t.name,
+              artist: t.artists.map((a) => a.name).join(', '),
+              album: t.album.name,
+              addedAt: item.added_at || new Date().toISOString()
+            });
           }
         }
-
-        if (items.length < limit) {
-          hasMore = false;
-        } else {
-          offset += limit;
-        }
       }
-    });
+
+      if (items.length < limit) {
+        hasMore = false;
+      } else {
+        offset += limit;
+      }
+    }
 
     return allTracks;
   }
@@ -305,18 +301,17 @@ export class SpotifyService {
     // Valid max for getTracks is 50
     for (let i = 0; i < trackIds.length; i += 50) {
       const batch = trackIds.slice(i, i + 50);
-      await this.executeWithRetry(async () => {
-        const response = await this.spotify.tracks.get(batch);
-        response.forEach((t) => {
-          if (t) {
-            allTracks.push({
-              uri: t.uri,
-              name: t.name,
-              artist: t.artists.map((a) => a.name).join(', '),
-              addedAt: new Date().toISOString()
-            });
-          }
-        });
+      const response = await this.executeWithRetry(() => this.spotify.tracks.get(batch));
+      response.forEach((t) => {
+        if (t) {
+          allTracks.push({
+            uri: t.uri,
+            name: t.name,
+            artist: t.artists.map((a) => a.name).join(', '),
+            album: t.album.name,
+            addedAt: new Date().toISOString()
+          });
+        }
       });
     }
     return allTracks;
@@ -376,6 +371,7 @@ export class SpotifyService {
           uri: t.uri,
           name: t.name,
           artist: t.artists.map((a) => a.name).join(', '),
+          album: t.album.name,
           addedAt: new Date().toISOString()
         };
       }
@@ -591,20 +587,58 @@ export class SpotifyService {
 
     // 1. Fetch Current
     const currentTracks = await this.getPlaylistTracks(playlistId);
-    const currentUris = currentTracks.map((t) => t.uri);
     const vipsSet = new Set(vipUris);
-    const targetSet = new Set(targetOrderedUris);
+    const targetFreq = new Map<string, number>();
+    targetOrderedUris.forEach((u) => targetFreq.set(u, (targetFreq.get(u) || 0) + 1));
 
-    const toKeep = currentUris.filter((uri) => vipsSet.has(uri) && targetSet.has(uri));
-    const toRemove = currentUris.filter((uri) => !toKeep.includes(uri));
+    const currentFreq = new Map<string, number>();
+    const toRemove: { uri: string; positions: number[] }[] = [];
+    const preservedUris: string[] = [];
+
+    currentTracks.forEach((track, index) => {
+      const count = currentFreq.get(track.uri) || 0;
+      const targetCount = targetFreq.get(track.uri) || 0;
+
+      // Keep if it is a VIP, we still need it to reach target frequency, and it exists in target
+      if (vipsSet.has(track.uri) && count < targetCount) {
+        currentFreq.set(track.uri, count + 1);
+        preservedUris.push(track.uri);
+      } else {
+        // Mark for removal by position
+        const existing = toRemove.find((r) => r.uri === track.uri);
+        if (existing) {
+          existing.positions.push(index);
+        } else {
+          toRemove.push({ uri: track.uri, positions: [index] });
+        }
+      }
+    });
 
     if (toRemove.length > 0) {
-      logger.info(`Removing ${toRemove.length} non-preserved tracks...`);
-      await this.removeTracks(playlistId, toRemove, dryRun);
+      logger.info(`Removing ${toRemove.length} tracks/instances by position...`);
+      // Batch removal by position (max 100 entries in total)
+      // Extract all pairs of {uri, position}
+      const allEntries: { uri: string; positions: number[] }[] = [];
+      toRemove.forEach((r) => {
+        // Further chunk positions if one URI has > 100 positions? (Unlikely but safe)
+        for (let i = 0; i < r.positions.length; i += 100) {
+          allEntries.push({
+            uri: r.uri,
+            positions: r.positions.slice(i, i + 100)
+          });
+        }
+      });
+
+      for (let i = 0; i < allEntries.length; i += 100) {
+        const batch = allEntries.slice(i, i + 100);
+        await this.executeWithRetry(() =>
+          this.spotify.playlists.removeItemsFromPlaylist(playlistId, { tracks: batch })
+        );
+      }
     }
 
     // 3. Skeleton Reorder (VIPs)
-    const skeleton = [...toKeep];
+    const skeleton = [...preservedUris];
     const backboneTarget = targetOrderedUris.filter(
       (uri) => vipsSet.has(uri) && skeleton.includes(uri)
     );

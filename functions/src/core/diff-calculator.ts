@@ -9,7 +9,7 @@ export interface DiffItem {
 }
 
 export interface RemovedDiffItem extends DiffItem {
-  reason?: 'duplicate' | 'expired' | 'other';
+  reason?: 'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other';
 }
 
 export interface DiffResult {
@@ -29,7 +29,7 @@ export class DiffCalculator {
     finalTrackListUris: string[], // The final ordered list of URIs
     mandatoryTracks: MandatoryTrack[], // Setup config (source of truth for VIPs)
     newAiTracks: { uri: string; artist: string; track: string }[], // AI selections
-    removalReasons?: Map<string, 'duplicate' | 'expired' | 'other'>
+    removalReasons?: Map<string, 'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other'>
   ): DiffResult {
     // 1. Identify Added URIs
     const survivorUris = new Set(keptTracks.map((t) => t.uri));
@@ -75,7 +75,10 @@ export class DiffCalculator {
       const removedCount = Math.max(0, cCount - fCount);
 
       if (removedCount > 0) {
-        const reason = removalReasons?.get(t.uri) || 'other';
+        const reasonLookup = removalReasons?.get(t.uri);
+        // Default to 'other' only if not found in map
+        const reason = reasonLookup || 'other';
+
         for (let i = 0; i < removedCount; i++) {
           removed.push({
             uri: t.uri,

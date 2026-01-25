@@ -16,7 +16,12 @@ export class TrackCleaner {
    */
   public processCurrentTracks(
     currentTracks: {
-      track: { uri: string; name: string; artists: { name: string }[] };
+      track: {
+        uri: string;
+        name: string;
+        artists: { name: string }[];
+        album?: { name: string };
+      };
       added_at: string;
     }[],
     config: PlaylistConfig,
@@ -43,6 +48,7 @@ export class TrackCleaner {
         uri: t.track.uri,
         name: t.track.name,
         artist: artist,
+        album: t.track.album?.name || 'Unknown Album',
         addedAt: addedAt,
         isVip: isVip,
         originalIndex: index

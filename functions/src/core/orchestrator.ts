@@ -66,27 +66,51 @@ export class PlaylistOrchestrator {
 
       logger.info(`Fetched ${currentTracks.length} tracks from Spotify.`);
 
-      // 2. Filter & Clean (Dedupe, Age)
+      // 2. Filter & Clean (Dedupe, Age, Artist Limit)
       const tracksToRemove: string[] = [];
       const survivingTracks: TrackWithMeta[] = [];
       const seenUris = new Set<string>();
+      const seenSignatures = new Set<string>();
+      const artistCounts: Record<string, number> = {};
       const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri)); // Protect VIPs
       const now = Date.now();
       const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
 
-      const removalReasons = new Map<string, 'duplicate' | 'expired' | 'other'>();
+      const removalReasons = new Map<
+        string,
+        'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other'
+      >();
       let duplicatesRemoved = 0;
       let expiredRemoved = 0;
+      let artistLimitRemoved = 0;
 
       for (const item of currentTracks) {
-        // 2a. Deduplication
-        if (curationRules.removeDuplicates && seenUris.has(item.uri)) {
+        // Create a unique signature for the track content (Name:Artist:Album)
+        const normalizedName = item.name.trim().toLowerCase();
+        const normalizedArtistString = item.artist.trim().toLowerCase();
+        const normalizedAlbum = item.album.trim().toLowerCase();
+        const signature = `${normalizedName}:${normalizedArtistString}:${normalizedAlbum}`;
+
+        // 2a. Deduplication (Same URI or Same Metadata Signature)
+        if (
+          curationRules.removeDuplicates &&
+          (seenUris.has(item.uri) || seenSignatures.has(signature))
+        ) {
+          if (seenSignatures.has(signature) && !seenUris.has(item.uri)) {
+            logger.info(
+              `Deduplicating track by signature conflict: "${item.name}" [${signature}]`,
+              {
+                uri: item.uri
+              }
+            );
+          }
           tracksToRemove.push(item.uri);
           removalReasons.set(item.uri, 'duplicate');
           duplicatesRemoved++;
           continue;
         }
         seenUris.add(item.uri);
+        seenSignatures.add(signature);
 
         // 2b. Age Check (Protect VIPs)
         const addedAt = new Date(item.addedAt).getTime();
@@ -98,17 +122,39 @@ export class PlaylistOrchestrator {
           continue; // Don't include in survivors
         }
 
+        // 2c. Artist Limit Check (Protect VIPs)
+        if (!vipUris.has(item.uri)) {
+          // Identify Primary Artist (Split by comma if multiple)
+          const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
+          const isVarious = primaryArtist === 'various artists';
+
+          if (!isVarious) {
+            const count = artistCounts[primaryArtist] || 0;
+            if (count >= curationRules.maxTracksPerArtist) {
+              logger.info(`Artist limit reached for "${primaryArtist}". Removing "${item.name}"`, {
+                uri: item.uri
+              });
+              tracksToRemove.push(item.uri);
+              removalReasons.set(item.uri, 'artist_limit');
+              artistLimitRemoved++;
+              continue;
+            }
+            artistCounts[primaryArtist] = count + 1;
+          }
+        }
+
         survivingTracks.push({
           uri: item.uri,
           artist: item.artist,
           name: item.name,
+          album: item.album,
           addedAt: new Date(item.addedAt),
           isVip: vipUris.has(item.uri)
         });
       }
 
       logger.info(
-        `Filtered tracks. Survivors: ${survivingTracks.length}. Duplicates: ${duplicatesRemoved}. Expired: ${expiredRemoved}`
+        `Filtered tracks. Survivors: ${survivingTracks.length}. Dups: ${duplicatesRemoved}. Expired: ${expiredRemoved}. Artist Limit: ${artistLimitRemoved}`
       );
 
       // 3. AI Generation (if needed)
@@ -148,7 +194,8 @@ export class PlaylistOrchestrator {
         const prompt = PromptGenerator.generatePrompt(
           config.name || 'Untitled Playlist',
           config.settings.description,
-          config.aiGeneration.isInstrumentalOnly
+          config.aiGeneration.isInstrumentalOnly,
+          config.settings.referenceArtists
         );
 
         const suggestions = await this.aiService.generateSuggestions(
@@ -202,8 +249,17 @@ export class PlaylistOrchestrator {
         config.mandatoryTracks,
         survivingTracks,
         newAiTracks,
-        config.settings.targetTotalTracks
+        config.settings.targetTotalTracks,
+        curationRules.shuffleAtEnd
       );
+
+      // 4b. Identify Size Limit Drops
+      const finalSet = new Set(finalTrackList);
+      for (const track of survivingTracks) {
+        if (!finalSet.has(track.uri) && !removalReasons.has(track.uri)) {
+          removalReasons.set(track.uri, 'size_limit');
+        }
+      }
 
       // 5. Calculate Diff & Commit
       const {
@@ -249,9 +305,8 @@ export class PlaylistOrchestrator {
         // Calculate exclusive counts for better UX badges (no double counting)
         const duplicatesCount = finalRemoved.filter((r) => r.reason === 'duplicate').length;
         const expiredCount = finalRemoved.filter((r) => r.reason === 'expired').length;
-        const otherRemovedCount = finalRemoved.filter(
-          (r) => r.reason === 'other' || !r.reason
-        ).length;
+        const artistLimitCount = finalRemoved.filter((r) => r.reason === 'artist_limit').length;
+        const sizeLimitCount = finalRemoved.filter((r) => r.reason === 'size_limit').length;
 
         await this.firestoreLogger.logActivity(
           config.ownerId,
@@ -264,10 +319,12 @@ export class PlaylistOrchestrator {
             playlistId: config.id,
             playlistName: config.name,
             addedCount,
-            removedCount: otherRemovedCount,
+            removedCount: finalRemoved.length,
             aiTracksAdded,
             duplicatesRemoved: duplicatesCount,
             expiredRemoved: expiredCount,
+            artistLimitRemoved: artistLimitCount,
+            sizeLimitRemoved: sizeLimitCount,
             finalCount: finalTrackList.length,
             dryRun: !!dryRun,
             triggeredBy: ownerName,

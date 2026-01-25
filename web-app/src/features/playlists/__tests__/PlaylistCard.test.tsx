@@ -37,7 +37,8 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
   curationRules: {
     maxTrackAgeDays: 365,
     removeDuplicates: true,
-    maxTracksPerArtist: 2
+    maxTracksPerArtist: 2,
+    shuffleAtEnd: true
   }
 };
 

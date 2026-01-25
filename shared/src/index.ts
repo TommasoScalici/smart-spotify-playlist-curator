@@ -11,6 +11,7 @@ export {
   CurationStatusSchema,
   CurationDiffSchema,
   OrchestrationResultSchema,
+  CurationEstimateSchema,
   ActivityMetadataSchema,
   ActivityLogSchema
 } from './schemas';
@@ -28,6 +29,7 @@ export type {
   CurationStatus,
   CurationDiff,
   OrchestrationResult,
+  CurationEstimate,
   ActivityMetadata,
   ActivityLog
 } from './schemas';

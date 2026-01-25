@@ -33,6 +33,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               id="maxTrackAgeDays"
               type="number"
               min="1"
+              onWheel={(e) => e.currentTarget.blur()}
               {...register('curationRules.maxTrackAgeDays', { valueAsNumber: true })}
               className={cn(errors.curationRules?.maxTrackAgeDays && 'border-destructive')}
             />
@@ -56,12 +57,40 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               type="number"
               min="5"
               max="999"
+              onWheel={(e) => e.currentTarget.blur()}
               {...register('settings.targetTotalTracks', { valueAsNumber: true })}
               className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
             />
             {errors.settings?.targetTotalTracks && (
               <p className="text-sm text-destructive font-medium">
                 {errors.settings.targetTotalTracks.message}
+              </p>
+            )}
+          </div>
+
+          {/* Max Tracks Per Artist */}
+          <div className="space-y-2">
+            <Label
+              htmlFor="maxTracksPerArtist"
+              className={cn(errors.curationRules?.maxTracksPerArtist && 'text-destructive')}
+            >
+              Max Tracks Per Artist
+            </Label>
+            <Input
+              id="maxTracksPerArtist"
+              type="number"
+              min="1"
+              max="10"
+              onWheel={(e) => e.currentTarget.blur()}
+              {...register('curationRules.maxTracksPerArtist', { valueAsNumber: true })}
+              className={cn(errors.curationRules?.maxTracksPerArtist && 'border-destructive')}
+            />
+            <p className="text-xs text-muted-foreground">
+              Limit how many songs from the same artist can be in the playlist.
+            </p>
+            {errors.curationRules?.maxTracksPerArtist && (
+              <p className="text-sm text-destructive font-medium">
+                {errors.curationRules.maxTracksPerArtist.message}
               </p>
             )}
           </div>
@@ -79,6 +108,23 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               name="curationRules.removeDuplicates"
               render={({ field }) => (
                 <Switch id="dedup-check" checked={field.value} onCheckedChange={field.onChange} />
+              )}
+            />
+          </div>
+
+          {/* Shuffle At End */}
+          <div className="flex items-center justify-between p-3 border rounded-md">
+            <div className="space-y-0.5">
+              <Label htmlFor="shuffle-check" className="text-base">
+                Shuffle Playlist
+              </Label>
+              <p className="text-xs text-muted-foreground">Randomize order vs keep original.</p>
+            </div>
+            <Controller
+              control={control}
+              name="curationRules.shuffleAtEnd"
+              render={({ field }) => (
+                <Switch id="shuffle-check" checked={field.value} onCheckedChange={field.onChange} />
               )}
             />
           </div>

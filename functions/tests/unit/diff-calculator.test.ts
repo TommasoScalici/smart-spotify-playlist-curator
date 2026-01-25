@@ -10,6 +10,7 @@ describe('DiffCalculator', () => {
     uri: `spotify:track:${id}`,
     name,
     artist,
+    album: 'Unknown Album',
     addedAt: new Date().toISOString()
   });
 
@@ -17,6 +18,7 @@ describe('DiffCalculator', () => {
     uri: `spotify:track:${id}`,
     name,
     artist,
+    album: 'Unknown Album',
     addedAt: new Date(),
     isVip: false
   });

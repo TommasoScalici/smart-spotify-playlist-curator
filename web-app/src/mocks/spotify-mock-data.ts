@@ -45,7 +45,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     curationRules: {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     }
   },
   {
@@ -72,7 +73,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     curationRules: {
       maxTrackAgeDays: 60,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     }
   },
   {
@@ -112,7 +114,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     curationRules: {
       maxTrackAgeDays: 90,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     }
   },
   {
@@ -139,7 +142,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     curationRules: {
       maxTrackAgeDays: 365,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     }
   },
   {
@@ -173,7 +177,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
     curationRules: {
       maxTrackAgeDays: 45,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     }
   }
 ];

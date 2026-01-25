@@ -153,6 +153,7 @@ const TrackRow = ({ index, control, register, setValue, remove, errors }: TrackR
                 id={`min-${index}`}
                 type="number"
                 placeholder="Min"
+                onWheel={(e) => e.currentTarget.blur()}
                 className={cn(
                   'h-8 w-16 px-2 text-center',
                   trackErrors?.positionRange?.min && 'border-destructive'
@@ -169,6 +170,7 @@ const TrackRow = ({ index, control, register, setValue, remove, errors }: TrackR
                 id={`max-${index}`}
                 type="number"
                 placeholder="Max"
+                onWheel={(e) => e.currentTarget.blur()}
                 className={cn(
                   'h-8 w-16 px-2 text-center',
                   trackErrors?.positionRange?.max && 'border-destructive'
@@ -219,6 +221,9 @@ export const TrackListSettings = ({
           <CardDescription>
             Pin specific songs to exact positions (e.g., Opener, Closer).
           </CardDescription>
+          <p className="text-[11px] font-medium text-amber-500/80 bg-amber-500/5 border border-amber-500/10 rounded px-2 py-1 mt-2 inline-block">
+            Note: Pinned tracks always stay in the playlist and bypass age & artist limits.
+          </p>
         </div>
         <Button
           variant="secondary"

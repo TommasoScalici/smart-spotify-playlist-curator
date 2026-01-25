@@ -43,7 +43,8 @@ const STOP_WORDS = new Set([
 function generatePromptPreview(
   name?: string,
   description?: string,
-  isInstrumental?: boolean
+  isInstrumental?: boolean,
+  referenceArtists?: string[]
 ): string {
   if (!name) return '(Prompt will be auto-generated from playlist name and description)';
 
@@ -57,6 +58,11 @@ function generatePromptPreview(
 
   if (description) {
     prompt += `\n\nPlaylist Description: ${description}`;
+  }
+
+  if (referenceArtists && referenceArtists.length > 0) {
+    prompt += `\n\nReference Artists: ${referenceArtists.join(', ')}`;
+    prompt += '\nUse these artists to define the sonic profile and quality bar for suggestions.';
   }
 
   if (titleWords.length > 0) {
@@ -78,6 +84,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
   const playlistDescription = watch('settings.description');
   const isInstrumental = watch('aiGeneration.isInstrumentalOnly');
   const isAiEnabled = watch('aiGeneration.enabled');
+  const referenceArtists = watch('settings.referenceArtists') || [];
 
   return (
     <Card className="mb-6">
@@ -111,6 +118,37 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
         {/* Conditional: Show AI settings only if enabled */}
         {isAiEnabled && (
           <>
+            {/* Reference Artists */}
+            <div className="space-y-3 p-4 border rounded-md bg-primary/5">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                <Label htmlFor="referenceArtists" className="text-sm font-semibold">
+                  Reference Artists
+                </Label>
+              </div>
+              <Controller
+                control={control}
+                name="settings.referenceArtists"
+                render={({ field }) => (
+                  <Input
+                    placeholder="e.g. Lofi Girl, J Dilla, Nujabes (comma separated)"
+                    value={field.value?.join(', ') || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const artists = val
+                        .split(',')
+                        .map((s) => s.trim())
+                        .filter(Boolean);
+                      field.onChange(artists);
+                    }}
+                  />
+                )}
+              />
+              <p className="text-xs text-muted-foreground">
+                Give the AI specific artists to emulate the "vibe" of.
+              </p>
+            </div>
+
             {/* Tracks to Add */}
             <div className="space-y-2">
               <Label
@@ -124,6 +162,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                 type="number"
                 min="0"
                 max="50"
+                onWheel={(e) => e.currentTarget.blur()}
                 {...register('aiGeneration.tracksToAdd', { valueAsNumber: true })}
                 className={cn(
                   'max-w-[150px]',
@@ -161,13 +200,18 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
               </div>
               <Textarea
                 id="prompt-preview"
-                value={generatePromptPreview(playlistName, playlistDescription, isInstrumental)}
+                value={generatePromptPreview(
+                  playlistName,
+                  playlistDescription,
+                  isInstrumental,
+                  referenceArtists
+                )}
                 readOnly
-                className="min-h-[100px] font-mono text-sm bg-muted cursor-not-allowed resize-none"
+                className="min-h-[120px] font-mono text-sm bg-muted cursor-not-allowed resize-none"
               />
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <Sparkles className="h-3 w-3" />
-                Prompts are auto-generated from playlist name and description.
+                Prompts are auto-generated from playlist name, reference artists, and description.
               </p>
             </div>
 
@@ -201,6 +245,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                     step="0.1"
                     min="0"
                     max="1"
+                    onWheel={(e) => e.currentTarget.blur()}
                     {...register('aiGeneration.temperature', { valueAsNumber: true })}
                     className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
                   />

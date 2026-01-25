@@ -28,7 +28,8 @@ export const AiGenerationConfigSchema = z.object({
 export const CurationRulesSchema = z.object({
   maxTrackAgeDays: z.number().min(1).default(30),
   maxTracksPerArtist: z.number().min(1).default(2),
-  removeDuplicates: z.boolean().default(true)
+  removeDuplicates: z.boolean().default(true),
+  shuffleAtEnd: z.boolean().default(true)
 });
 
 export const PlaylistSettingsSchema = z.object({
@@ -47,7 +48,7 @@ export const CurationDiffSchema = z.object({
       uri: z.string(),
       name: z.string(),
       artist: z.string(),
-      reason: z.enum(['duplicate', 'expired', 'other']).optional()
+      reason: z.enum(['duplicate', 'expired', 'artist_limit', 'size_limit', 'other']).optional()
     })
   ),
   keptMandatory: z
@@ -70,6 +71,8 @@ export const ActivityMetadataSchema = z.object({
   aiTracksAdded: z.number().optional(),
   duplicatesRemoved: z.number().optional(),
   expiredRemoved: z.number().optional(),
+  artistLimitRemoved: z.number().optional(),
+  sizeLimitRemoved: z.number().optional(),
   finalCount: z.number().optional(),
   dryRun: z.boolean().optional(),
   error: z.string().optional(),
@@ -122,7 +125,8 @@ export const PlaylistConfigSchema = z.object({
   curationRules: CurationRulesSchema.default({
     maxTrackAgeDays: 30,
     maxTracksPerArtist: 2,
-    removeDuplicates: true
+    removeDuplicates: true,
+    shuffleAtEnd: true
   })
 });
 
@@ -186,5 +190,20 @@ export const OrchestrationResultSchema = z.object({
     })
   )
 });
+
+// --- Estimation Result ---
+
+export const CurationEstimateSchema = z.object({
+  currentTracks: z.number(),
+  duplicatesToRemove: z.number(),
+  agedOutTracks: z.number(),
+  artistLimitRemoved: z.number(),
+  sizeLimitRemoved: z.number(),
+  mandatoryToAdd: z.number(),
+  aiTracksToAdd: z.number(),
+  predictedFinal: z.number()
+});
+
+export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;
 
 export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;

@@ -8,8 +8,10 @@
     "node": "24"
   },
   "scripts": {
+    "format": "prettier --write .",
     "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

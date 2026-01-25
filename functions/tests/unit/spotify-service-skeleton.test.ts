@@ -60,6 +60,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           uri: 'spotify:track:A',
           name: 'A',
           artists: [{ name: 'Art' }],
+          album: { name: 'Album A' },
           id: '1',
           type: 'track'
         },
@@ -70,6 +71,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           uri: 'spotify:track:B',
           name: 'B',
           artists: [{ name: 'Art' }],
+          album: { name: 'Album B' },
           id: '2',
           type: 'track'
         },
@@ -80,6 +82,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           uri: 'spotify:track:C',
           name: 'C',
           artists: [{ name: 'Art' }],
+          album: { name: 'Album C' },
           id: '3',
           type: 'track'
         },
@@ -90,6 +93,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           uri: 'spotify:track:D',
           name: 'D',
           artists: [{ name: 'Art' }],
+          album: { name: 'Album D' },
           id: '4',
           type: 'track'
         },
@@ -100,6 +104,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
           uri: 'spotify:track:E',
           name: 'E',
           artists: [{ name: 'Art' }],
+          album: { name: 'Album E' },
           id: '5',
           type: 'track'
         },
@@ -129,9 +134,9 @@ describe('SpotifyService - Skeleton Strategy', () => {
 
     // 1. Remove Logic: B, C, E
     const expectedRemove = [
-      { uri: 'spotify:track:B' },
-      { uri: 'spotify:track:C' },
-      { uri: 'spotify:track:E' }
+      { uri: 'spotify:track:B', positions: [1] },
+      { uri: 'spotify:track:C', positions: [2] },
+      { uri: 'spotify:track:E', positions: [4] }
     ];
     expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(playlistId, {
       tracks: expectedRemove
@@ -164,11 +169,25 @@ describe('SpotifyService - Skeleton Strategy', () => {
 
     const currentTracks = [
       {
-        track: { uri: 'spotify:track:D', name: 'D', artists: [], id: '4', type: 'track' },
+        track: {
+          uri: 'spotify:track:D',
+          name: 'D',
+          artists: [],
+          album: { name: 'Album D' },
+          id: '4',
+          type: 'track'
+        },
         added_at: '2023-01-01'
       },
       {
-        track: { uri: 'spotify:track:A', name: 'A', artists: [], id: '1', type: 'track' },
+        track: {
+          uri: 'spotify:track:A',
+          name: 'A',
+          artists: [],
+          album: { name: 'Album A' },
+          id: '1',
+          type: 'track'
+        },
         added_at: '2023-01-01'
       }
     ];

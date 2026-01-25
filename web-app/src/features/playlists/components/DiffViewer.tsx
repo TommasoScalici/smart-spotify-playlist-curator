@@ -103,11 +103,19 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
                               'bg-blue-500/10 text-blue-500 border-blue-500/20',
                             track.reason === 'expired' &&
                               'bg-amber-500/10 text-amber-500 border-amber-500/20',
-                            track.reason === 'other' &&
+                            track.reason === 'artist_limit' &&
+                              'bg-purple-500/10 text-purple-500 border-purple-500/20',
+                            track.reason === 'size_limit' &&
+                              'bg-rose-500/10 text-rose-500 border-rose-500/20',
+                            (track.reason === 'other' || !track.reason) &&
                               'bg-muted text-muted-foreground border-muted-foreground/20'
                           )}
                         >
-                          {track.reason}
+                          {track.reason === 'artist_limit'
+                            ? 'Artist limit'
+                            : track.reason === 'size_limit'
+                              ? 'Size limit'
+                              : track.reason || 'other'}
                         </Badge>
                       )}
                     </div>

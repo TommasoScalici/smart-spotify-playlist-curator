@@ -3,17 +3,18 @@
   "version": "1.4.0",
   "description": "Firebase Cloud Functions for Smart Spotify Playlist Curator, powering AI-driven playlist generation and management.",
   "scripts": {
-    "lint": "eslint .",
     "build": "tsc -p tsconfig.build.json",
     "build:watch": "tsc --watch",
+    "deploy": "firebase deploy --only functions",
+    "format": "prettier --write .",
+    "lint": "eslint .",
+    "logs": "firebase functions:log",
     "serve": "npm run build && firebase emulators:start --only functions",
     "shell": "npm run build && firebase functions:shell",
     "start": "npm run shell",
-    "deploy": "firebase deploy --only functions",
-    "logs": "firebase functions:log",
     "test": "vitest run",
-    "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
     "type-check": "tsc --noEmit"
   },
   "engines": {

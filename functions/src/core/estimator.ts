@@ -1,15 +1,6 @@
 import { SpotifyService } from '../services/spotify-service';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { PlaylistConfig, CurationEstimate } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
-
-export interface CurationEstimate {
-  currentTracks: number;
-  duplicatesToRemove: number;
-  agedOutTracks: number;
-  mandatoryToAdd: number;
-  aiTracksToAdd: number;
-  predictedFinal: number;
-}
 
 /**
  * Estimates the result of a curation run without making changes.
@@ -29,59 +20,92 @@ export class CurationEstimator {
 
     logger.info(`Estimating curation for playlist: ${config.name}`, { playlistId });
 
-    // Fetch current tracks
+    // 1. Fetch current tracks
     const currentTracks = await spotifyService.getPlaylistTracks(playlistId);
     const currentCount = currentTracks.length;
 
-    // Calculate duplicates
-    let duplicatesToRemove = 0;
-    if (config.curationRules.removeDuplicates) {
-      const seen = new Set<string>();
-      for (const track of currentTracks) {
-        if (seen.has(track.uri)) {
-          duplicatesToRemove++;
-        } else {
-          seen.add(track.uri);
-        }
-      }
-    }
-
-    // Calculate aged-out tracks
-    let agedOutTracks = 0;
-    const now = new Date();
-    const maxAgeDays = config.curationRules.maxTrackAgeDays;
+    const { curationRules } = config;
+    const now = Date.now();
+    const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
     const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri));
 
-    for (const track of currentTracks) {
-      if (vipUris.has(track.uri)) continue; // VIPs are protected
-      const addedAt = new Date(track.addedAt);
-      const ageInMs = now.getTime() - addedAt.getTime();
-      const ageInDays = ageInMs / (1000 * 60 * 60 * 24);
-      if (ageInDays > maxAgeDays) {
-        agedOutTracks++;
+    let duplicatesToRemove = 0;
+    let agedOutTracks = 0;
+    let artistLimitRemoved = 0;
+
+    const seenUris = new Set<string>();
+    const seenSignatures = new Set<string>();
+    const artistCounts: Record<string, number> = {};
+
+    const survivingUris = new Set<string>();
+
+    // 2. Simulate Filter Loop (Exact match of Orchestrator.ts)
+    for (const item of currentTracks) {
+      const normalizedName = item.name.trim().toLowerCase();
+      const normalizedArtist = item.artist.trim().toLowerCase();
+      const normalizedAlbum = item.album.trim().toLowerCase();
+      const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
+
+      // 2a. Deduplication
+      if (
+        curationRules.removeDuplicates &&
+        (seenUris.has(item.uri) || seenSignatures.has(signature))
+      ) {
+        duplicatesToRemove++;
+        continue;
       }
+      seenUris.add(item.uri);
+      seenSignatures.add(signature);
+
+      // 2b. Age Check
+      const addedAt = new Date(item.addedAt).getTime();
+      const age = now - addedAt;
+      if (!vipUris.has(item.uri) && age > maxAgeMs) {
+        agedOutTracks++;
+        continue;
+      }
+
+      // 2c. Artist Limit
+      if (!vipUris.has(item.uri)) {
+        const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
+        const isVarious = primaryArtist === 'various artists';
+
+        if (!isVarious) {
+          const count = artistCounts[primaryArtist] || 0;
+          if (count >= curationRules.maxTracksPerArtist) {
+            artistLimitRemoved++;
+            continue;
+          }
+          artistCounts[primaryArtist] = count + 1;
+        }
+      }
+
+      survivingUris.add(item.uri);
     }
 
-    // Calculate mandatory tracks to add
+    // 3. Calculate additions
     let mandatoryToAdd = 0;
-    const currentUris = new Set(currentTracks.map((t) => t.uri));
     for (const mandatory of config.mandatoryTracks) {
-      if (!currentUris.has(mandatory.uri)) {
+      if (!survivingUris.has(mandatory.uri)) {
         mandatoryToAdd++;
       }
     }
 
-    // AI tracks to add (if enabled)
     const aiTracksToAdd = config.aiGeneration.enabled ? config.aiGeneration.tracksToAdd : 0;
 
-    // Predicted final count
-    const predictedFinal =
-      currentCount - duplicatesToRemove - agedOutTracks + mandatoryToAdd + aiTracksToAdd;
+    // 4. Size Limit (Aggressive cleanup if over target)
+    // The predicted final should account for the target limit.
+    const target = config.settings.targetTotalTracks;
+    const preLimitCount = survivingUris.size + mandatoryToAdd + aiTracksToAdd;
+    const sizeLimitRemoved = Math.max(0, preLimitCount - target);
+    const predictedFinal = Math.min(preLimitCount, target);
 
     return {
       currentTracks: currentCount,
       duplicatesToRemove,
       agedOutTracks,
+      artistLimitRemoved,
+      sizeLimitRemoved,
       mandatoryToAdd,
       aiTracksToAdd,
       predictedFinal

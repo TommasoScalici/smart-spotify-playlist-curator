@@ -3,7 +3,9 @@ import { functions } from './firebase';
 import {
   SpotifyProfile,
   OrchestrationResult,
-  OrchestrationResultSchema
+  OrchestrationResultSchema,
+  CurationEstimate,
+  CurationEstimateSchema
 } from '@smart-spotify-curator/shared';
 
 export interface SpotifySearchResult {
@@ -134,26 +136,9 @@ export const FunctionsService = {
    * @param playlistId - The playlist config ID to estimate curation for
    * @returns CurationEstimate with projected changes
    */
-  async estimateCuration(playlistId: string): Promise<{
-    currentTracks: number;
-    duplicatesToRemove: number;
-    agedOutTracks: number;
-    mandatoryToAdd: number;
-    aiTracksToAdd: number;
-    predictedFinal: number;
-  }> {
-    const estimate = httpsCallable<
-      { playlistId: string },
-      {
-        currentTracks: number;
-        duplicatesToRemove: number;
-        agedOutTracks: number;
-        mandatoryToAdd: number;
-        aiTracksToAdd: number;
-        predictedFinal: number;
-      }
-    >(functions, 'estimateCuration');
+  async estimateCuration(playlistId: string): Promise<CurationEstimate> {
+    const estimate = httpsCallable<{ playlistId: string }, unknown>(functions, 'estimateCuration');
     const result = await estimate({ playlistId });
-    return result.data;
+    return CurationEstimateSchema.parse(result.data);
   }
 };

@@ -113,6 +113,16 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
                     -{activity.metadata.expiredRemoved} Expired
                   </span>
                 ) : null}
+                {activity.metadata.artistLimitRemoved ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                    -{activity.metadata.artistLimitRemoved} Artist Limit
+                  </span>
+                ) : null}
+                {activity.metadata.sizeLimitRemoved ? (
+                  <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-pink-500/10 text-pink-500 border border-pink-500/20">
+                    -{activity.metadata.sizeLimitRemoved} Size Limit
+                  </span>
+                ) : null}
               </div>
             )}
 

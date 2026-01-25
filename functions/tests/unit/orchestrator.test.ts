@@ -67,7 +67,8 @@ describe('PlaylistOrchestrator', () => {
     curationRules: {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     },
     mandatoryTracks: []
   };
@@ -109,6 +110,7 @@ describe('PlaylistOrchestrator', () => {
       uri: 'spotify:track:new-ai-uri',
       artist: 'Artist A',
       name: 'Track B',
+      album: 'Album B',
       addedAt: new Date().toISOString()
     });
 
@@ -130,12 +132,14 @@ describe('PlaylistOrchestrator', () => {
         uri: 'spotify:track:A',
         artist: 'Artist A',
         name: 'Track A',
+        album: 'Album A',
         addedAt: ''
       })
       .mockResolvedValueOnce({
         uri: 'spotify:track:B',
         artist: 'Artist B',
         name: 'Track B',
+        album: 'Album B',
         addedAt: ''
       });
 
@@ -155,6 +159,71 @@ describe('PlaylistOrchestrator', () => {
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalled();
   });
 
+  it('Path 1b: Deduplication Logic (Title Tracks & Identical Tuples)', async () => {
+    // Scenario:
+    // 1. "Bad Company" (Bad Company, Bad Company) -> Title Track (Should Keep)
+    // 2. "Bad Company" (Bad Company, Bad Company) -> EXACT Duplicate (Should Remove)
+    // 3. "Different" (Bad Company, Bad Company) -> Same Artist/Album, Diff Name (Should Keep)
+    // 4. "Same Name" (Different Artist, Album X) -> Same Name, Diff Artist (Should Keep)
+
+    const now = new Date();
+    const tracks = [
+      {
+        uri: 'uri:1',
+        name: 'Bad Company',
+        artist: 'Bad Company',
+        album: 'Bad Company',
+        addedAt: now.toISOString()
+      },
+      {
+        uri: 'uri:2',
+        name: 'Bad Company',
+        artist: 'Bad Company',
+        album: 'Bad Company',
+        addedAt: now.toISOString()
+      }, // Dupe
+      {
+        uri: 'uri:3',
+        name: 'Different',
+        artist: 'Bad Company',
+        album: 'Bad Company',
+        addedAt: now.toISOString()
+      },
+      {
+        uri: 'uri:4',
+        name: 'Bad Company',
+        artist: 'Other Artist',
+        album: 'Other Album',
+        addedAt: now.toISOString()
+      }
+    ];
+
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue(tracks);
+
+    // AI/SlotManager mocks to return simple pass-through
+    mockSlotManager.arrangePlaylist.mockImplementation((_, survivors) =>
+      survivors.map((t: { uri: string }) => t.uri)
+    );
+
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.arrayContaining([
+        expect.objectContaining({ uri: 'uri:1' }),
+        expect.objectContaining({ uri: 'uri:3' }),
+        expect.objectContaining({ uri: 'uri:4' })
+      ]),
+      expect.any(Array),
+      expect.any(Number),
+      true
+    );
+
+    // Verify uri:2 is NOT in survivors
+    const survivorsArg = mockSlotManager.arrangePlaylist.mock.calls[0][1];
+    expect(survivorsArg).not.toContainEqual(expect.objectContaining({ uri: 'uri:2' }));
+  });
+
   it('Path 2: Age Verification (Removes Old Tracks)', async () => {
     // Config: 30 days max
     const now = new Date();
@@ -162,8 +231,20 @@ describe('PlaylistOrchestrator', () => {
     const newDate = new Date(); // Now (Fresh)
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([
-      { uri: 'spotify:track:old', name: 'Old', artist: 'A', addedAt: oldDate.toISOString() },
-      { uri: 'spotify:track:new', name: 'New', artist: 'B', addedAt: newDate.toISOString() }
+      {
+        uri: 'spotify:track:old',
+        name: 'Old',
+        artist: 'A',
+        album: 'Album A',
+        addedAt: oldDate.toISOString()
+      },
+      {
+        uri: 'spotify:track:new',
+        name: 'New',
+        artist: 'B',
+        album: 'Album B',
+        addedAt: newDate.toISOString()
+      }
     ]);
 
     // Disable AI for clarity
@@ -176,7 +257,8 @@ describe('PlaylistOrchestrator', () => {
       expect.any(Array), // mandatory
       expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:new' })]),
       expect.any(Array), // ai
-      expect.any(Number) // total
+      expect.any(Number), // total
+      true // shuffleAtEnd
     );
 
     // "old" track should NOT be present in survivors

@@ -299,7 +299,8 @@ export const triggerCuration = onCall(
 );
 
 // --- Estimation for Pre-Flight Modal ---
-import { CurationEstimator, CurationEstimate } from './core/estimator';
+import { CurationEstimator } from './core/estimator';
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 
 export const estimateCuration = onCall(
   {

@@ -17,6 +17,7 @@ describe('CurationEstimator', () => {
     uri: `spotify:track:${id}`,
     name: `Track ${id}`,
     artist,
+    album: `Album ${id}`,
     addedAt // ISO String
   });
 
@@ -47,7 +48,8 @@ describe('CurationEstimator', () => {
     curationRules: {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     },
     mandatoryTracks: []
   };
@@ -82,6 +84,8 @@ describe('CurationEstimator', () => {
       currentTracks: 20,
       duplicatesToRemove: 0,
       agedOutTracks: 0,
+      artistLimitRemoved: 0,
+      sizeLimitRemoved: 0,
       mandatoryToAdd: 0,
       aiTracksToAdd: 0,
       predictedFinal: 20
@@ -113,6 +117,8 @@ describe('CurationEstimator', () => {
       currentTracks: 3,
       duplicatesToRemove: 1, // 3 - 1 = 2
       agedOutTracks: 0,
+      artistLimitRemoved: 0,
+      sizeLimitRemoved: 0,
       mandatoryToAdd: 0,
       aiTracksToAdd: 0,
       predictedFinal: 2
@@ -140,6 +146,8 @@ describe('CurationEstimator', () => {
       currentTracks: 2,
       duplicatesToRemove: 0,
       agedOutTracks: 1, // The old one
+      artistLimitRemoved: 0,
+      sizeLimitRemoved: 0,
       mandatoryToAdd: 0,
       aiTracksToAdd: 10, // Default config has 10
       predictedFinal: 11 // (2 - 1) + 10 = 11
@@ -198,6 +206,8 @@ describe('CurationEstimator', () => {
       currentTracks: 4,
       duplicatesToRemove: 1,
       agedOutTracks: 1,
+      artistLimitRemoved: 0,
+      sizeLimitRemoved: 0,
       mandatoryToAdd: 1,
       aiTracksToAdd: 5,
       predictedFinal: 8 // (4 - 1 - 1) + 1 + 5 = 8

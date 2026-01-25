@@ -42,7 +42,8 @@ export class PromptGenerator {
   public static generatePrompt(
     playlistName: string,
     description?: string,
-    isInstrumentalOnly?: boolean
+    isInstrumentalOnly?: boolean,
+    referenceArtists?: string[]
   ): string {
     // Extract meaningful words from title
     const titleWords = playlistName
@@ -56,6 +57,11 @@ export class PromptGenerator {
 
     if (description) {
       prompt += `\n\nPlaylist Description: ${description}`;
+    }
+
+    if (referenceArtists && referenceArtists.length > 0) {
+      prompt += `\n\nReference Artists: ${referenceArtists.join(', ')}`;
+      prompt += '\nUse these artists to define the sonic profile and quality bar for suggestions.';
     }
 
     // Use title words as style cues

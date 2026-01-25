@@ -10,15 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-
-export interface CurationEstimate {
-  currentTracks: number;
-  duplicatesToRemove: number;
-  agedOutTracks: number;
-  mandatoryToAdd: number;
-  aiTracksToAdd: number;
-  predictedFinal: number;
-}
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 
 interface ConfirmCurationModalProps {
   isOpen: boolean;
@@ -41,6 +33,8 @@ export const ConfirmCurationModal = ({
   const totalChanges = estimate
     ? estimate.duplicatesToRemove +
       estimate.agedOutTracks +
+      estimate.artistLimitRemoved +
+      estimate.sizeLimitRemoved +
       estimate.mandatoryToAdd +
       estimate.aiTracksToAdd
     : 0;
@@ -120,19 +114,35 @@ export const ConfirmCurationModal = ({
                   count={estimate.duplicatesToRemove}
                   type="remove"
                   icon={<X className="h-3 w-3" />}
-                  color="text-red-400"
-                  bg="bg-red-400/10"
+                  color="text-blue-400"
+                  bg="bg-blue-400/10"
                 />
                 <ChangeRow
                   label="Aged Out"
                   count={estimate.agedOutTracks}
                   type="remove"
                   icon={<X className="h-3 w-3" />}
-                  color="text-orange-400"
-                  bg="bg-orange-400/10"
+                  color="text-amber-400"
+                  bg="bg-amber-400/10"
                 />
                 <ChangeRow
-                  label="Mandatory"
+                  label="Artist limit"
+                  count={estimate.artistLimitRemoved}
+                  type="remove"
+                  icon={<X className="h-3 w-3" />}
+                  color="text-purple-400"
+                  bg="bg-purple-400/10"
+                />
+                <ChangeRow
+                  label="Size limit"
+                  count={estimate.sizeLimitRemoved}
+                  type="remove"
+                  icon={<X className="h-3 w-3" />}
+                  color="text-rose-400"
+                  bg="bg-rose-400/10"
+                />
+                <ChangeRow
+                  label="VIP Tracks"
                   count={estimate.mandatoryToAdd}
                   type="add"
                   icon={<ArrowRight className="h-3 w-3" />}
@@ -140,12 +150,12 @@ export const ConfirmCurationModal = ({
                   bg="bg-emerald-400/10"
                 />
                 <ChangeRow
-                  label="AI Generated"
+                  label="AI Suggestions"
                   count={estimate.aiTracksToAdd}
                   type="add"
                   icon={<Music2 className="h-3 w-3" />}
-                  color="text-blue-400"
-                  bg="bg-blue-400/10"
+                  color="text-purple-400"
+                  bg="bg-purple-400/10"
                 />
               </div>
 

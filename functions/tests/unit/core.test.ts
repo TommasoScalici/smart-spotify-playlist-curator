@@ -24,7 +24,8 @@ describe('Core Logic', () => {
     curationRules: {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
-      maxTracksPerArtist: 2
+      maxTracksPerArtist: 2,
+      shuffleAtEnd: true
     },
     mandatoryTracks: [
       {
@@ -249,6 +250,25 @@ describe('Core Logic', () => {
       expect(result.length).toBe(6);
       const clumpyCount = result.filter((u) => u.startsWith('c')).length;
       expect(clumpyCount).toBe(3);
+    });
+
+    it('should respect No Shuffle (Sequential Placement)', () => {
+      const slotManager = new SlotManager();
+      const mandatory: MandatoryTrack[] = [];
+      const survivors = [
+        { uri: 's1', artist: 'A' },
+        { uri: 's2', artist: 'B' }
+      ];
+      const ai = [
+        { uri: 'ai1', artist: 'C' },
+        { uri: 'ai2', artist: 'D' }
+      ];
+
+      // Shuffle = false
+      const result = slotManager.arrangePlaylist(mandatory, survivors, ai, 10, false);
+
+      // Order should be exactly: Survivors then AI
+      expect(result).toEqual(['s1', 's2', 'ai1', 'ai2']);
     });
   });
 });

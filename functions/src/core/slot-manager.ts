@@ -19,10 +19,12 @@ export class SlotManager {
     mandatoryTracks: MandatoryTrack[],
     survivorTracks: { uri: string; artist: string }[],
     newAiTracks: { uri: string; artist: string }[],
-    totalSlots: number
+    totalSlots: number,
+    shuffle: boolean = true
   ): string[] {
     const playlist: (string | null)[] = new Array(totalSlots).fill(null);
 
+    // Phase A & B: Mandatory Tracks (Always Fixed)
     for (const meta of mandatoryTracks) {
       const { min, max } = meta.positionRange;
       if (min === max) {
@@ -45,10 +47,16 @@ export class SlotManager {
         for (let i = start; i <= end; i++) if (playlist[i] === null) rangeSlots.push(i);
 
         if (rangeSlots.length > 0) {
-          const chosen = rangeSlots[Math.floor(Math.random() * rangeSlots.length)];
+          // If shuffle is off, pick the first available slot (deterministic)
+          // If shuffle is on, pick random
+          const chosen = shuffle
+            ? rangeSlots[Math.floor(Math.random() * rangeSlots.length)]
+            : rangeSlots[0];
+
           playlist[chosen] = meta.uri;
           placed = true;
         } else {
+          // Fallback nearest neighbor (logic handles both cases naturally)
           let offset = 1;
           while (!placed) {
             const left = start - offset;
@@ -82,25 +90,63 @@ export class SlotManager {
       }
     }
 
-    const topSlotsLimit = 30;
-    const newAiTracksPool = [...newAiTracks]; // Copy to mutate
+    const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
 
+    // Pool = Survivors + AI (minus mandatory)
+    // IMPORTANT: If shuffle=false, order matters. Survivors first, then AI.
+    const pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
+
+    if (!shuffle) {
+      // SEQUENTIAL FILL
+      for (let i = 0; i < totalSlots; i++) {
+        if (playlist[i] === null && pool.length > 0) {
+          const track = pool.shift();
+          if (track) playlist[i] = track.uri;
+        }
+      }
+      return playlist.filter((uri): uri is string => uri !== null);
+    }
+
+    // SHUFFLE FILL LOGIC (Existing logic)
+
+    // Prioritize new AI tracks in top 30 slots if possible (Feature Requirement)
+    const topSlotsLimit = 30;
+
+    // Note: The original logic prioritized AI tracks specifically.
+    // If we want to preserve that behavior, we should prioritize picking AI tracks for empty slots < 30.
+    // But then we remove them from the general 'pool'.
+
+    // Re-creating the pools to match original logic style but using the main `pool` source is cleaner,
+    // but the original logic had a specific "Phase C" for AI.
+
+    // Let's adapt the original logic:
+    const newAiTracksPool = pool.filter((p) => newAiTracks.some((a) => a.uri === p.uri));
+
+    // Original logic: Fill empty slots < 30 with AI tracks first
     for (let i = 0; i < Math.min(topSlotsLimit, totalSlots); i++) {
       if (playlist[i] === null && newAiTracksPool.length > 0) {
+        // Random pick or sequential? Original logic was sequential pop() from aiTracksPool (which was copy).
+        // Original: const track = newAiTracksPool.shift();
         const track = newAiTracksPool.shift();
-        if (track) playlist[i] = track.uri;
+        if (track) {
+          playlist[i] = track.uri;
+          // Remove from main pool reference effectively?
+          // We need a unified pool for the Weighted Random Pick phase.
+        }
       }
     }
 
-    const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
-    // Pool = Survivors + Remaining AI (minus mandatory)
-    const pool = [...survivorTracks, ...newAiTracksPool].filter((t) => !mandatoryUris.has(t.uri));
+    // Now rebuild the pool for the rest (Survivors + Remaining AI)
+    // We already used some AI tracks.
+    // The safest way is to filter `pool` by what's NOT in `playlist` yet.
+    const currentPlaced = new Set(playlist.filter(Boolean));
+    const remainingPool = pool.filter((t) => !currentPlaced.has(t.uri));
 
     // Group by Artist for Weighted Selection
     const artistBuckets: {
       [artist: string]: { uri: string; artist: string }[];
     } = {};
-    for (const t of pool) {
+    for (const t of remainingPool) {
       if (!artistBuckets[t.artist]) artistBuckets[t.artist] = [];
       artistBuckets[t.artist].push(t);
     }
@@ -110,42 +156,35 @@ export class SlotManager {
     // Fill remaining slots
     for (let i = 0; i < totalSlots; i++) {
       if (playlist[i] === null) {
-        if (pool.length === 0) break;
+        if (remainingPool.length === 0) break; // Should verify if remainingPool tracks are exhausted
 
         // Look up previous track's artist to prevent clumping.
-        // We check both the pool and mandatory tracks (though mandatory tracks don't store artist metadata effectively here, we do our best with the pool).
         let prevArtist: string | null = null;
         if (i > 0 && playlist[i - 1]) {
           const prevUri = playlist[i - 1];
-          // Check pool
           const poolMatch = [...survivorTracks, ...newAiTracks].find((t) => t.uri === prevUri);
           if (poolMatch) prevArtist = poolMatch.artist;
-          // If prevUri was a VIP not in our pool, we might miss the artist, but this covers most dynamic cases.
         }
 
         // Weighted Random Pick: Pick an Artist, then pick a track.
-        // Filter out empty buckets
         artists = artists.filter((a) => artistBuckets[a].length > 0);
 
         if (artists.length === 0) break;
 
-        // Anti-Clumping: Filter out previous artist if possible
+        // Anti-Clumping
         let candidates = artists;
         if (prevArtist && artists.length > 1) {
           candidates = artists.filter((a) => a !== prevArtist);
-          // If filtering removed everyone (only 1 artist left and it's the prev one), we must use it.
           if (candidates.length === 0) candidates = artists;
         }
 
-        // Perfect strategy: Round Robin on Artists.
+        // Round Robin / Random Artist
         const randomArtistIndex = Math.floor(Math.random() * candidates.length);
         const chosenArtist = candidates[randomArtistIndex];
 
         const track = artistBuckets[chosenArtist].pop(); // Take one
         if (track) {
           playlist[i] = track.uri;
-          // Bug Fix: Do not splice `artists` here using `randomArtistIndex` (which is from candidates array).
-          // The filter at start of loop `artists = artists.filter(...)` will naturally remove empty buckets next iteration.
         }
       }
     }
