@@ -22,6 +22,7 @@ import { AiService } from './services/ai-service';
 import { SpotifyService, SearchResult } from './services/spotify-service';
 import { PlaylistOrchestrator } from './core/orchestrator';
 import { SlotManager } from './core/slot-manager';
+import { TrackCleaner } from './core/track-cleaner';
 import { FirestoreLogger } from './services/firestore-logger';
 import { PlaylistConfig, OrchestrationResult } from '@smart-spotify-curator/shared';
 import { db } from './config/firebase';
@@ -131,6 +132,7 @@ export async function runOrchestrator(
   // 1. Stateless Services
   const aiService = new AiService();
   const slotManager = new SlotManager();
+  const trackCleaner = new TrackCleaner();
   const firestoreLogger = new FirestoreLogger();
 
   const results: OrchestrationResult['results'] = [];
@@ -150,7 +152,12 @@ export async function runOrchestrator(
     );
 
     // 4. Create Orchestrator (handles Spotify auth internally)
-    const orchestrator = new PlaylistOrchestrator(aiService, slotManager, firestoreLogger);
+    const orchestrator = new PlaylistOrchestrator(
+      aiService,
+      slotManager,
+      trackCleaner,
+      firestoreLogger
+    );
 
     // 5. Execute
     await orchestrator.curatePlaylist(playlistConfig, spotifyService, callerName);

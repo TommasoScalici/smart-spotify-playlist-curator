@@ -13,7 +13,8 @@ export {
   OrchestrationResultSchema,
   CurationEstimateSchema,
   ActivityMetadataSchema,
-  ActivityLogSchema
+  ActivityLogSchema,
+  TrackInfoSchema
 } from './schemas';
 
 export type {
@@ -31,5 +32,6 @@ export type {
   OrchestrationResult,
   CurationEstimate,
   ActivityMetadata,
-  ActivityLog
+  ActivityLog,
+  TrackInfo
 } from './schemas';

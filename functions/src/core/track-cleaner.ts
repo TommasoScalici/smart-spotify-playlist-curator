@@ -1,125 +1,109 @@
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { ProcessingResult, TrackWithMeta } from './types-internal';
+import { PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
+import { TrackWithMeta } from './types-internal';
+
+export type RemovalReason = 'duplicate' | 'expired' | 'artist_limit' | 'size_limit';
+
+export interface RemovedTrack {
+  uri: string;
+  name: string;
+  artist: string;
+  reason: RemovalReason;
+}
 
 export class TrackCleaner {
   /**
-   * Processes current tracks to apply VIP protection, age cleanup, and size limits.
-   * Steps:
-   * 1. Map to internal format and Identify VIPs
-   * 2. Remove tracks older than maxTrackAgeDays (unless VIP)
-   * 3. Enforce max tracks per artist (unless VIP)
-   * 4. Enforce hard size limit (removing oldest non-VIPs first)
-   * @param currentTracks List of track objects from Spotify (must contain uri and added_at)
+   * Processes current tracks to apply VIP protection, age cleanup, and artist limits.
+   * @param currentTracks List of TrackInfo from Spotify
    * @param config The playlist configuration
-   * @param vipUris Set or array of VIP track URIs
-   * @returns ProcessingResult containing kept tracks, tracks to remove, and needed slots
+   * @param vipUris Array of VIP track URIs
+   * @returns Surviving tracks and list of removed tracks with reasons
    */
   public processCurrentTracks(
-    currentTracks: {
-      track: {
-        uri: string;
-        name: string;
-        artists: { name: string }[];
-        album?: { name: string };
-      };
-      added_at: string;
-    }[],
+    currentTracks: TrackInfo[],
     config: PlaylistConfig,
-    vipUris: string[],
-    targetSizeAfterCleanup?: number // Optional override for aggressive cleaning
-  ): ProcessingResult {
-    const { curationRules, settings } = config;
-    const maxAgeDays = curationRules.maxTrackAgeDays;
+    vipUris: string[]
+  ): {
+    survivingTracks: TrackWithMeta[];
+    removedTracks: RemovedTrack[];
+  } {
+    const { curationRules } = config;
+    const now = Date.now();
+    const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
+    const vipSet = new Set(vipUris);
 
-    // Use override if provided, otherwise default to settings target
-    const effectiveTarget =
-      targetSizeAfterCleanup !== undefined ? targetSizeAfterCleanup : settings.targetTotalTracks;
+    const survivingTracks: TrackWithMeta[] = [];
+    const removedTracks: RemovedTrack[] = [];
 
-    const now = new Date();
+    const seenUris = new Set<string>();
+    const seenSignatures = new Set<string>();
+    const artistCounts: Record<string, number> = {};
 
-    let tracks: TrackWithMeta[] = currentTracks.map((t, index) => {
-      const addedAt = new Date(t.added_at);
-      const isVip = vipUris.includes(t.track.uri);
-      // Robust artist extraction
-      const artist =
-        t.track.artists && t.track.artists.length > 0 ? t.track.artists[0].name : 'Unknown Artist';
+    for (const item of currentTracks) {
+      const normalizedName = item.name.trim().toLowerCase();
+      const normalizedArtist = item.artist.trim().toLowerCase();
+      const normalizedAlbum = item.album.trim().toLowerCase();
+      const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
 
-      return {
-        uri: t.track.uri,
-        name: t.track.name,
-        artist: artist,
-        album: t.track.album?.name || 'Unknown Album',
-        addedAt: addedAt,
-        isVip: isVip,
-        originalIndex: index
-      };
-    });
-
-    const removedUris: string[] = [];
-
-    tracks = tracks.filter((track) => {
-      if (track.isVip) return true;
-
-      const ageInMs = now.getTime() - track.addedAt.getTime();
-      const ageInDays = ageInMs / (1000 * 60 * 60 * 24);
-
-      if (ageInDays > maxAgeDays) {
-        removedUris.push(track.uri);
-        return false;
+      // 1. Deduplication (Same URI or Same Metadata Signature)
+      if (
+        curationRules.removeDuplicates &&
+        (seenUris.has(item.uri) || seenSignatures.has(signature))
+      ) {
+        removedTracks.push({
+          uri: item.uri,
+          name: item.name,
+          artist: item.artist,
+          reason: 'duplicate'
+        });
+        continue;
       }
-      return true;
-    });
+      seenUris.add(item.uri);
+      seenSignatures.add(signature);
 
-    // Group by artist
-    const artistCounts: { [key: string]: number } = {};
-    const tracksAfterArtistLimit: TrackWithMeta[] = [];
+      const isVip = vipSet.has(item.uri);
+      const addedAtTime = new Date(item.addedAt).getTime();
 
-    // Process in order (oldest first)
-
-    for (const track of tracks) {
-      if (track.isVip) {
-        tracksAfterArtistLimit.push(track);
+      // 2. Age Check (Protect VIPs)
+      if (!isVip && now - addedAtTime > maxAgeMs) {
+        removedTracks.push({
+          uri: item.uri,
+          name: item.name,
+          artist: item.artist,
+          reason: 'expired'
+        });
         continue;
       }
 
-      const count = artistCounts[track.artist] || 0;
-      const limit = curationRules.maxTracksPerArtist ?? 2;
-      if (count < limit) {
-        artistCounts[track.artist] = count + 1;
-        tracksAfterArtistLimit.push(track);
-      } else {
-        removedUris.push(track.uri);
-      }
-    }
-    tracks = tracksAfterArtistLimit;
+      // 3. Artist Limit Check (Protect VIPs)
+      if (!isVip) {
+        const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
+        const isVarious = primaryArtist === 'various artists';
 
-    if (tracks.length > effectiveTarget) {
-      const vips = tracks.filter((t) => t.isVip);
-      let nonVips = tracks.filter((t) => !t.isVip);
-
-      // Sort non-VIPs by addedAt (Oldest first)
-      nonVips.sort((a, b) => a.addedAt.getTime() - b.addedAt.getTime());
-
-      // Calculate how many we need to remove
-      const slotsForNonVips = Math.max(0, effectiveTarget - vips.length);
-
-      if (nonVips.length > slotsForNonVips) {
-        const tracksToKeep = nonVips.slice(nonVips.length - slotsForNonVips);
-        const tracksToDrop = nonVips.slice(0, nonVips.length - slotsForNonVips);
-
-        tracksToDrop.forEach((t) => removedUris.push(t.uri));
-        nonVips = tracksToKeep;
+        if (!isVarious) {
+          const count = artistCounts[primaryArtist] || 0;
+          if (count >= curationRules.maxTracksPerArtist) {
+            removedTracks.push({
+              uri: item.uri,
+              name: item.name,
+              artist: item.artist,
+              reason: 'artist_limit'
+            });
+            continue;
+          }
+          artistCounts[primaryArtist] = count + 1;
+        }
       }
 
-      tracks = [...vips, ...nonVips];
+      survivingTracks.push({
+        uri: item.uri,
+        artist: item.artist,
+        name: item.name,
+        album: item.album,
+        addedAt: new Date(item.addedAt),
+        isVip
+      });
     }
 
-    const slotsNeeded = Math.max(0, effectiveTarget - tracks.length);
-
-    return {
-      keptTracks: tracks,
-      tracksToRemove: removedUris,
-      slotsNeeded: slotsNeeded
-    };
+    return { survivingTracks, removedTracks };
   }
 }

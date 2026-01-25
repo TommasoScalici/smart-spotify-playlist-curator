@@ -7,12 +7,13 @@ import * as logger from 'firebase-functions/logger';
 import { FirestoreLogger } from '../services/firestore-logger';
 import { PromptGenerator } from '../services/prompt-generator';
 import { DiffCalculator } from './diff-calculator';
-import { TrackWithMeta } from './types-internal';
+import { TrackCleaner, RemovalReason } from './track-cleaner';
 
 export class PlaylistOrchestrator {
   constructor(
     private aiService: AiService,
     private slotManager: SlotManager,
+    private trackCleaner: TrackCleaner,
     private firestoreLogger: FirestoreLogger
   ) {}
 
@@ -66,100 +67,24 @@ export class PlaylistOrchestrator {
 
       logger.info(`Fetched ${currentTracks.length} tracks from Spotify.`);
 
-      // 2. Filter & Clean (Dedupe, Age, Artist Limit)
-      const tracksToRemove: string[] = [];
-      const survivingTracks: TrackWithMeta[] = [];
-      const seenUris = new Set<string>();
-      const seenSignatures = new Set<string>();
-      const artistCounts: Record<string, number> = {};
-      const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri)); // Protect VIPs
-      const now = Date.now();
-      const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
+      // 2. Filter & Clean (Dedupe, Age, Artist Limit) using TrackCleaner
+      const vipUris = config.mandatoryTracks.map((m) => m.uri);
+      const { survivingTracks, removedTracks } = this.trackCleaner.processCurrentTracks(
+        currentTracks,
+        config,
+        vipUris
+      );
 
-      const removalReasons = new Map<
-        string,
-        'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other'
-      >();
-      let duplicatesRemoved = 0;
-      let expiredRemoved = 0;
-      let artistLimitRemoved = 0;
-
-      for (const item of currentTracks) {
-        // Create a unique signature for the track content (Name:Artist:Album)
-        const normalizedName = item.name.trim().toLowerCase();
-        const normalizedArtistString = item.artist.trim().toLowerCase();
-        const normalizedAlbum = item.album.trim().toLowerCase();
-        const signature = `${normalizedName}:${normalizedArtistString}:${normalizedAlbum}`;
-
-        // 2a. Deduplication (Same URI or Same Metadata Signature)
-        if (
-          curationRules.removeDuplicates &&
-          (seenUris.has(item.uri) || seenSignatures.has(signature))
-        ) {
-          if (seenSignatures.has(signature) && !seenUris.has(item.uri)) {
-            logger.info(
-              `Deduplicating track by signature conflict: "${item.name}" [${signature}]`,
-              {
-                uri: item.uri
-              }
-            );
-          }
-          tracksToRemove.push(item.uri);
-          removalReasons.set(item.uri, 'duplicate');
-          duplicatesRemoved++;
-          continue;
-        }
-        seenUris.add(item.uri);
-        seenSignatures.add(signature);
-
-        // 2b. Age Check (Protect VIPs)
-        const addedAt = new Date(item.addedAt).getTime();
-        const age = now - addedAt;
-        if (!vipUris.has(item.uri) && age > maxAgeMs) {
-          tracksToRemove.push(item.uri);
-          removalReasons.set(item.uri, 'expired');
-          expiredRemoved++;
-          continue; // Don't include in survivors
-        }
-
-        // 2c. Artist Limit Check (Protect VIPs)
-        if (!vipUris.has(item.uri)) {
-          // Identify Primary Artist (Split by comma if multiple)
-          const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
-          const isVarious = primaryArtist === 'various artists';
-
-          if (!isVarious) {
-            const count = artistCounts[primaryArtist] || 0;
-            if (count >= curationRules.maxTracksPerArtist) {
-              logger.info(`Artist limit reached for "${primaryArtist}". Removing "${item.name}"`, {
-                uri: item.uri
-              });
-              tracksToRemove.push(item.uri);
-              removalReasons.set(item.uri, 'artist_limit');
-              artistLimitRemoved++;
-              continue;
-            }
-            artistCounts[primaryArtist] = count + 1;
-          }
-        }
-
-        survivingTracks.push({
-          uri: item.uri,
-          artist: item.artist,
-          name: item.name,
-          album: item.album,
-          addedAt: new Date(item.addedAt),
-          isVip: vipUris.has(item.uri)
-        });
-      }
+      const removalReasons = new Map<string, RemovalReason | 'size_limit' | 'other'>();
+      removedTracks.forEach((rt) => removalReasons.set(rt.uri, rt.reason));
 
       logger.info(
-        `Filtered tracks. Survivors: ${survivingTracks.length}. Dups: ${duplicatesRemoved}. Expired: ${expiredRemoved}. Artist Limit: ${artistLimitRemoved}`
+        `Filtered tracks. Survivors: ${survivingTracks.length}. Total Removed via rules: ${removedTracks.length}`
       );
 
       // 3. AI Generation (if needed)
       const currentVipUrisInPlaylist = survivingTracks
-        .filter((t) => vipUris.has(t.uri))
+        .filter((t) => vipUris.includes(t.uri))
         .map((t) => t.uri);
       const missingVipsCount = config.mandatoryTracks.filter(
         (m) => !currentVipUrisInPlaylist.includes(m.uri)
@@ -208,23 +133,54 @@ export class PlaylistOrchestrator {
         const batchArtistCounts: Record<string, number> = {};
         const currentUriSetExtended = new Set([...currentUriSet]);
 
-        for (const suggestion of suggestions) {
+        // Parallel Search in Batches to respect rate limits and improve performance
+        const BATCH_SIZE = 5;
+        for (let i = 0; i < suggestions.length; i += BATCH_SIZE) {
           if (newAiTracks.length >= tracksNeeded) break;
-          if ((batchArtistCounts[suggestion.artist] || 0) >= curationRules.maxTracksPerArtist)
-            continue;
 
-          const trackInfo = await spotifyService.searchTrack(
-            `${suggestion.artist} ${suggestion.track}`
+          const batch = suggestions.slice(i, i + BATCH_SIZE);
+          const searchPromises = batch.map((suggestion) =>
+            (async () => {
+              // Quick check before searching
+              if (
+                (batchArtistCounts[suggestion.artist] || 0) >= curationRules.maxTracksPerArtist ||
+                newAiTracks.length >= tracksNeeded
+              ) {
+                return null;
+              }
+
+              const trackInfo = await spotifyService.searchTrack(
+                `${suggestion.artist} ${suggestion.track}`
+              );
+
+              if (trackInfo && !currentUriSetExtended.has(trackInfo.uri)) {
+                return { suggestion, trackInfo };
+              }
+              return null;
+            })()
           );
 
-          if (trackInfo && !currentUriSetExtended.has(trackInfo.uri)) {
-            newAiTracks.push({
-              uri: trackInfo.uri,
-              artist: trackInfo.artist,
-              track: trackInfo.name
-            });
-            batchArtistCounts[suggestion.artist] = (batchArtistCounts[suggestion.artist] || 0) + 1;
-            currentUriSetExtended.add(trackInfo.uri);
+          const batchResults = await Promise.all(searchPromises);
+
+          for (const res of batchResults) {
+            if (!res) continue;
+            const { suggestion, trackInfo } = res;
+
+            // Re-verify limits after parallel result arrives
+            if (
+              newAiTracks.length < tracksNeeded &&
+              (batchArtistCounts[suggestion.artist] || 0) < curationRules.maxTracksPerArtist &&
+              !currentUriSetExtended.has(trackInfo.uri)
+            ) {
+              newAiTracks.push({
+                uri: trackInfo.uri,
+                artist: trackInfo.artist,
+                track: trackInfo.name
+              });
+              batchArtistCounts[suggestion.artist] =
+                (batchArtistCounts[suggestion.artist] || 0) + 1;
+              currentUriSetExtended.add(trackInfo.uri);
+            }
           }
         }
       }
@@ -290,12 +246,7 @@ export class PlaylistOrchestrator {
         );
       }
 
-      await spotifyService.performSmartUpdate(
-        playlistId,
-        finalTrackList,
-        !!dryRun,
-        Array.from(vipUris)
-      );
+      await spotifyService.performSmartUpdate(playlistId, finalTrackList, !!dryRun, vipUris);
 
       // 7. Success log
       if (config.ownerId && currentLogId) {

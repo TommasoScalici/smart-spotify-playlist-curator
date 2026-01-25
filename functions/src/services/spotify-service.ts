@@ -231,40 +231,56 @@ export class SpotifyService {
   }
 
   public async getPlaylistTracks(playlistId: string): Promise<TrackInfo[]> {
+    const limit = 50;
+    const maxTracks = 1000; // Hard limit for safety
     const allTracks: TrackInfo[] = [];
-    let offset = 0;
-    const limit = 50; // SDK might default to 20, max 50 usually via API directly
-    // The SDK handles pagination via helper? No, we do manual pagination to be safe/granular.
 
-    let hasMore = true;
+    // 1. Fetch First Page (Sequential) to get total
+    const firstPage = await this.executeWithRetry(() =>
+      this.spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, 0)
+    );
 
-    while (hasMore) {
-      const response = await this.executeWithRetry(() =>
-        this.spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, offset)
-      );
+    const total = firstPage.total;
+    const items = firstPage.items;
 
-      const items = response.items;
-
-      for (const item of items) {
+    // Process first page
+    const processItems = (batch: typeof items) => {
+      batch.forEach((item) => {
         if (item.track && item.track.type === 'track') {
           const t = item.track;
           if ('artists' in t) {
             allTracks.push({
               uri: t.uri,
               name: t.name,
-              artist: t.artists.map((a) => a.name).join(', '),
+              artist: t.artists.map((a: { name: string }) => a.name).join(', '),
               album: t.album.name,
               addedAt: item.added_at || new Date().toISOString()
             });
           }
         }
-      }
+      });
+    };
 
-      if (items.length < limit) {
-        hasMore = false;
-      } else {
-        offset += limit;
-      }
+    processItems(items);
+
+    // 2. Calculate remaining pages
+    const totalToFetch = Math.min(total, maxTracks);
+    const promises: Promise<void>[] = [];
+
+    for (let offset = limit; offset < totalToFetch; offset += limit) {
+      promises.push(
+        (async () => {
+          const response = await this.executeWithRetry(() =>
+            this.spotify.playlists.getPlaylistItems(playlistId, undefined, undefined, limit, offset)
+          );
+          processItems(response.items);
+        })()
+      );
+    }
+
+    if (promises.length > 0) {
+      logger.info(`Fetching ${promises.length} additional track pages in parallel...`);
+      await Promise.all(promises);
     }
 
     return allTracks;
@@ -654,7 +670,7 @@ export class SpotifyService {
             await this.executeWithRetry(() =>
               this.spotify.playlists.movePlaylistItems(playlistId, currentIndex, i, 1)
             );
-            await this.delay(300);
+            await this.delay(100);
 
             const [moved] = skeleton.splice(currentIndex, 1);
             skeleton.splice(i, 0, moved);
@@ -666,6 +682,7 @@ export class SpotifyService {
     // 4. Block Insertion
     let insertPointer = 0;
     let pendingBlock: string[] = [];
+    const backboneTargetSet = new Set(backboneTarget);
 
     const flushBlock = async () => {
       if (pendingBlock.length > 0) {
@@ -677,7 +694,7 @@ export class SpotifyService {
     };
 
     for (const uri of targetOrderedUris) {
-      if (backboneTarget.includes(uri)) {
+      if (backboneTargetSet.has(uri)) {
         await flushBlock();
         insertPointer++;
       } else {

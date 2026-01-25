@@ -1,12 +1,15 @@
 import { SpotifyService } from '../services/spotify-service';
 import { PlaylistConfig, CurationEstimate } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
+import { TrackCleaner } from './track-cleaner';
 
 /**
  * Estimates the result of a curation run without making changes.
  * Used for the pre-flight confirmation modal.
  */
 export class CurationEstimator {
+  private trackCleaner = new TrackCleaner();
+
   /**
    * Calculates what the curation will do.
    * @param config Playlist configuration
@@ -24,64 +27,20 @@ export class CurationEstimator {
     const currentTracks = await spotifyService.getPlaylistTracks(playlistId);
     const currentCount = currentTracks.length;
 
-    const { curationRules } = config;
-    const now = Date.now();
-    const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
-    const vipUris = new Set(config.mandatoryTracks.map((m) => m.uri));
+    const vipUris = config.mandatoryTracks.map((m) => m.uri);
 
-    let duplicatesToRemove = 0;
-    let agedOutTracks = 0;
-    let artistLimitRemoved = 0;
+    // 2. Use TrackCleaner for logic consistency
+    const { survivingTracks, removedTracks } = this.trackCleaner.processCurrentTracks(
+      currentTracks,
+      config,
+      vipUris
+    );
 
-    const seenUris = new Set<string>();
-    const seenSignatures = new Set<string>();
-    const artistCounts: Record<string, number> = {};
+    const duplicatesToRemove = removedTracks.filter((t) => t.reason === 'duplicate').length;
+    const agedOutTracks = removedTracks.filter((t) => t.reason === 'expired').length;
+    const artistLimitRemoved = removedTracks.filter((t) => t.reason === 'artist_limit').length;
 
-    const survivingUris = new Set<string>();
-
-    // 2. Simulate Filter Loop (Exact match of Orchestrator.ts)
-    for (const item of currentTracks) {
-      const normalizedName = item.name.trim().toLowerCase();
-      const normalizedArtist = item.artist.trim().toLowerCase();
-      const normalizedAlbum = item.album.trim().toLowerCase();
-      const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
-
-      // 2a. Deduplication
-      if (
-        curationRules.removeDuplicates &&
-        (seenUris.has(item.uri) || seenSignatures.has(signature))
-      ) {
-        duplicatesToRemove++;
-        continue;
-      }
-      seenUris.add(item.uri);
-      seenSignatures.add(signature);
-
-      // 2b. Age Check
-      const addedAt = new Date(item.addedAt).getTime();
-      const age = now - addedAt;
-      if (!vipUris.has(item.uri) && age > maxAgeMs) {
-        agedOutTracks++;
-        continue;
-      }
-
-      // 2c. Artist Limit
-      if (!vipUris.has(item.uri)) {
-        const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
-        const isVarious = primaryArtist === 'various artists';
-
-        if (!isVarious) {
-          const count = artistCounts[primaryArtist] || 0;
-          if (count >= curationRules.maxTracksPerArtist) {
-            artistLimitRemoved++;
-            continue;
-          }
-          artistCounts[primaryArtist] = count + 1;
-        }
-      }
-
-      survivingUris.add(item.uri);
-    }
+    const survivingUris = new Set(survivingTracks.map((t) => t.uri));
 
     // 3. Calculate additions
     let mandatoryToAdd = 0;

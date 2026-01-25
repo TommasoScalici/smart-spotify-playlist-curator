@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { SlotManager } from '../../src/core/slot-manager';
-import { PlaylistConfig, MandatoryTrack } from '@smart-spotify-curator/shared';
+import { PlaylistConfig, MandatoryTrack, TrackInfo } from '@smart-spotify-curator/shared';
 
 describe('Core Logic', () => {
   // --- MOCK DATA SETUP ---
@@ -48,30 +48,43 @@ describe('Core Logic', () => {
   const twoDaysAgo = new Date();
   twoDaysAgo.setDate(today.getDate() - 2);
 
-  const currentTracksRaw = [
-    { uri: 'spotify:track:OLD_TRACK', addedAt: fortyDaysAgo },
-    { uri: 'spotify:track:NEW_TRACK', addedAt: twoDaysAgo },
-    { uri: 'spotify:track:VIP_FIXED_POS_5', addedAt: fortyDaysAgo }, // Old but VIP
-    { uri: 'spotify:track:EXTRA_OLD', addedAt: fortyDaysAgo }
+  const currentTracksRaw: TrackInfo[] = [
+    {
+      uri: 'spotify:track:OLD_TRACK',
+      addedAt: fortyDaysAgo.toISOString(),
+      name: 'Old Track',
+      artist: 'Artist A',
+      album: 'Album A'
+    },
+    {
+      uri: 'spotify:track:NEW_TRACK',
+      addedAt: twoDaysAgo.toISOString(),
+      name: 'New Track',
+      artist: 'Artist B',
+      album: 'Album B'
+    },
+    {
+      uri: 'spotify:track:VIP_FIXED_POS_5',
+      addedAt: fortyDaysAgo.toISOString(),
+      name: 'VIP Track',
+      artist: 'Artist C',
+      album: 'Album C'
+    }, // Old but VIP
+    {
+      uri: 'spotify:track:EXTRA_OLD',
+      addedAt: fortyDaysAgo.toISOString(),
+      name: 'Extra Old',
+      artist: 'Artist D',
+      album: 'Album D'
+    }
   ];
 
   describe('TrackCleaner', () => {
     it('should remove old tracks but keep VIPs', () => {
       const cleaner = new TrackCleaner();
-      const cleanResult = cleaner.processCurrentTracks(
-        currentTracksRaw.map((t) => ({
-          track: {
-            uri: t.uri,
-            name: 'Test Track',
-            artists: [{ name: 'Test Artist' }]
-          },
-          added_at: t.addedAt.toISOString()
-        })),
-        mockConfig,
-        vipUris
-      );
+      const cleanResult = cleaner.processCurrentTracks(currentTracksRaw, mockConfig, vipUris);
 
-      const keptUris = cleanResult.keptTracks.map((t) => t.uri);
+      const keptUris = cleanResult.survivingTracks.map((t) => t.uri);
 
       // Assertions
       expect(keptUris).not.toContain('spotify:track:OLD_TRACK'); // Expired
@@ -79,54 +92,49 @@ describe('Core Logic', () => {
       expect(keptUris).toContain('spotify:track:NEW_TRACK'); // Fresh
       expect(keptUris).toContain('spotify:track:VIP_FIXED_POS_5'); // VIP Protected
 
-      expect(cleanResult.keptTracks.length).toBe(2);
-      expect(cleanResult.slotsNeeded).toBe(8); // 10 - 2 = 8
+      expect(cleanResult.survivingTracks.length).toBe(2);
     });
 
     it('should enforce Max 2 Tracks limit per artist (excluding VIPs)', () => {
       const cleaner = new TrackCleaner();
       // 5 tracks by "Metallica", 1 VIP, 4 non-VIP
-      const metallicaTracks = [
+      const metallicaTracks: TrackInfo[] = [
         {
           uri: 'spotify:track:M1',
-          addedAt: twoDaysAgo,
+          addedAt: twoDaysAgo.toISOString(),
           artist: 'Metallica',
-          isVip: true
+          name: 'M1',
+          album: 'Album'
         }, // VIP - Should Keep
         {
           uri: 'spotify:track:M2',
-          addedAt: twoDaysAgo,
+          addedAt: twoDaysAgo.toISOString(),
           artist: 'Metallica',
-          isVip: false
+          name: 'M2',
+          album: 'Album'
         }, // Keep
         {
           uri: 'spotify:track:M3',
-          addedAt: twoDaysAgo,
+          addedAt: twoDaysAgo.toISOString(),
           artist: 'Metallica',
-          isVip: false
+          name: 'M3',
+          album: 'Album'
         }, // Keep
         {
           uri: 'spotify:track:M4',
-          addedAt: twoDaysAgo,
+          addedAt: twoDaysAgo.toISOString(),
           artist: 'Metallica',
-          isVip: false
+          name: 'M4',
+          album: 'Album'
         }, // Remove
         {
           uri: 'spotify:track:M5',
-          addedAt: twoDaysAgo,
+          addedAt: twoDaysAgo.toISOString(),
           artist: 'Metallica',
-          isVip: false
+          name: 'M5',
+          album: 'Album'
         } // Remove
       ];
-
-      const input = metallicaTracks.map((t) => ({
-        track: {
-          uri: t.uri,
-          name: t.artist + ' Track',
-          artists: [{ name: t.artist }]
-        },
-        added_at: t.addedAt.toISOString()
-      }));
 
       // Config mock with VIP
       const configWithVip = {
@@ -134,16 +142,18 @@ describe('Core Logic', () => {
         mandatoryTracks: [{ uri: 'spotify:track:M1', positionRange: { min: 1, max: 1 } }]
       };
 
-      const result = cleaner.processCurrentTracks(input, configWithVip, ['spotify:track:M1']);
+      const result = cleaner.processCurrentTracks(metallicaTracks, configWithVip, [
+        'spotify:track:M1'
+      ]);
 
-      const keptUris = result.keptTracks.map((t) => t.uri);
+      const keptUris = result.survivingTracks.map((t) => t.uri);
 
       expect(keptUris).toContain('spotify:track:M1'); // VIP kept
       expect(keptUris).toContain('spotify:track:M2'); // kept
       expect(keptUris).toContain('spotify:track:M3'); // kept
       expect(keptUris.length).toBe(3); // 1 VIP + 2 Non-VIP limit
-      expect(result.tracksToRemove).toContain('spotify:track:M4');
-      expect(result.tracksToRemove).toContain('spotify:track:M5');
+      expect(result.removedTracks.map((r) => r.uri)).toContain('spotify:track:M4');
+      expect(result.removedTracks.map((r) => r.uri)).toContain('spotify:track:M5');
     });
   });
 

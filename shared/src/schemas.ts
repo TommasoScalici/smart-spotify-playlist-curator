@@ -1,5 +1,16 @@
 import { z } from 'zod';
 
+export const TrackInfoSchema = z.object({
+  uri: z.string(),
+  name: z.string(),
+  artist: z.string(),
+  album: z.string(),
+  imageUrl: z.string().optional(),
+  addedAt: z.string()
+});
+
+export type TrackInfo = z.infer<typeof TrackInfoSchema>;
+
 // --- Sub-schemas ---
 
 export const PositionRangeSchema = z.object({

@@ -33,8 +33,9 @@ export const exchangeSpotifyToken = functions.https.onCall(
     const input = request.data;
 
     // 2. Validate Inputs
+    let validatedData: z.infer<typeof ExchangeTokenSchema>;
     try {
-      ExchangeTokenSchema.parse(input);
+      validatedData = ExchangeTokenSchema.parse(input);
     } catch (error) {
       logger.warn('Invalid input for exchangeSpotifyToken', error);
       throw new functions.https.HttpsError('invalid-argument', 'Invalid arguments provided.');
@@ -46,8 +47,8 @@ export const exchangeSpotifyToken = functions.https.onCall(
       // but we need the client ID/Secret configured in the instance.
       const spotifyService = new SpotifyService('initial-auth-flow');
       const { refreshToken, accessToken } = await spotifyService.exchangeCode(
-        input.code,
-        input.redirectUri
+        validatedData.code,
+        validatedData.redirectUri
       );
 
       // 4. Fetch Public Profile Info IMMEDIATELY (Before writing anything)
