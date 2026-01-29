@@ -1,5 +1,5 @@
-import * as functions from 'firebase-functions';
-import * as logger from 'firebase-functions/logger';
+import { logger } from 'firebase-functions/v2';
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
 import { z } from 'zod';
 
 import { db } from '../config/firebase';
@@ -15,7 +15,7 @@ const ExchangeTokenSchema = z.object({
  * Cloud Function to exchange an OAuth2 Authorization Code for Spotify Tokens.
  * Safely handles secret storage and profile syncing.
  */
-export const exchangeSpotifyToken = functions.https.onCall(
+export const exchangeSpotifyToken = onCall(
   {
     cors: true,
     invoker: 'public',
@@ -24,10 +24,7 @@ export const exchangeSpotifyToken = functions.https.onCall(
   async (request) => {
     // 1. Verify User Authentication
     if (!request.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'The function must be called while authenticated.'
-      );
+      throw new HttpsError('unauthenticated', 'The function must be called while authenticated.');
     }
 
     const uid = request.auth.uid;
@@ -39,7 +36,7 @@ export const exchangeSpotifyToken = functions.https.onCall(
       validatedData = ExchangeTokenSchema.parse(input);
     } catch (error) {
       logger.warn('Invalid input for exchangeSpotifyToken', error);
-      throw new functions.https.HttpsError('invalid-argument', 'Invalid arguments provided.');
+      throw new HttpsError('invalid-argument', 'Invalid arguments provided.');
     }
 
     try {
@@ -98,7 +95,7 @@ export const exchangeSpotifyToken = functions.https.onCall(
       logger.error('Error linking Spotify account:', error);
       // Since we used a batch, we know NOTHING was written if we got here.
       // The state is clean.
-      throw new functions.https.HttpsError('internal', 'Failed to link Spotify account.');
+      throw new HttpsError('internal', 'Failed to link Spotify account.');
     }
   }
 );

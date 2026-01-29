@@ -117,7 +117,7 @@ export const SpotifySearch = ({
                   onSelect={() => {
                     handleSelect(item);
                   }}
-                  className="cursor-pointer aria-selected:bg-accent aria-selected:text-accent-foreground data-[disabled]:opacity-100 data-[disabled]:pointer-events-auto"
+                  className="cursor-pointer aria-selected:bg-accent aria-selected:text-accent-foreground data-disabled:opacity-100 data-disabled:pointer-events-auto"
                 >
                   <div className="flex items-center gap-3 w-full overflow-hidden">
                     {item.imageUrl ? (

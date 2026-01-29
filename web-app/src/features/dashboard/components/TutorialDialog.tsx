@@ -33,7 +33,7 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="w-[90%] sm:w-full sm:max-w-[500px] p-0 overflow-hidden border-border bg-card rounded-lg sm:rounded-lg">
         {/* Header Image / Gradient */}
-        <div className="h-32 bg-gradient-to-br from-primary/20 via-background to-secondary/20 relative flex items-center justify-center overflow-hidden">
+        <div className="h-32 bg-linear-to-br from-primary/20 via-background to-secondary/20 relative flex items-center justify-center overflow-hidden">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
           {step === 1 && <Music className="h-16 w-16 text-primary/40 animate-pulse" />}
           {step === 2 && <Settings className="h-16 w-16 text-secondary/40 animate-spin-slow" />}

@@ -35,14 +35,12 @@ export class SpotifyService extends SpotifyBaseClient {
   }
   public setAccessToken(token: string, expiresInSeconds: number) {
     this.auth.setAccessToken(token, expiresInSeconds);
-    this.auth.updateSdkToken();
   }
   public setTokens(at: string, rt: string, ex: number) {
     this.auth.setTokens(at, rt, ex);
-    this.auth.updateSdkToken();
   }
   public getAccessToken() {
-    return this.auth.getAccessToken();
+    return this.auth.getAccessString();
   }
   public getRefreshToken() {
     return this.auth.getRefreshToken();

@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 <AlertTriangle className="h-10 w-10 stroke-[1.5px]" />
               </div>
 
-              <h1 className="text-3xl font-bold tracking-tight mb-3 bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">
+              <h1 className="text-3xl font-bold tracking-tight mb-3 bg-linear-to-br from-white to-white/60 bg-clip-text text-transparent">
                 Something went wrong
               </h1>
 

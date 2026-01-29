@@ -68,7 +68,7 @@ export const OnboardingHero = () => {
   return (
     <div className="relative overflow-hidden rounded-3xl w-full max-w-4xl bg-card/80 dark:bg-card/95 backdrop-blur-3xl border-2 border-border/50 shadow-2xl flex flex-col items-center p-6 sm:p-8 md:p-10 text-center animate-in fade-in zoom-in-95 duration-1000 transition-all min-h-[500px] sm:min-h-fit mx-4 sm:mx-auto my-auto ring-1 ring-black/5 dark:ring-white/5">
       {/* Dynamic Ambient Background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-secondary/10 z-0" />
+      <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-background to-secondary/10 z-0" />
       <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 z-0 pointer-events-none" />
 
       {/* Content */}
@@ -146,7 +146,7 @@ export const OnboardingHero = () => {
             onClick={login}
             className="group relative w-full sm:w-auto h-12 md:h-13 px-8 md:px-10 text-base md:text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
             <span className="relative flex items-center justify-center gap-2">
               Connect Spotify Account
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />

@@ -79,7 +79,7 @@ export default function SpotifyCallback() {
         {/* Decorative Background Glow */}
         <div
           className={cn(
-            'absolute -inset-4 rounded-[2rem] blur-2xl opacity-20 transition-colors duration-1000',
+            'absolute -inset-4 rounded-4xl blur-2xl opacity-20 transition-colors duration-1000',
             effectiveStatus === 'processing'
               ? 'bg-primary'
               : effectiveStatus === 'success'
@@ -88,7 +88,7 @@ export default function SpotifyCallback() {
           )}
         />
 
-        <div className="relative glass-panel rounded-[2rem] p-8 md:p-12 text-center border-white/10 shadow-2xl overflow-hidden">
+        <div className="relative glass-panel rounded-4xl p-8 md:p-12 text-center border-white/10 shadow-2xl overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-white/5 overflow-hidden">
             {effectiveStatus === 'processing' && (
               <div className="h-full bg-primary animate-progress-indeterminate" />

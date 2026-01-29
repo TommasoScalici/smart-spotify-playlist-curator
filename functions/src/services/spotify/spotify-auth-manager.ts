@@ -1,26 +1,72 @@
-import { SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { AccessToken, IAuthStrategy, SdkConfiguration, SpotifyApi } from '@spotify/web-api-ts-sdk';
 import * as logger from 'firebase-functions/logger';
 
 import { config as env } from '../../config/env';
 import { SpotifyTokens } from '../../types/spotify';
 
-export class SpotifyAuthManager {
+export class SpotifyAuthManager implements IAuthStrategy {
   private accessToken: string | null = null;
   private tokenExpirationEpoch: number = 0;
 
   constructor(
     private spotify: SpotifyApi,
     private refreshToken: string
-  ) {}
+  ) {
+    this.spotify.switchAuthenticationStrategy(this);
+  }
+
+  // --- IAuthStrategy Implementation ---
+
+  public setConfiguration(_configuration: SdkConfiguration): void {
+    // No-op for now
+  }
+
+  public async getOrCreateAccessToken(): Promise<AccessToken> {
+    await this.ensureAccessToken();
+    return this.getCurrentAccessTokenObj();
+  }
+
+  public async getAccessToken(): Promise<AccessToken | null> {
+    if (!this.accessToken) return null;
+    return this.getCurrentAccessTokenObj();
+  }
+
+  public removeAccessToken(): void {
+    this.accessToken = null;
+  }
+
+  // --- Core Logic ---
+
+  private getCurrentAccessTokenObj(): AccessToken {
+    if (!this.accessToken) {
+      throw new Error('No access token available');
+    }
+    const expiresIn = Math.max(0, this.tokenExpirationEpoch - Math.floor(Date.now() / 1000));
+    return {
+      access_token: this.accessToken,
+      token_type: 'Bearer',
+      expires_in: expiresIn,
+      refresh_token: this.refreshToken,
+      expires: this.tokenExpirationEpoch * 1000
+    };
+  }
 
   public setAccessToken(token: string, expiresInSeconds: number): void {
     this.accessToken = token;
     this.tokenExpirationEpoch = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    // No need to update SDK manually; strategy will read new values on next request
   }
 
   public setTokens(accessToken: string, refreshToken: string, expiresInSeconds: number): void {
     this.setAccessToken(accessToken, expiresInSeconds);
     this.refreshToken = refreshToken;
+  }
+
+  /**
+   * @deprecated logic moved to strategy, but kept for explicit calls if needed
+   */
+  public updateSdkToken(): void {
+    // No-op now as strategy is dynamic
   }
 
   public async forceRefresh(): Promise<void> {
@@ -30,7 +76,6 @@ export class SpotifyAuthManager {
     if (tokens.refresh_token) {
       this.refreshToken = tokens.refresh_token;
     }
-    this.updateSdkToken();
   }
 
   public async ensureAccessToken(): Promise<void> {
@@ -42,36 +87,6 @@ export class SpotifyAuthManager {
       if (tokens.refresh_token) {
         this.refreshToken = tokens.refresh_token;
       }
-      this.updateSdkToken();
-    }
-  }
-
-  public updateSdkToken(): void {
-    if (!this.accessToken) return;
-    const expiration = this.tokenExpirationEpoch * 1000;
-
-    const token = {
-      access_token: this.accessToken,
-      token_type: 'Bearer',
-      expires_in: Math.floor((expiration - Date.now()) / 1000),
-      refresh_token: this.refreshToken,
-      expires: expiration
-    };
-
-    // Use a more structured approach to avoid 'any' while still handling SDK internals
-    const api = this.spotify as unknown as {
-      setAccessToken?: (token: unknown) => void;
-      authenticationStrategy?: {
-        getAccessToken?: () => Promise<unknown>;
-      };
-    };
-
-    if (typeof api.setAccessToken === 'function') {
-      api.setAccessToken(token);
-    } else if (api.authenticationStrategy) {
-      // Internal hack for Strategy-based token management
-      const strategy = api.authenticationStrategy as Record<string, unknown>;
-      strategy['getAccessToken'] = async () => token;
     }
   }
 
@@ -101,7 +116,7 @@ export class SpotifyAuthManager {
     return (await response.json()) as SpotifyTokens;
   }
 
-  public getAccessToken() {
+  public getAccessString() {
     return this.accessToken;
   }
   public getRefreshToken() {
