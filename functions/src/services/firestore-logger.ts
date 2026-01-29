@@ -17,7 +17,7 @@ export class FirestoreLogger {
   async logActivity(
     ownerId: string,
     type: ActivityType,
-    message: string,
+    message?: string,
     metadata?: Record<string, unknown>,
     logId?: string
   ): Promise<string> {
@@ -31,14 +31,17 @@ export class FirestoreLogger {
       // Sanitize metadata to remove undefined values which Firestore doesn't like
       const sanitizedMetadata = JSON.parse(JSON.stringify(metadata || {}));
 
-      const data = {
+      const data: Record<string, unknown> = {
         type,
-        message,
         metadata: sanitizedMetadata,
         timestamp: new Date().toISOString(),
         read: false,
         deleted: false
       };
+
+      if (message !== undefined && message !== null) {
+        data.message = message;
+      }
 
       if (logId) {
         // Fetch existing metadata to perform a deep merge in memory

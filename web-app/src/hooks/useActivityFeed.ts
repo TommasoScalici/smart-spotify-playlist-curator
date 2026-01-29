@@ -7,7 +7,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
 import { db } from '../services/firebase';
 
-const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
+const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true' && import.meta.env.MODE !== 'test';
 
 export interface ActivityLog {
   id: string;

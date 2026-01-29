@@ -21,7 +21,8 @@ const mockSpotifyInstance = {
     playlists: { playlists: vi.fn() }
   },
   search: vi.fn(),
-  tracks: { get: vi.fn() }
+  tracks: { get: vi.fn() },
+  setAccessToken: vi.fn()
   // Add other methods if needed by constructor or ensureAccessToken init
 };
 

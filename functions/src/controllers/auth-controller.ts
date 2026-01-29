@@ -46,8 +46,7 @@ export const exchangeSpotifyToken = functions.https.onCall(
       // 3. Exchange Code for Tokens
       // We init with a placeholder because we don't have a token yet,
       // but we need the client ID/Secret configured in the instance.
-      const spotifyService = new SpotifyService('initial-auth-flow');
-      const { refreshToken, accessToken } = await spotifyService.exchangeCode(
+      const { refreshToken, accessToken } = await SpotifyService.exchangeCode(
         validatedData.code,
         validatedData.redirectUri
       );

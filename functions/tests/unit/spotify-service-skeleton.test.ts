@@ -18,7 +18,8 @@ const mockSpotifyInstance = {
     movePlaylistItems: vi.fn(),
     addItemsToPlaylist: vi.fn(),
     getPlaylist: vi.fn()
-  }
+  },
+  setAccessToken: vi.fn()
 };
 
 vi.mock('@spotify/web-api-ts-sdk', () => ({
@@ -52,7 +53,6 @@ describe('SpotifyService - Smart Update', () => {
   it('should execute Smart Update: Remove -> Add -> Sort', async () => {
     // Setup
     const playlistId = 'test-playlist';
-    const vipUris = ['spotify:track:A', 'spotify:track:D'];
 
     // Current State: [A(vip), B, C, D(vip), E]
     const currentTracks = [
@@ -116,7 +116,6 @@ describe('SpotifyService - Smart Update', () => {
     // Mock response to change state between calls!
     mockSpotifyInstance.playlists.getPlaylistItems
       .mockResolvedValueOnce({ total: 5, items: currentTracks }) // Stage 1 fetch
-      .mockResolvedValueOnce({ total: 2, items: [currentTracks[0], currentTracks[3]] }) // After removals [A, D]
       .mockResolvedValueOnce({
         total: 5,
         items: [
@@ -168,7 +167,7 @@ describe('SpotifyService - Smart Update', () => {
     mockSpotifyInstance.playlists.addItemsToPlaylist.mockResolvedValue({ snapshot_id: 'snap4' });
 
     // Execute
-    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
+    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false);
 
     // 1. Remove Logic: B, C, E.
     expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(
@@ -248,8 +247,7 @@ describe('SpotifyService - Smart Update', () => {
     await spotifyService.performSmartUpdate(
       playlistId,
       ['spotify:track:A', 'spotify:track:D'],
-      false,
-      []
+      false
     );
 
     // Initial: [D, A].

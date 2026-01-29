@@ -73,7 +73,7 @@ export async function persistSpotifyTokens(
   // Always update access token cache if available/fresh
   if (newAccessToken) {
     updates.accessToken = newAccessToken;
-    updates.expiresAt = new Date(newExpiresAt).toISOString();
+    updates.expiresAt = new Date(newExpiresAt * 1000).toISOString();
   }
 
   if (Object.keys(updates).length > 0) {
