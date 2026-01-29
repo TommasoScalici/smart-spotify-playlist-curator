@@ -1,6 +1,6 @@
-import * as esbuild from 'esbuild';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as esbuild from 'esbuild';
 
 const ROOT_DIR = process.cwd();
 const FUNCTIONS_DIR = path.join(ROOT_DIR, 'functions');

@@ -1,13 +1,14 @@
-import { UseFormRegister, FieldErrors, UseFormWatch, Control, Controller } from 'react-hook-form';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Switch } from '@/components/ui/switch';
-import { Sparkles, RefreshCw, Bot } from 'lucide-react';
+import { Bot, RefreshCw, Sparkles } from 'lucide-react';
+import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 import { toast } from 'sonner';
+
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 
 interface AiSettingsProps {

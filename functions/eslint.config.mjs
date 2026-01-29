@@ -1,5 +1,6 @@
-import rootConfig from '../eslint.config.mjs';
 import prettier from 'eslint-config-prettier';
+
+import rootConfig from '../eslint.config.mjs';
 
 export default [
   ...rootConfig,

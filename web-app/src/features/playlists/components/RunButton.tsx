@@ -1,12 +1,13 @@
 import { useState } from 'react';
+import { Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
-import { Zap, Loader2 } from 'lucide-react';
-import { FunctionsService } from '@/services/functions-service';
+
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 import { ConfirmCurationModal } from '@/features/playlists/components/ConfirmCurationModal';
-import { CurationEstimate } from '@smart-spotify-curator/shared';
+import { cn } from '@/lib/utils';
+import { FunctionsService } from '@/services/functions-service';
 
 interface RunButtonProps {
   playlistId?: string;

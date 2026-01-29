@@ -1,7 +1,8 @@
+import { CheckCircle2, History, MinusCircle, Music, PlusCircle } from 'lucide-react';
+
 import { CurationDiff } from '@smart-spotify-curator/shared';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { PlusCircle, MinusCircle, Music, CheckCircle2, History } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface DiffViewerProps {
@@ -57,8 +58,8 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
                     key={track.uri}
                     className="flex flex-col p-2.5 text-sm rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
                   >
-                    <span className="font-semibold break-words">{track.name}</span>
-                    <span className="text-xs text-muted-foreground break-words">
+                    <span className="font-semibold wrap-break-word">{track.name}</span>
+                    <span className="text-xs text-muted-foreground wrap-break-word">
                       {track.artist}
                     </span>
                   </div>
@@ -91,7 +92,7 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
                     className="flex flex-col p-2.5 text-sm rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-all group/item scroll-m-2"
                   >
                     <div className="flex justify-between items-start gap-2 mb-1">
-                      <span className="font-semibold break-words decoration-line-through decoration-red-500/50 flex-1 leading-tight">
+                      <span className="font-semibold wrap-break-word decoration-line-through decoration-red-500/50 flex-1 leading-tight">
                         {track.name}
                       </span>
                       {track.reason && (
@@ -119,7 +120,7 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
                         </Badge>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground break-words leading-tight">
+                    <span className="text-xs text-muted-foreground wrap-break-word leading-tight">
                       {track.artist}
                     </span>
                   </div>
@@ -151,8 +152,8 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
                     key={track.uri}
                     className="flex flex-col p-2.5 text-sm rounded-md bg-white/5 border border-white/5 hover:bg-white/10 transition-all"
                   >
-                    <span className="font-semibold break-words">{track.name}</span>
-                    <span className="text-xs text-muted-foreground break-words">
+                    <span className="font-semibold wrap-break-word">{track.name}</span>
+                    <span className="text-xs text-muted-foreground wrap-break-word">
                       {track.artist}
                     </span>
                   </div>

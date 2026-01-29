@@ -1,22 +1,23 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Clock, History, User, Trash2, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { useActivityFeed, ActivityLog } from '@/hooks/useActivityFeed';
 import { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { FirestoreService } from '@/services/firestore-service';
+import { Activity, Clock, History, Sparkles, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { DiffViewer } from '@/features/playlists/components/DiffViewer';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { ActivityLog, useActivityFeed } from '@/hooks/useActivityFeed';
+import { cn } from '@/lib/utils';
+import { FirestoreService } from '@/services/firestore-service';
 
 // Simple time ago formatter
 const formatTimeAgo = (isoString: string) => {

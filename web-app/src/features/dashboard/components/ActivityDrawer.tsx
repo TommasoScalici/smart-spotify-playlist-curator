@@ -1,9 +1,11 @@
-import { X, Activity } from 'lucide-react';
-import { createPortal } from 'react-dom';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
-import { ActivityFeed } from './ActivityFeed';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { Activity, X } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+import { ActivityFeed } from './ActivityFeed';
 
 interface ActivityDrawerProps {
   open: boolean;

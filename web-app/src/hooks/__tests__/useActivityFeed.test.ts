@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { useActivityFeed } from '../useActivityFeed';
 import { onSnapshot, Query } from 'firebase/firestore';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
 import { useAuth } from '../../contexts/AuthContext';
+import { useActivityFeed } from '../useActivityFeed';
 
 // Mocks
 vi.mock('firebase/firestore', () => ({

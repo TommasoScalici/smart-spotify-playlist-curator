@@ -1,8 +1,9 @@
 import * as functions from 'firebase-functions';
 import * as logger from 'firebase-functions/logger';
+import { z } from 'zod';
+
 import { db } from '../config/firebase';
 import { SpotifyService } from '../services/spotify-service';
-import { z } from 'zod';
 
 // Schema for input validation
 const ExchangeTokenSchema = z.object({

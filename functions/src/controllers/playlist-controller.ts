@@ -1,7 +1,9 @@
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { z } from 'zod';
-import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 import { logger } from 'firebase-functions/v2';
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
+import { z } from 'zod';
+
+import { db } from '../config/firebase';
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 
 // Request Schema
 const GetPlaylistMetricsRequestSchema = z.object({
@@ -17,8 +19,6 @@ const PlaylistMetricsSchema = z.object({
   owner: z.string().optional(),
   description: z.string().optional()
 });
-
-import { db } from '../config/firebase';
 
 /**
  * Cloud Function: getPlaylistMetrics

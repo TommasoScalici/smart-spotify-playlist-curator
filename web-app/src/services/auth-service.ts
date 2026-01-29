@@ -1,14 +1,16 @@
 import {
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
   User as FirebaseUser,
+  GoogleAuthProvider,
   IdTokenResult,
-  onAuthStateChanged
+  onAuthStateChanged,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+
+import { UserProfile, UserSchema } from '@smart-spotify-curator/shared';
+
 import { auth, db } from './firebase';
-import { UserSchema, UserProfile } from '@smart-spotify-curator/shared';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 

@@ -1,12 +1,14 @@
 import { httpsCallable } from 'firebase/functions';
-import { functions } from './firebase';
+
 import {
-  SpotifyProfile,
+  CurationEstimate,
+  CurationEstimateSchema,
   OrchestrationResult,
   OrchestrationResultSchema,
-  CurationEstimate,
-  CurationEstimateSchema
+  SpotifyProfile
 } from '@smart-spotify-curator/shared';
+
+import { functions } from './firebase';
 
 export interface SpotifySearchResult {
   uri: string;

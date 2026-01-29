@@ -26,6 +26,26 @@ export interface ActivityLogEntry {
 }
 
 /**
+ * Helper to create valid ActivityMetadata for mocks
+ */
+const createMockMetadata = (overrides: Partial<ActivityMetadata>): ActivityMetadata => ({
+  playlistId: 'unknown',
+  playlistName: 'Unknown',
+  addedCount: 0,
+  removedCount: 0,
+  aiTracksAdded: 0,
+  duplicatesRemoved: 0,
+  expiredRemoved: 0,
+  artistLimitRemoved: 0,
+  sizeLimitRemoved: 0,
+  finalCount: 0,
+  dryRun: false,
+  progress: 0,
+  state: 'idle',
+  ...overrides
+});
+
+/**
  * Mock Activity Data for Debug Mode
  */
 export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
@@ -35,7 +55,7 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'curation_completed',
     message: 'Successfully curated "🎧 Chill Vibes"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
       playlistName: '🎧 Chill Vibes',
       addedCount: 12,
@@ -43,8 +63,10 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
       duplicatesRemoved: 2,
       finalCount: 50,
       aiTracksAdded: 10,
-      triggeredBy: 'Developer Admin'
-    }
+      triggeredBy: 'Developer Admin',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-2',
@@ -52,13 +74,15 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'info',
     action: 'duplicates_removed',
     message: 'Removed 5 duplicate tracks from "💪 Workout Energy"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
       duplicatesRemoved: 5,
       finalCount: 30,
-      triggeredBy: 'System Auto'
-    }
+      triggeredBy: 'System Auto',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-3',
@@ -66,13 +90,15 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'tracks_added',
     message: 'Added 8 new tracks to "☕ Morning Coffee"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX1s9knjP51Oa',
       playlistName: '☕ Morning Coffee',
       addedCount: 8,
       finalCount: 25,
-      triggeredBy: 'Tommaso'
-    }
+      triggeredBy: 'Tommaso',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-4',
@@ -80,13 +106,15 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'warning',
     action: 'health_check',
     message: 'Health check found issues in "🎉 Party Mix"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
       duplicatesRemoved: 3,
       finalCount: 75,
-      triggeredBy: 'Health Monitor'
-    }
+      triggeredBy: 'Health Monitor',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-5',
@@ -94,12 +122,14 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'playlist_created',
     message: 'Created new playlist "🌙 Late Night Jazz"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO',
       playlistName: '🌙 Late Night Jazz',
       finalCount: 0,
-      triggeredBy: 'Developer Admin'
-    }
+      triggeredBy: 'Developer Admin',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-6',
@@ -107,12 +137,13 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'error',
     action: 'curation_failed',
     message: 'Failed to curate "🎉 Party Mix"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DXa2PvUpywmrr',
       playlistName: '🎉 Party Mix',
       error: 'Spotify API rate limit exceeded',
-      triggeredBy: 'System Auto'
-    }
+      triggeredBy: 'System Auto',
+      state: 'error'
+    })
   },
   {
     id: 'activity-7',
@@ -120,12 +151,14 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'manual_run',
     message: 'Manually triggered curation for "💪 Workout Energy"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
       addedCount: 5,
-      triggeredBy: 'Tommaso'
-    }
+      triggeredBy: 'Tommaso',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-8',
@@ -133,13 +166,15 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'info',
     action: 'tracks_removed',
     message: 'Removed 4 outdated tracks from "🎧 Chill Vibes"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M',
       playlistName: '🎧 Chill Vibes',
       removedCount: 4,
       finalCount: 50,
-      triggeredBy: 'Developer Admin'
-    }
+      triggeredBy: 'Developer Admin',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-9',
@@ -147,7 +182,12 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'spotify_connected',
     message: 'Connected Spotify account',
-    metadata: {}
+    metadata: createMockMetadata({
+      playlistId: 'none',
+      playlistName: 'Account',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-10',
@@ -155,15 +195,17 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'success',
     action: 'curation_completed',
     message: 'Successfully curated "🌙 Late Night Jazz"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX4sWSpwq3LiO',
       playlistName: '🌙 Late Night Jazz',
       addedCount: 15,
       removedCount: 0,
       duplicatesRemoved: 0,
       finalCount: 40,
-      triggeredBy: 'Scheduler'
-    }
+      triggeredBy: 'Scheduler',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-11',
@@ -171,11 +213,13 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'info',
     action: 'playlist_updated',
     message: 'Updated configuration for "☕ Morning Coffee"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX1s9knjP51Oa',
       playlistName: '☕ Morning Coffee',
-      triggeredBy: 'Tommaso'
-    }
+      triggeredBy: 'Tommaso',
+      state: 'completed',
+      progress: 100
+    })
   },
   {
     id: 'activity-12',
@@ -183,10 +227,12 @@ export const MOCK_ACTIVITIES: ActivityLogEntry[] = [
     type: 'warning',
     action: 'curation_started',
     message: 'Started curation for "💪 Workout Energy"',
-    metadata: {
+    metadata: createMockMetadata({
       playlistId: 'spotify:playlist:37i9dQZF1DX0XUsuxWHRQd',
       playlistName: '💪 Workout Energy',
-      triggeredBy: 'Developer Admin'
-    }
+      triggeredBy: 'Developer Admin',
+      state: 'running',
+      progress: 10
+    })
   }
 ];

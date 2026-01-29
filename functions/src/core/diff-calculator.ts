@@ -1,6 +1,7 @@
-import { TrackWithMeta } from './types-internal';
 import { MandatoryTrack } from '@smart-spotify-curator/shared';
+
 import { TrackInfo } from '../services/spotify-service';
+import { TrackWithMeta } from './types-internal';
 
 export interface DiffItem {
   uri: string;

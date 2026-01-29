@@ -1,11 +1,9 @@
-import express from 'express';
-import open from 'open';
-import dotenv from 'dotenv';
-
+import { randomBytes } from 'crypto';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { randomBytes } from 'crypto';
-import type { Request, Response } from 'express';
+import dotenv from 'dotenv';
+import express, { type Request, type Response } from 'express';
+import open from 'open';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

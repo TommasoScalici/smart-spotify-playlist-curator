@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
-import { OnboardingHero } from '../components/OnboardingHero';
+import { act, fireEvent, render, screen } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
 import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
+import { OnboardingHero } from '../components/OnboardingHero';
 
 // Mock dependencies
 vi.mock('../../../hooks/useSpotifyAuth');

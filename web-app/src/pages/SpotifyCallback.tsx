@@ -1,12 +1,14 @@
-import { useEffect, useState, useRef } from 'react';
-import { useNavigate, useSearchParams, Link } from 'react-router-dom';
-import { FunctionsService } from '../services/functions-service';
-import { useAuth } from '../contexts/AuthContext';
+import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { CheckCircle2, ChevronLeft, Loader2, XCircle } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, XCircle, ChevronLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+
+import { useAuth } from '../contexts/AuthContext';
 import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
+import { FunctionsService } from '../services/functions-service';
 
 export default function SpotifyCallback() {
   const [searchParams] = useSearchParams();

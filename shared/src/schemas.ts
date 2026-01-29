@@ -79,22 +79,22 @@ export const CurationDiffSchema = z.object({
 });
 
 export const ActivityMetadataSchema = z.object({
-  playlistId: z.string().optional(),
-  playlistName: z.string().optional(),
-  addedCount: z.number().optional(),
-  removedCount: z.number().optional(),
-  aiTracksAdded: z.number().optional(),
-  duplicatesRemoved: z.number().optional(),
-  expiredRemoved: z.number().optional(),
-  artistLimitRemoved: z.number().optional(),
-  sizeLimitRemoved: z.number().optional(),
-  finalCount: z.number().optional(),
-  dryRun: z.boolean().optional(),
+  playlistId: z.string(),
+  playlistName: z.string(),
+  addedCount: z.number().default(0),
+  removedCount: z.number().default(0),
+  aiTracksAdded: z.number().default(0),
+  duplicatesRemoved: z.number().default(0),
+  expiredRemoved: z.number().default(0),
+  artistLimitRemoved: z.number().default(0),
+  sizeLimitRemoved: z.number().default(0),
+  finalCount: z.number().default(0),
+  dryRun: z.boolean().default(false),
   error: z.string().optional(),
-  progress: z.number().optional(),
+  progress: z.number().default(0),
   step: z.string().optional(),
   triggeredBy: z.string().optional(),
-  state: z.enum(['idle', 'running', 'completed', 'error']).optional(),
+  state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
   diff: CurationDiffSchema.optional()
 });
 
@@ -122,12 +122,10 @@ export const PlaylistConfigSchema = z.object({
     .string()
     .min(1, 'you have to select the target playlist')
     .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
-  name: z.string().optional(),
+  name: z.string(), // Name should be required as well
   enabled: z.boolean().default(true),
   imageUrl: z.string().optional().nullable(),
-  ownerId: z.string().optional(),
-  dryRun: z.boolean().optional(),
-  mandate: z.enum(['exact', 'flexible']).optional(),
+  ownerId: z.string().min(1, 'Owner ID is required'),
   settings: PlaylistSettingsSchema.default({
     targetTotalTracks: 20
   }),
@@ -152,8 +150,8 @@ export const PlaylistConfigSchema = z.object({
 export const SpotifyProfileSchema = z.object({
   id: z.string(),
   displayName: z.string().nullable(),
-  email: z.email(),
-  avatarUrl: z.url().nullable(),
+  email: z.string().email(),
+  avatarUrl: z.string().url().nullable(),
   product: z.string(),
   linkedAt: z.date(),
   status: z.enum(['active', 'invalid']).default('active'),
@@ -162,9 +160,9 @@ export const SpotifyProfileSchema = z.object({
 
 export const UserSchema = z.object({
   uid: z.string(),
-  email: z.email(),
+  email: z.string().email(),
   displayName: z.string().optional(),
-  photoURL: z.url().optional(),
+  photoURL: z.string().url().optional(),
   createdAt: z.date(),
   lastLoginAt: z.date(),
   theme: z.enum(['light', 'dark', 'system']).default('system'),

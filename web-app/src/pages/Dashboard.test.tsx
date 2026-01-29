@@ -1,12 +1,13 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
 import { User } from 'firebase/auth';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
+import { BrowserRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
+import { AuthContext } from '../contexts/AuthContext';
+import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
 import Dashboard from '../pages/Dashboard';
 import { FirestoreService } from '../services/firestore-service';
-import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
-import { AuthContext } from '../contexts/AuthContext';
-import { BrowserRouter } from 'react-router-dom';
 
 // Mocks
 vi.mock('../services/firestore-service');

@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { render, screen, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { SpotifySearch } from '../components/SpotifySearch';
-import { FunctionsService } from '../../../services/functions-service';
 import userEvent from '@testing-library/user-event';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
+import { FunctionsService } from '../../../services/functions-service';
+import { SpotifySearch } from '../components/SpotifySearch';
 
 // Mock FunctionsService
 vi.mock('@/services/functions-service');

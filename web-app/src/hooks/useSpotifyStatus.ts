@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
-import { FirestoreService } from '../services/firestore-service';
+
 import { MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
+import { FirestoreService } from '../services/firestore-service';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 const DEBUG_SHOW_HERO = import.meta.env.VITE_DEBUG_SHOW_HERO === 'true';

@@ -1,8 +1,8 @@
-import { initializeApp, getApps } from 'firebase-admin/app';
-import { getFirestore } from 'firebase-admin/firestore';
 import * as path from 'path';
-import * as dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
+import * as dotenv from 'dotenv';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
 // Handling __dirname in ESM
 const __filename = fileURLToPath(import.meta.url);

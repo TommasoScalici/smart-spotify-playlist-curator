@@ -1,4 +1,5 @@
 import { PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
+
 import { TrackWithMeta } from './types-internal';
 
 export type RemovalReason = 'duplicate' | 'expired' | 'artist_limit' | 'size_limit';

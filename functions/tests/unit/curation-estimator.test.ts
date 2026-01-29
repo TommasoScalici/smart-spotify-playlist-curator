@@ -1,7 +1,9 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { MandatoryTrack, PlaylistConfig } from '@smart-spotify-curator/shared';
+
 import { CurationEstimator } from '../../src/core/estimator';
 import { SpotifyService, TrackInfo } from '../../src/services/spotify-service';
-import { PlaylistConfig, MandatoryTrack } from '@smart-spotify-curator/shared';
 
 // Mock Dependencies
 vi.mock('../../src/services/spotify-service');

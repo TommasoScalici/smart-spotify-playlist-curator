@@ -1,8 +1,9 @@
-import { Control, Controller, UseFormRegister, FieldErrors } from 'react-hook-form';
+import { Control, Controller, FieldErrors, UseFormRegister } from 'react-hook-form';
+
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 

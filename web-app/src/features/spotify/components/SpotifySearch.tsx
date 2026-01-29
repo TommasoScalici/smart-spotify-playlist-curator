@@ -1,17 +1,19 @@
-import { useState, useEffect } from 'react';
-import { FunctionsService } from '../../../services/functions-service';
-import { Loader2, Music, Disc, Check, ChevronsUpDown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Check, ChevronsUpDown, Disc, Loader2, Music } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import {
   Command,
-  CommandInput,
-  CommandList,
   CommandEmpty,
   CommandGroup,
-  CommandItem
+  CommandInput,
+  CommandItem,
+  CommandList
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+import { FunctionsService } from '../../../services/functions-service';
 
 interface SearchResult {
   uri: string;

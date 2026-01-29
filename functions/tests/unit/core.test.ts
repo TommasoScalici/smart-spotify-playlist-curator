@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { TrackCleaner } from '../../src/core/track-cleaner';
+import { describe, expect, it } from 'vitest';
+
+import { MandatoryTrack, PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
+
 import { SlotManager } from '../../src/core/slot-manager';
-import { PlaylistConfig, MandatoryTrack, TrackInfo } from '@smart-spotify-curator/shared';
+import { TrackCleaner } from '../../src/core/track-cleaner';
 
 describe('Core Logic', () => {
   // --- MOCK DATA SETUP ---

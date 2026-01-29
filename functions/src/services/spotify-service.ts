@@ -1,6 +1,7 @@
 import { SpotifyApi, Track } from '@spotify/web-api-ts-sdk';
-import { config } from '../config/env';
 import * as logger from 'firebase-functions/logger';
+
+import { config } from '../config/env';
 
 export interface TrackInfo {
   uri: string;

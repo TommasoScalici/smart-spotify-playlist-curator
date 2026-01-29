@@ -1,6 +1,8 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AiService } from '../../src/services/ai-service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
 import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+
+import { AiService } from '../../src/services/ai-service';
 
 // Mock dependencies
 const mockGenerateContent = vi.fn();

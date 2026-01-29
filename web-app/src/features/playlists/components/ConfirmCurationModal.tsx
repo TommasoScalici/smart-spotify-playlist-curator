@@ -1,4 +1,8 @@
-import { AlertTriangle, Info, Loader2, Play, X, Music2, ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Info, Loader2, Music2, Play, X } from 'lucide-react';
+
+import { CurationEstimate } from '@smart-spotify-curator/shared';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -7,10 +11,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
-import { CurationEstimate } from '@smart-spotify-curator/shared';
 
 interface ConfirmCurationModalProps {
   isOpen: boolean;

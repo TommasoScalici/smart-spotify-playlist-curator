@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { RunButton } from '../components/RunButton';
-import { FunctionsService } from '@/services/functions-service';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { FunctionsService } from '@/services/functions-service';
+
+import { RunButton } from '../components/RunButton';
 
 // Mocks
 vi.mock('@/services/functions-service');

@@ -1,8 +1,10 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { config } from '../config/env';
-import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
+
+import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+
+import { config } from '../config/env';
 
 export interface AiSuggestion {
   artist: string;

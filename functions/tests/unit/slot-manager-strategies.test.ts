@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import { SlotManager } from '../../src/core/slot-manager';
+import { describe, expect, it } from 'vitest';
+
 import { MandatoryTrack } from '@smart-spotify-curator/shared';
+
+import { SlotManager } from '../../src/core/slot-manager';
 
 describe('SlotManager - Size Limit Strategies', () => {
   const slotManager = new SlotManager();

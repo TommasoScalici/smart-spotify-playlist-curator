@@ -2,6 +2,8 @@ import { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
   enabled: true,
+  name: '',
+  ownerId: '',
   settings: {
     targetTotalTracks: 20,
     description: '',

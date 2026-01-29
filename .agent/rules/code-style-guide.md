@@ -4,7 +4,6 @@ trigger: always_on
 
 # Smart Spotify Playlist Curator - Developer & Architecture Guide
 
-> **Version**: 2.0.0
 > **Last Updated**: January 2026
 > **Context**: Senior Fullstack Monorepo (React + Firebase + Node.js)
 
@@ -28,12 +27,12 @@ This document serves as the absolute source of truth for all contributors (Human
 | **Language**     | TypeScript               | `v5.9` (Strict Mode)                                          |
 | **FaaS Backend** | Firebase Cloud Functions | Gen 2, Region `us-central1`, Memory 512MB+                    |
 | **Frontend**     | React                    | `v19` + Vite `v6`                                             |
-| **Styling**      | Tailwind CSS `v3.4`      | + `shadcn/ui`, `lucide-react`, `tailwindcss-animate`          |
+| **Styling**      | Tailwind CSS `v4.0`      | CSS-first configuration + `shadcn/ui`, `lucide-react`         |
 | **State**        | TanStack Query `v5`      | No global stores (Redux/Zustand) unless absolutely necessary. |
 | **Database**     | Firestore                | User-centric Schema: `users/{uid}/playlists`                  |
 | **Validation**   | Zod `v4`                 | **MANDATORY** for all inputs/outputs.                         |
 | **Testing**      | Vitest                   | Workspace-native runner for Unit & Integration tests.         |
-| **Versioning**   | standard-version         | Semantic Versioning & Automated Changelogs.                   |
+| **Versioning**   | release-it               | Conventional Commits & Automated Changelogs.                  |
 
 ---
 
@@ -48,24 +47,26 @@ We use npm workspaces to manage dependencies and code sharing.
 ├── functions/       # Backend Business Logic (Firebase)
 │   ├── src/
 │   │   ├── admin/       # Admin SDK interactions (Privileged)
-│   │   ├── auth/        # Auth Tokens & Secrets
-│   │   ├── services/    # Business Logic (SpotifyService, AiService)
-│   │   └── index.ts     # Entry Point (Triggers)
+│   │   ├── controllers/ # Https onCall Handlers
+│   │   ├── core/        # Core Orchestration Logic (Orchestrator, SlotManager)
+│   │   ├── services/    # External Services (SpotifyService, AiService)
+│   │   └── index.ts     # Entry Point (Triggers & Exports)
 │   └── tests/           # Integration & Unit Tests
 │
 ├── web-app/         # Command Center UI
 │   ├── src/
 │   │   ├── components/  # Reusable UI (Atomic design-ish)
+│   │   ├── features/    # Feature-based logic (Playlists, Dashboard)
 │   │   ├── contexts/    # AuthContext, ThemeProvider
 │   │   ├── services/    # Frontend Services (Firestore, Functions)
 │   │   └── pages/       # Route Views
 │
 ├── shared/          # The Knowledge Base
 │   ├── src/
-│   │   ├── types.ts     # Shared Interfaces (PlaylistConfig, User)
+│   │   ├── index.ts     # Centralized exports for types and schemas
 │   │   └── schemas.ts   # Zod Schemas used by both FE and BE
 │
-└── scripts/         # Automation & Maintenance (Release, Cleanup)
+└── scripts/         # Automation & Maintenance (Release, Cleanup, Auth)
 ```
 
 ---
@@ -74,7 +75,7 @@ We use npm workspaces to manage dependencies and code sharing.
 
 ### 1. Type Safety & Validation
 
-- **Zero `any` Policy**: Explicitly type everything. If complex, use `shared/src/types.ts`.
+- **Zero `any` Policy**: Explicitly type everything. If complex, use `shared/src/schemas.ts`.
 - **Boundary Validation**:
   - **API Responses**: Always validate using `zod`.
   - **Firestore Reads**: Use `zod` schemas to parse documents.
@@ -82,20 +83,22 @@ We use npm workspaces to manage dependencies and code sharing.
 
 ### 2. Design Patterns
 
-- **Singleton Services (Backend)**:
-  - `SpotifyService` is a Singleton to manage global rate limits (`429`) and connection pooling.
-- **Factory Pattern (Multi-Tenancy)**:
-  - For curation jobs, `SpotifyService` is instantiated _per-user_ using a factory method that injects the user's Refresh Token.
+- **Factory Pattern (Spotify Authentication)**:
+  - `SpotifyService` is instantiated _per-user_ using the `getAuthorizedSpotifyService` factory helper in `functions/src/services/auth-service.ts`. This ensures correct token usage and rotation.
+- **Retry Logic (Backend)**:
+  - `SpotifyService` includes internal retry logic (`executeWithRetry`) to handle Spotify API rate limits (429) and network transient errors.
 - **Orchestrator Pattern**:
-  - Business logic flow (check condition -> fetch tracks -> filter -> update) lives in `PlaylistOrchestrator`, not in the HTTP handler.
+  - Business logic flow (check condition -> fetch tracks -> filter -> update) lives in `PlaylistOrchestrator`, not in the HTTP/onCall handler.
 - **Optimistic UI (Frontend)**:
-  - Mutations should update the UI immediately (`onMutate` in TanStack Query) and rollback on error.
+  - Mutations update the UI immediately (`onMutate` in TanStack Query) and rollback on error.
+- **Real-time Synchronization**:
+  - Use Firestore subscriptions for long-running task progress (e.g., `subscribeLatestLog`).
 
 ### 3. Frontend / UX Guidelines
 
 - **Component Library**: Use `shadcn/ui` components (in `@/components/ui`) for consistency.
-- **Styling**: Use utility classes (Tailwind). Avoid `style={{}}` prop unless dynamic coordinates.
-- **Glassmorphism**: Use `bg-black/40 backdrop-blur-md` for panels to achieve the "Premium Studio" look.
+- **Styling**: Use utility classes (Tailwind v4). Avoid `style={{}}` prop unless dynamic coordinates.
+- **Glassmorphism**: Use `bg-card/40 backdrop-blur-xl` and border-gradient techniques for a "Premium Studio" look.
 - **Feedback**:
   - **Loading**: Use Skeletons (`PlaylistCardSkeleton`), not just spinners.
   - **Success/Error**: Use `sonner` toasts.
@@ -109,7 +112,7 @@ We follow the **"Trophy Shape"**: Many Integration tests, some Unit tests, few E
 - **Runner**: `vitest` (configured in root & workspaces).
 - **Backend Integration**:
   - Mock external calls (Spotify API) but test service logic flow.
-  - Use `functions/tests/setup.ts` to silence verbose logs (`console.log`) during runs.
+  - Use `functions/tests/setup.ts` to silence verbose logs during runs.
 - **Frontend Smoke Tests**:
   - Render components and check for crashes or basic element presence.
   - Environment: `jsdom`.
@@ -121,7 +124,7 @@ We follow the **"Trophy Shape"**: Many Integration tests, some Unit tests, few E
 
 ### 1. Commits & Versioning
 
-We use **Conventional Commits** to automate releases.
+We use **Conventional Commits** to automate releases with `release-it`.
 
 - `feat: ...` -> Minor Version Bump (v1.1.0)
 - `fix: ...` -> Patch Version Bump (v1.0.1)
@@ -139,17 +142,18 @@ npm run release
 
 - **Pre-commit**: `husky` runs `lint-staged` (Format & Lint) and `npm run type-check`.
 - **Deployment**:
-  - **Bundling**: We use `esbuild` to bundle functions into a single file before deploying to Firebase.
-  - **Config**: Secrets are managed via Google Cloud Secret Manager (accessed via Firestore for user secrets).
+  - **Bundling**: `functions` are transpiled via `tsc` (configured for Gen 2).
+  - **Secrets**: Managed via Google Cloud Secret Manager (configured in `onCall` options).
 
 ---
 
 ## ⚠️ Critical Rules (Do Not Ignore)
 
-1.  **Never Hardcode Secrets**: Use `process.env` (locally) or Firestore `secrets` collection (prod).
-2.  **Respect Rate Limits**: The `SpotifyService` includes retry logic. Do not bypass it.
-3.  **Dry Run First**: All destructive backend operations must support `{ dryRun: true }`.
-4.  **No Direct Spotify Calls from Client**: The Frontend **MUST** proxy all Spotify operations through Cloud Functions (`searchSpotify`, etc.) to keep secrets server-side.
+1.  **Never Hardcode Secrets**: Use `secrets` array in Cloud Function configuration or Firestore `secrets` collection.
+2.  **Respect Rate Limits**: Use the retry logic provided in `SpotifyService`.
+3.  **Dry Run First**: Destructive operations must support `{ dryRun: true }`.
+4.  **No Direct Spotify Calls from Client**: The Frontend **MUST** proxy all Spotify operations through Cloud Functions (e.g., `searchSpotify`) to keep secrets server-side.
+5.  **Zod as Source of Truth**: All shared types must be inferred from Zod schemas in `shared/src/schemas.ts`.
 
 ---
 

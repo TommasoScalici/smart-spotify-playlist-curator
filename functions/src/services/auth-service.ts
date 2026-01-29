@@ -1,5 +1,6 @@
 import * as logger from 'firebase-functions/logger';
 import { HttpsError } from 'firebase-functions/v2/https';
+
 import { db } from '../config/firebase';
 import { SpotifyService } from './spotify-service';
 

@@ -1,8 +1,20 @@
+import { existsSync } from 'fs';
+import { resolve } from 'path';
+import * as dotenv from 'dotenv';
 import { setGlobalOptions } from 'firebase-functions';
 import * as logger from 'firebase-functions/logger';
-import * as dotenv from 'dotenv';
-import { resolve } from 'path';
-import { existsSync } from 'fs';
+import { HttpsError, onCall } from 'firebase-functions/v2/https';
+
+// --- Estimation for Pre-Flight Modal ---
+import type {
+  CurationEstimate,
+  OrchestrationResult,
+  PlaylistConfig
+} from '@smart-spotify-curator/shared';
+
+import { db } from './config/firebase.js';
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from './services/auth-service.js';
+import type { SearchResult } from './services/spotify-service.js';
 
 // Load environment variables from root .env ONLY for local development
 // In Cloud Functions, credentials are automatically provided
@@ -16,13 +28,6 @@ if (isLocalDevelopment) {
 
 // Set max instances to 1 for sequential processing (safety against rate limits)
 setGlobalOptions({ maxInstances: 1 });
-
-import { db } from './config/firebase.js';
-import { getAuthorizedSpotifyService, persistSpotifyTokens } from './services/auth-service.js';
-
-import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import type { PlaylistConfig, OrchestrationResult } from '@smart-spotify-curator/shared';
-import type { SearchResult } from './services/spotify-service.js';
 
 // Helpers moved to ./services/auth-service.ts
 
@@ -58,16 +63,12 @@ export async function runOrchestrator(
 
   // Single Playlist Execution
   const playlistConfig = config;
-
-  // Apply Dry Run Override if present
-  if (dryRunOverride !== undefined) {
-    playlistConfig.dryRun = dryRunOverride;
-  }
+  const isDryRun = dryRunOverride !== undefined ? dryRunOverride : false;
 
   try {
     // 3. Fetch User's Spotify Token & Create Orchestrator
     const { service: spotifyService, originalRefreshToken } = await getAuthorizedSpotifyService(
-      playlistConfig.ownerId!
+      playlistConfig.ownerId
     );
 
     // 4. Create Orchestrator (handles Spotify auth internally)
@@ -79,12 +80,12 @@ export async function runOrchestrator(
     );
 
     // 5. Execute
-    await orchestrator.curatePlaylist(playlistConfig, spotifyService, callerName);
+    await orchestrator.curatePlaylist(playlistConfig, spotifyService, isDryRun, callerName);
 
     // 6. Persist any token updates (Important for rotation)
-    await persistSpotifyTokens(playlistConfig.ownerId!, spotifyService, originalRefreshToken);
+    await persistSpotifyTokens(playlistConfig.ownerId, spotifyService, originalRefreshToken);
 
-    results.push({ name: playlistConfig.name || 'Unnamed Playlist', status: 'success' });
+    results.push({ name: playlistConfig.name, status: 'success' });
   } catch (error) {
     const errMsg = (error as Error).message;
     logger.error(`Error processing playlist ${playlistConfig.name}`, error);
@@ -213,9 +214,6 @@ export const triggerCuration = onCall(
     }
   }
 );
-
-// --- Estimation for Pre-Flight Modal ---
-import type { CurationEstimate } from '@smart-spotify-curator/shared';
 
 export const estimateCuration = onCall(
   {

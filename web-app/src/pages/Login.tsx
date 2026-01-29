@@ -1,8 +1,10 @@
 import { useState } from 'react';
+import { Chrome, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+
 import { Button } from '@/components/ui/button';
-import { Music, Chrome } from 'lucide-react';
+
+import { useAuth } from '../contexts/AuthContext';
 
 export default function Login() {
   const { signIn, user } = useAuth();

@@ -1,14 +1,15 @@
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
+import { ArrowRight, CheckCircle2, Music, Play, Settings, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Music, Settings, Play, ArrowRight, CheckCircle2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
   DialogDescription,
-  DialogFooter
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
 } from '@/components/ui/dialog';
 
 interface TutorialDialogProps {

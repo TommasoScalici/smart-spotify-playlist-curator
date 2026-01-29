@@ -1,11 +1,13 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
+
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
-import { SpotifyService } from '../../src/services/spotify-service';
-import { AiService } from '../../src/services/ai-service';
 import { SlotManager } from '../../src/core/slot-manager';
 import { TrackCleaner } from '../../src/core/track-cleaner';
+import { AiService } from '../../src/services/ai-service';
 import { FirestoreLogger } from '../../src/services/firestore-logger';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { SpotifyService } from '../../src/services/spotify-service';
 
 // Mock dependencies
 vi.mock('../../src/services/spotify-service');
@@ -98,7 +100,11 @@ describe('PlaylistOrchestrator Edge Cases', () => {
       popularity: 50
     });
 
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+    await orchestrator.curatePlaylist(
+      mockConfig,
+      mockSpotifyService as unknown as SpotifyService,
+      false
+    );
 
     expect(mockSpotifyService.searchTrack).toHaveBeenCalledTimes(2);
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
@@ -114,7 +120,11 @@ describe('PlaylistOrchestrator Edge Cases', () => {
   it('should handle AI returning zero suggestions', async () => {
     mockAiService.generateSuggestions.mockResolvedValue([]);
 
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+    await orchestrator.curatePlaylist(
+      mockConfig,
+      mockSpotifyService as unknown as SpotifyService,
+      false
+    );
 
     expect(mockSpotifyService.searchTrack).not.toHaveBeenCalled();
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
@@ -147,7 +157,11 @@ describe('PlaylistOrchestrator Edge Cases', () => {
         popularity: 60
       });
 
-    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
+    await orchestrator.curatePlaylist(
+      mockConfig,
+      mockSpotifyService as unknown as SpotifyService,
+      false
+    );
 
     const aiTracks = mockSlotManager.arrangePlaylist.mock.calls[0][2] as { artist: string }[];
     expect(aiTracks.filter((t) => t.artist === 'Artist A')).toHaveLength(1);
@@ -157,7 +171,11 @@ describe('PlaylistOrchestrator Edge Cases', () => {
     mockSpotifyService.getPlaylistTracks.mockRejectedValue(new Error('API Failure'));
 
     await expect(
-      orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService)
+      orchestrator.curatePlaylist(
+        mockConfig,
+        mockSpotifyService as unknown as SpotifyService,
+        false
+      )
     ).rejects.toThrow('API Failure');
 
     expect(mockFirestoreLogger.logActivity).toHaveBeenCalledWith(

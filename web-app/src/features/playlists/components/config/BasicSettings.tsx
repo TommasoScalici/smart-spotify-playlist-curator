@@ -1,3 +1,6 @@
+import { useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2, Music, X } from 'lucide-react';
 import {
   Control,
   Controller,
@@ -6,18 +9,16 @@ import {
   UseFormSetValue,
   UseFormWatch
 } from 'react-hook-form';
+
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
-import { SpotifySearch } from '@/features/spotify/components/SpotifySearch';
-import { Music, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
-import { FunctionsService } from '@/services/functions-service';
-import { useEffect } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { SpotifySearch } from '@/features/spotify/components/SpotifySearch';
 import { cn, decodeHtmlEntities } from '@/lib/utils';
+import { FunctionsService } from '@/services/functions-service';
 
 interface BasicSettingsProps {
   control: Control<PlaylistConfig>;

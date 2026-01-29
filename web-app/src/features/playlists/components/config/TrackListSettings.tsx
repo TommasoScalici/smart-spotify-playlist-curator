@@ -1,14 +1,17 @@
+import { useQuery } from '@tanstack/react-query';
+import { GripVertical, Loader2, Music, Plus, Trash2 } from 'lucide-react';
 import {
   Control,
+  FieldErrors,
   useFieldArray,
   UseFormRegister,
   UseFormSetValue,
-  FieldErrors,
   useWatch
 } from 'react-hook-form';
+
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -19,11 +22,9 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Plus, Trash2, Music, Loader2, GripVertical } from 'lucide-react';
 import { SpotifySearch } from '@/features/spotify/components/SpotifySearch';
-import { useQuery } from '@tanstack/react-query';
-import { FunctionsService } from '@/services/functions-service';
 import { cn } from '@/lib/utils';
+import { FunctionsService } from '@/services/functions-service';
 
 interface TrackListSettingsProps {
   control: Control<PlaylistConfig>;

@@ -1,22 +1,23 @@
-import { zodResolver } from '@hookform/resolvers/zod';
-import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
-import { Save, Loader2, AlertCircle } from 'lucide-react';
-import { useForm, Resolver, useWatch, FieldErrors } from 'react-hook-form';
-import { useQuery } from '@tanstack/react-query';
-import { FunctionsService } from '@/services/functions-service';
-import { FirestoreService } from '@/services/firestore-service';
-import { useAuth } from '@/contexts/AuthContext';
 import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
+import { AlertCircle, Loader2, Save } from 'lucide-react';
+import { FieldErrors, Resolver, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
-import { BasicSettings } from './config/BasicSettings';
+
+import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
+import { Button } from '@/components/ui/button';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { DEFAULT_PLAYLIST_CONFIG } from '@/constants/defaults';
+import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
+import { FirestoreService } from '@/services/firestore-service';
+import { FunctionsService } from '@/services/functions-service';
+
 import { AiSettings } from './config/AiSettings';
+import { BasicSettings } from './config/BasicSettings';
 import { RulesSettings } from './config/RulesSettings';
 import { TrackListSettings } from './config/TrackListSettings';
-import { DEFAULT_PLAYLIST_CONFIG } from '@/constants/defaults';
-
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { cn } from '@/lib/utils';
 
 interface ConfigEditorProps {
   initialConfig?: PlaylistConfig;

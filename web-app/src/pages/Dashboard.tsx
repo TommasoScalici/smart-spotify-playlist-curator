@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react';
-import { FirestoreService } from '../services/firestore-service';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
-import { RunButton } from '@/features/playlists/components/RunButton';
+import { History, Plus, RefreshCcw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
+
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
-import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
+import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
 import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
 import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
-import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
-import { Plus, RefreshCcw, History } from 'lucide-react';
+import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
+import { RunButton } from '@/features/playlists/components/RunButton';
+
+import { useAuth } from '../contexts/AuthContext';
+import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
+import { FirestoreService } from '../services/firestore-service';
 
 export default function Dashboard() {
   const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);

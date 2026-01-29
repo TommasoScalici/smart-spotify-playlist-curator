@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
-import { db } from '../services/firebase';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+
+import { ActivityMetadata } from '@smart-spotify-curator/shared';
+
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
-import { ActivityMetadata } from '@smart-spotify-curator/shared';
+import { db } from '../services/firebase';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 

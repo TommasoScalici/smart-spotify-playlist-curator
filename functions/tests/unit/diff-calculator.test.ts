@@ -1,7 +1,9 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
+
+import { MandatoryTrack } from '@smart-spotify-curator/shared';
+
 import { DiffCalculator } from '../../src/core/diff-calculator';
 import { TrackWithMeta } from '../../src/core/types-internal';
-import { MandatoryTrack } from '@smart-spotify-curator/shared';
 import { TrackInfo } from '../../src/services/spotify-service';
 
 describe('DiffCalculator', () => {

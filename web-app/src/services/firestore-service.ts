@@ -1,27 +1,29 @@
 import {
   collection,
-  getDocs,
-  getDoc,
-  setDoc,
-  updateDoc,
   deleteDoc,
   doc,
-  writeBatch,
-  query,
-  where,
+  getDoc,
+  getDocs,
+  limit,
   onSnapshot,
   orderBy,
-  limit
+  query,
+  setDoc,
+  updateDoc,
+  where,
+  writeBatch
 } from 'firebase/firestore';
-import { db } from './firebase';
+
 import {
+  ActivityLog,
+  ActivityLogSchema,
   PlaylistConfig,
   PlaylistConfigSchema,
-  SpotifyProfile,
-  ActivityLog,
-  ActivityLogSchema
+  SpotifyProfile
 } from '@smart-spotify-curator/shared';
+
 import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
+import { db } from './firebase';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 

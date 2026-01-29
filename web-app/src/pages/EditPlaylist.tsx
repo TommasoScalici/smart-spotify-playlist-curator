@@ -1,12 +1,14 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { FirestoreService } from '../services/firestore-service';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
-import { ConfigEditor } from '@/features/playlists/components/ConfigEditor';
-import { Loader2, ArrowLeft } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useCallback, useEffect, useState } from 'react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
+import { ConfigEditor } from '@/features/playlists/components/ConfigEditor';
+
+import { useAuth } from '../contexts/AuthContext';
+import { FirestoreService } from '../services/firestore-service';
 
 export default function EditPlaylist() {
   const { id } = useParams();

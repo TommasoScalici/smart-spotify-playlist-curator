@@ -1,6 +1,8 @@
-import { SpotifyService } from '../services/spotify-service';
-import { PlaylistConfig, CurationEstimate } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
+
+import { CurationEstimate, PlaylistConfig } from '@smart-spotify-curator/shared';
+
+import { SpotifyService } from '../services/spotify-service';
 import { TrackCleaner } from './track-cleaner';
 
 /**

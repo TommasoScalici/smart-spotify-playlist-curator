@@ -1,27 +1,17 @@
-import {
-  Sheet,
-  SheetContent,
-  SheetDescription,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger
-} from '@/components/ui/sheet';
 import { useState } from 'react';
-import { Outlet, Link } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
-import { ModeToggle } from '../common/ModeToggle';
-
-import { useSpotifyStatus } from '../../hooks/useSpotifyStatus';
-import { cn } from '@/lib/utils';
-import { Badge } from '@/components/ui/badge';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+  AlertTriangle,
+  CheckCircle2,
+  History as HistoryIcon,
+  LogOut,
+  Menu,
+  Unlink,
+  XCircle
+} from 'lucide-react';
+import { Link, Outlet } from 'react-router-dom';
+import { toast } from 'sonner';
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,19 +22,30 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
-import {
-  LogOut,
-  CheckCircle2,
-  XCircle,
-  Unlink,
-  AlertTriangle,
-  Menu,
-  History as HistoryIcon
-} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger
+} from '@/components/ui/sheet';
+import { cn } from '@/lib/utils';
+
+import { useAuth } from '../../contexts/AuthContext';
+import { useSpotifyStatus } from '../../hooks/useSpotifyStatus';
 import { FirestoreService } from '../../services/firestore-service';
-import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
+import { ModeToggle } from '../common/ModeToggle';
 
 export const MainLayout = () => {
   const { user, signOut } = useAuth();

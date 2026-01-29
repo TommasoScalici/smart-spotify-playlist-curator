@@ -1,13 +1,15 @@
 // @vitest-environment jsdom
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { PlaylistCard } from '../components/PlaylistCard';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { AuthContext } from '@/contexts/AuthContext';
 import { FirestoreService } from '@/services/firestore-service';
 import { FunctionsService } from '@/services/functions-service';
-import { AuthContext } from '@/contexts/AuthContext';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+
+import { PlaylistCard } from '../components/PlaylistCard';
 
 // Mocks
 vi.mock('@/services/firestore-service');

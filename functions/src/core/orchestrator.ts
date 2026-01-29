@@ -1,13 +1,14 @@
-import { SpotifyService } from '../services/spotify-service';
-import { AiService } from '../services/ai-service';
-import { SlotManager } from './slot-manager';
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
+
+import { AiService } from '../services/ai-service';
 import { FirestoreLogger } from '../services/firestore-logger';
 import { PromptGenerator } from '../services/prompt-generator';
+import { SpotifyService } from '../services/spotify-service';
 import { DiffCalculator } from './diff-calculator';
-import { TrackCleaner, RemovalReason } from './track-cleaner';
+import { SlotManager } from './slot-manager';
+import { RemovalReason, TrackCleaner } from './track-cleaner';
 
 export class PlaylistOrchestrator {
   constructor(
@@ -21,15 +22,18 @@ export class PlaylistOrchestrator {
    * Curates a playlist by applying all configured rules and AI generation.
    * @param config - Playlist configuration
    * @param spotifyService - Spotify service instance for API calls
+   * @param dryRun - Whether this is a simulation or actual update
+   * @param ownerName - Optional name of the user triggering the run
    * @returns Promise resolving when curation is complete
    * @throws Error if any critical step fails
    */
   public async curatePlaylist(
     config: PlaylistConfig,
     spotifyService: SpotifyService,
+    dryRun: boolean,
     ownerName?: string
   ): Promise<void> {
-    const { dryRun, curationRules } = config;
+    const { curationRules } = config;
 
     // Spotify API generally expects IDs, not URIs. Sanitize just in case.
     const playlistId = config.id.replace('spotify:playlist:', '');
@@ -47,15 +51,18 @@ export class PlaylistOrchestrator {
       currentLogId = await this.firestoreLogger.logActivity(
         config.ownerId,
         'running',
-        `Curating "${config.name || 'Untitled Playlist'}"...`,
+        `Curating "${config.name}"...`,
         {
           playlistId: config.id,
           playlistName: config.name,
-          dryRun: !!dryRun,
+          dryRun: dryRun,
           progress: 0,
           step: 'Initializing...',
           triggeredBy: ownerName,
-          state: 'running'
+          state: 'running',
+          addedCount: 0,
+          removedCount: 0,
+          finalCount: 0
         }
       );
     }

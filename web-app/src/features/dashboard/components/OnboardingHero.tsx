@@ -1,17 +1,19 @@
 import { useEffect, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
-  Music,
-  CheckCircle2,
-  Zap,
   ArrowRight,
+  CheckCircle2,
+  Music,
+  ShieldCheck,
   Sparkles,
   Trophy,
   Users,
-  ShieldCheck
+  Zap
 } from 'lucide-react';
-import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
+
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+
+import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
 
 export const OnboardingHero = () => {
   const { login } = useSpotifyAuth();

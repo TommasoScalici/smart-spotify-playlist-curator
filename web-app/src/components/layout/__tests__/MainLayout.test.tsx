@@ -1,14 +1,15 @@
 // @vitest-environment jsdom
-import { render, screen, waitFor } from '@testing-library/react';
-import { User } from 'firebase/auth';
-import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
-import { MainLayout } from '../MainLayout';
-import { useSpotifyStatus } from '../../../hooks/useSpotifyStatus';
-import { AuthContext } from '../../../contexts/AuthContext';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { User } from 'firebase/auth';
 import { BrowserRouter } from 'react-router-dom';
+import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+
+import { AuthContext } from '../../../contexts/AuthContext';
+import { useSpotifyStatus } from '../../../hooks/useSpotifyStatus';
 import { FirestoreService } from '../../../services/firestore-service';
+import { MainLayout } from '../MainLayout';
 
 // Mock dependencies
 vi.mock('../../../hooks/useSpotifyStatus');
