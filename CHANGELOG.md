@@ -1,5 +1,15 @@
 # Changelog
 
+# [1.7.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.6.0...v1.7.0) (2026-01-29)
+
+### Bug Fixes
+
+- **functions:** resolve lint errors in SpotifyAuthManager and apply formatting updates ([ee1ceac](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/ee1ceacbe612778d7a46115e3a80f134600222d4))
+
+### Features
+
+- refactor PlaylistCard into hook & sub-components, add import sorting plugin, and polish DiffViewer UI ([681e429](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/681e4297abf6340901f7ee7c14d9e513cfd02030))
+
 # [1.6.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.5.0...v1.6.0) (2026-01-29)
 
 ### Features
