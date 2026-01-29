@@ -49,7 +49,8 @@ describe('PlaylistOrchestrator Edge Cases', () => {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
       maxTracksPerArtist: 1,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     },
     mandatoryTracks: []
   };
@@ -90,9 +91,12 @@ describe('PlaylistOrchestrator Edge Cases', () => {
     ]);
 
     // First search fails (null), second succeeds
-    mockSpotifyService.searchTrack
-      .mockResolvedValueOnce(null)
-      .mockResolvedValueOnce({ uri: 'uri:B', artist: 'Artist B', name: 'Track B' });
+    mockSpotifyService.searchTrack.mockResolvedValueOnce(null).mockResolvedValueOnce({
+      uri: 'uri:B',
+      artist: 'Artist B',
+      name: 'Track B',
+      popularity: 50
+    });
 
     await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
@@ -102,7 +106,8 @@ describe('PlaylistOrchestrator Edge Cases', () => {
       expect.any(Array),
       expect.arrayContaining([expect.objectContaining({ uri: 'uri:B' })]),
       5,
-      true
+      true,
+      'drop_random'
     );
   });
 
@@ -117,7 +122,8 @@ describe('PlaylistOrchestrator Edge Cases', () => {
       [],
       [],
       5,
-      true
+      true,
+      'drop_random'
     );
   });
 
@@ -128,8 +134,18 @@ describe('PlaylistOrchestrator Edge Cases', () => {
     ]);
 
     mockSpotifyService.searchTrack
-      .mockResolvedValueOnce({ uri: 'uri:A1', artist: 'Artist A', name: 'Track A1' })
-      .mockResolvedValueOnce({ uri: 'uri:A2', artist: 'Artist A', name: 'Track A2' });
+      .mockResolvedValueOnce({
+        uri: 'uri:A1',
+        artist: 'Artist A',
+        name: 'Track A1',
+        popularity: 50
+      })
+      .mockResolvedValueOnce({
+        uri: 'uri:A2',
+        artist: 'Artist A',
+        name: 'Track A2',
+        popularity: 60
+      });
 
     await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 

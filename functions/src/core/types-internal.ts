@@ -7,6 +7,7 @@ export interface TrackWithMeta {
   addedAt: Date;
   isVip: boolean;
   originalIndex?: number;
+  popularity?: number;
 }
 
 export interface ProcessingResult {

@@ -2,9 +2,11 @@ import {
   collection,
   getDocs,
   getDoc,
+  setDoc,
+  updateDoc,
   deleteDoc,
   doc,
-  setDoc,
+  writeBatch,
   query,
   where,
   onSnapshot,
@@ -246,6 +248,7 @@ export const FirestoreService = {
     const q = query(
       activityRef,
       where('metadata.playlistId', '==', playlistId),
+      where('deleted', '==', false),
       orderBy('timestamp', 'desc'),
       limit(1)
     );
@@ -263,5 +266,41 @@ export const FirestoreService = {
         callback(null);
       }
     });
+  },
+
+  /**
+   * Soft delete an activity log entry.
+   * @param uid - The user ID
+   * @param logId - The Firestore document ID of the log
+   */
+  async softDeleteActivity(uid: string, logId: string): Promise<void> {
+    const logRef = doc(db, 'users', uid, 'logs', logId);
+    await updateDoc(logRef, { deleted: true });
+  },
+
+  /**
+   * Soft delete all activity log entries for a user.
+   * @param uid - The user ID
+   */
+  async clearAllActivities(uid: string): Promise<void> {
+    const logsRef = collection(db, 'users', uid, 'logs');
+    // We fetch current logs to mark them as deleted.
+    // We don't use a 'where' query for deletion to ensure we catch legacy logs missing the field.
+    const snapshot = await getDocs(query(logsRef, limit(500)));
+
+    const batch = writeBatch(db);
+    let count = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.deleted !== true) {
+        batch.update(doc.ref, { deleted: true });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
   }
 };

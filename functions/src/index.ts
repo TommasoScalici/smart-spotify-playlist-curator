@@ -17,102 +17,14 @@ if (isLocalDevelopment) {
 // Set max instances to 1 for sequential processing (safety against rate limits)
 setGlobalOptions({ maxInstances: 1 });
 
-import { ConfigService } from './services/config-service';
-import { AiService } from './services/ai-service';
-import { SpotifyService, SearchResult } from './services/spotify-service';
-import { PlaylistOrchestrator } from './core/orchestrator';
-import { SlotManager } from './core/slot-manager';
-import { TrackCleaner } from './core/track-cleaner';
-import { FirestoreLogger } from './services/firestore-logger';
-import { PlaylistConfig, OrchestrationResult } from '@smart-spotify-curator/shared';
-import { db } from './config/firebase';
+import { db } from './config/firebase.js';
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from './services/auth-service.js';
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
+import type { PlaylistConfig, OrchestrationResult } from '@smart-spotify-curator/shared';
+import type { SearchResult } from './services/spotify-service.js';
 
-// --- Token Management Helpers ---
-
-/**
- * Gets an authorized Spotify service for a given user, reusing cached access tokens if valid.
- * @param uid - The Firebase User ID
- * @returns Object containing the initialized SpotifyService and the original RefreshToken
- * @throws HttpsError if not linked or token missing
- */
-export async function getAuthorizedSpotifyService(uid: string) {
-  const secretsRef = db.doc(`users/${uid}/secrets/spotify`);
-  const secretSnap = await secretsRef.get();
-
-  if (!secretSnap.exists) {
-    throw new HttpsError('not-found', 'Spotify not linked');
-  }
-
-  const data = secretSnap.data();
-  const refreshToken = data?.refreshToken;
-  if (!refreshToken) {
-    throw new HttpsError('not-found', 'Spotify refresh token missing');
-  }
-
-  // Create Spotify Service
-  const spotifyService = new SpotifyService(refreshToken);
-
-  // Check if we have a cached access token that's still valid (not expiring within 5 minutes)
-  const cachedAccessToken = data?.accessToken;
-  const cachedExpiresAt = data?.expiresAt;
-  if (cachedAccessToken && cachedExpiresAt) {
-    const expiresAtDate = new Date(cachedExpiresAt);
-    const now = new Date();
-    const fiveMinutesFromNow = new Date(now.getTime() + 5 * 60 * 1000);
-
-    if (expiresAtDate > fiveMinutesFromNow) {
-      // Token is still valid, reuse it
-      const expiresInSeconds = Math.floor((expiresAtDate.getTime() - now.getTime()) / 1000);
-      spotifyService.setTokens(cachedAccessToken, refreshToken, expiresInSeconds);
-    }
-  }
-
-  return { service: spotifyService, originalRefreshToken: refreshToken };
-}
-
-/**
- * Persists any updated tokens (including rotated refresh tokens) back to Firestore.
- * @param uid - The Firebase User ID
- * @param service - The SpotifyService instance containing potentially updated tokens
- * @param originalRefreshToken - The original refresh token to check for rotation
- */
-export async function persistSpotifyTokens(
-  uid: string,
-  service: SpotifyService,
-  originalRefreshToken: string
-) {
-  const newRefreshToken = service.getRefreshToken();
-  const newAccessToken = service.getAccessToken();
-  const newExpiresAt = service.getTokenExpirationEpoch();
-
-  const updates: {
-    refreshToken?: string;
-    accessToken?: string;
-    expiresAt?: string;
-    updatedAt?: string;
-  } = {};
-  // Only update if refresh token actually rotated
-  if (newRefreshToken && newRefreshToken !== originalRefreshToken) {
-    updates.refreshToken = newRefreshToken;
-  }
-  // Always update access token cache if available/fresh
-  if (newAccessToken) {
-    updates.accessToken = newAccessToken;
-    updates.expiresAt = new Date(newExpiresAt).toISOString();
-  }
-
-  if (Object.keys(updates).length > 0) {
-    updates.updatedAt = new Date().toISOString();
-    try {
-      await db.doc(`users/${uid}/secrets/spotify`).set(updates, { merge: true });
-      logger.info(`Persisted updated Spotify tokens for user ${uid}`);
-    } catch (e) {
-      logger.error(`Failed to persist updated Spotify tokens for user ${uid}`, e);
-    }
-  }
-}
+// Helpers moved to ./services/auth-service.ts
 
 // Shared logic for both HTTP and onCall (Web App)
 export async function runOrchestrator(
@@ -128,6 +40,13 @@ export async function runOrchestrator(
     );
     throw new Error('Permission denied. You do not own this playlist.');
   }
+
+  // Move imports into the function or use lazy initialization to speed up cloud-init
+  const { AiService } = await import('./services/ai-service.js');
+  const { PlaylistOrchestrator } = await import('./core/orchestrator.js');
+  const { SlotManager } = await import('./core/slot-manager.js');
+  const { TrackCleaner } = await import('./core/track-cleaner.js');
+  const { FirestoreLogger } = await import('./services/firestore-logger.js');
 
   // 1. Stateless Services
   const aiService = new AiService();
@@ -191,20 +110,9 @@ export async function runOrchestrator(
       error: errMsg
     });
 
-    if (playlistConfig.ownerId) {
-      await firestoreLogger.logActivity(
-        playlistConfig.ownerId,
-        'error',
-        `Failed to curate "${playlistConfig.name || 'Untitled Playlist'}"`,
-        {
-          playlistId: playlistConfig.id,
-          playlistName: playlistConfig.name,
-          error: errMsg,
-          dryRun: !!dryRunOverride,
-          triggeredBy: callerName
-        }
-      );
-    }
+    // Note: Orchestrator already logs the error state internally using currentLogId.
+    // We do NOT need to log it again here, as that creates a duplicate "New Log" entry
+    // instead of updating the existing "Running" one.
   }
 
   return { message: 'Playlist update completed', results };
@@ -238,6 +146,7 @@ export const triggerCuration = onCall(
     logger.info(`Received triggerCuration from user ${uid}`, { playlistId, dryRun });
 
     // 2. Load and Verify Config
+    const { ConfigService } = await import('./services/config-service.js');
     const configService = new ConfigService();
     let config: PlaylistConfig | null = null;
 
@@ -306,8 +215,7 @@ export const triggerCuration = onCall(
 );
 
 // --- Estimation for Pre-Flight Modal ---
-import { CurationEstimator } from './core/estimator';
-import { CurationEstimate } from '@smart-spotify-curator/shared';
+import type { CurationEstimate } from '@smart-spotify-curator/shared';
 
 export const estimateCuration = onCall(
   {
@@ -333,6 +241,7 @@ export const estimateCuration = onCall(
     }
 
     // Validate ownership
+    const { ConfigService } = await import('./services/config-service.js');
     const configService = new ConfigService();
     const config = await configService.getPlaylistConfig(playlistId);
     if (!config) {
@@ -346,6 +255,7 @@ export const estimateCuration = onCall(
       const { service: spotifyService, originalRefreshToken } =
         await getAuthorizedSpotifyService(uid);
 
+      const { CurationEstimator } = await import('./core/estimator.js');
       const estimator = new CurationEstimator();
       const estimate = await estimator.estimate(config, spotifyService);
 
@@ -408,10 +318,10 @@ export const searchSpotify = onCall(
 
       if (searchTypes.includes('playlist')) {
         // Optimized Service-level search (Parallel fetching + Owned filter)
-        results = await spotifyService.searchUserPlaylists(query, limit || 20);
+        results = (await spotifyService.searchUserPlaylists(query, limit || 20)) as SearchResult[];
       } else {
         // For tracks/artists, global search is appropriate
-        results = await spotifyService.search(query, searchTypes, limit || 20);
+        results = (await spotifyService.search(query, searchTypes, limit || 20)) as SearchResult[];
       }
 
       // Persist any token updates (Important for rotation)

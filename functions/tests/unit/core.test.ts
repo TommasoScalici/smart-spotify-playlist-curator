@@ -25,7 +25,8 @@ describe('Core Logic', () => {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     },
     mandatoryTracks: [
       {
@@ -54,28 +55,32 @@ describe('Core Logic', () => {
       addedAt: fortyDaysAgo.toISOString(),
       name: 'Old Track',
       artist: 'Artist A',
-      album: 'Album A'
+      album: 'Album A',
+      popularity: 50
     },
     {
       uri: 'spotify:track:NEW_TRACK',
       addedAt: twoDaysAgo.toISOString(),
       name: 'New Track',
       artist: 'Artist B',
-      album: 'Album B'
+      album: 'Album B',
+      popularity: 60
     },
     {
       uri: 'spotify:track:VIP_FIXED_POS_5',
       addedAt: fortyDaysAgo.toISOString(),
       name: 'VIP Track',
       artist: 'Artist C',
-      album: 'Album C'
+      album: 'Album C',
+      popularity: 70
     }, // Old but VIP
     {
       uri: 'spotify:track:EXTRA_OLD',
       addedAt: fortyDaysAgo.toISOString(),
       name: 'Extra Old',
       artist: 'Artist D',
-      album: 'Album D'
+      album: 'Album D',
+      popularity: 40
     }
   ];
 

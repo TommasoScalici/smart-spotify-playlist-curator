@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, where } from 'firebase/firestore';
 import { db } from '../services/firebase';
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
@@ -13,6 +13,7 @@ export interface ActivityLog {
   message: string;
   timestamp: string; // ISO string
   read: boolean;
+  deleted?: boolean;
   metadata?: ActivityMetadata;
 }
 
@@ -27,7 +28,7 @@ export const useActivityFeed = () => {
   const [internalActivities, setInternalActivities] = useState<ActivityLog[]>([]);
   const [internalLoading, setInternalLoading] = useState(true);
 
-  const activities = user ? internalActivities : [];
+  const activities = user ? internalActivities.filter((a) => !a.deleted) : [];
   const loading = user ? internalLoading : false;
 
   useEffect(() => {
@@ -36,7 +37,12 @@ export const useActivityFeed = () => {
     }
 
     const logsRef = collection(db, 'users', user.uid, 'logs');
-    const q = query(logsRef, orderBy('timestamp', 'desc'), limit(50));
+    const q = query(
+      logsRef,
+      where('deleted', '==', false),
+      orderBy('timestamp', 'desc'),
+      limit(50)
+    );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const logs = snapshot.docs.map((doc) => ({

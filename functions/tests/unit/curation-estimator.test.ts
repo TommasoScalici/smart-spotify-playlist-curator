@@ -18,7 +18,8 @@ describe('CurationEstimator', () => {
     name: `Track ${id}`,
     artist,
     album: `Album ${id}`,
-    addedAt // ISO String
+    addedAt, // ISO String
+    popularity: 50
   });
 
   const createMandatoryTrack = (id: string): MandatoryTrack => ({
@@ -49,7 +50,8 @@ describe('CurationEstimator', () => {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     },
     mandatoryTracks: []
   };

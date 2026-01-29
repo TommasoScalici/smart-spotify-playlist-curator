@@ -1,8 +1,11 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Activity, Clock, History } from 'lucide-react';
+import { Activity, Clock, History, User, Trash2, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useActivityFeed, ActivityLog } from '@/hooks/useActivityFeed';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { FirestoreService } from '@/services/firestore-service';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -31,16 +34,46 @@ const formatTimeAgo = (isoString: string) => {
 
 interface ActivityFeedProps {
   isDrawer?: boolean;
+  onClose?: () => void;
 }
 
-export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
+export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
+  const { user } = useAuth();
   const { activities, loading } = useActivityFeed();
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
 
   const handleActivityClick = (activity: ActivityLog) => {
     if (activity.type === 'success' && activity.metadata?.diff) {
       setSelectedActivity(activity);
+      // Close side panel if it's open, so the modal is visible and doesn't get lost in blur
+      if (isDrawer) {
+        onClose?.();
+      }
     }
+  };
+
+  const handleDelete = async (e: React.MouseEvent, activityId: string) => {
+    e.stopPropagation();
+    if (!user) return;
+
+    try {
+      await FirestoreService.softDeleteActivity(user.uid, activityId);
+      toast.success('Activity removed');
+    } catch (error) {
+      console.error('Failed to delete activity:', error);
+      toast.error('Failed to remove activity');
+    }
+  };
+
+  const handleClearAll = async () => {
+    if (!user || activities.length === 0) return;
+
+    const promise = FirestoreService.clearAllActivities(user.uid);
+    toast.promise(promise, {
+      loading: 'Clearing all activities...',
+      success: 'Activity history cleared',
+      error: 'Failed to clear activities'
+    });
   };
 
   const content = (
@@ -60,17 +93,42 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
         </div>
       )}
 
+      {!loading && activities.length > 0 && (
+        <div className="flex justify-end mb-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleClearAll}
+            className="text-[10px] h-7 gap-1.5 font-bold uppercase tracking-wider hover:bg-destructive/10 hover:text-destructive group/clear transition-all"
+          >
+            <Sparkles className="h-3 w-3 group-hover/clear:hidden" />
+            <Trash2 className="h-3 w-3 hidden group-hover/clear:block" />
+            Clear history
+          </Button>
+        </div>
+      )}
+
       {activities.map((activity) => (
         <div
           key={activity.id}
           className={cn(
-            'flex gap-3 items-start group animate-fade-in p-2 rounded-lg transition-all',
+            'flex gap-3 items-start group/item animate-fade-in p-2 rounded-lg transition-all relative',
             activity.type === 'success' && activity.metadata?.diff
               ? 'cursor-pointer hover:bg-white/5'
               : ''
           )}
           onClick={() => handleActivityClick(activity)}
         >
+          {/* Delete Button (Hover) */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={(e) => handleDelete(e, activity.id)}
+            className="absolute top-1 right-1 h-6 w-6 rounded-full opacity-0 group-hover/item:opacity-100 hover:bg-destructive/20 hover:text-destructive transition-opacity z-10"
+          >
+            <Trash2 className="h-3 w-3" />
+          </Button>
+
           <div
             className={cn(
               'mt-1 h-2 w-2 rounded-full shrink-0 ring-2 ring-offset-2 ring-offset-card',
@@ -132,15 +190,25 @@ export const ActivityFeed = ({ isDrawer }: ActivityFeedProps) => {
               {activity.metadata?.triggeredBy && (
                 <>
                   <span>•</span>
-                  <div className="flex items-center gap-1">
-                    <div className="h-3 w-3 rounded-full bg-primary/20 flex items-center justify-center">
-                      <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="h-4 w-4 rounded-full bg-primary/20 flex items-center justify-center">
+                      <User className="h-2.5 w-2.5 text-primary fill-primary/30" />
                     </div>
                     <span
-                      className="truncate max-w-[120px]"
+                      className="wrap-break-word"
                       title={`Triggered by ${activity.metadata.triggeredBy}`}
                     >
                       {activity.metadata.triggeredBy}
+                    </span>
+                    <span
+                      className={cn(
+                        'text-[9px] font-black uppercase px-1.5 rounded border leading-none py-0.5 tracking-wider',
+                        activity.metadata.dryRun
+                          ? 'border-amber-500/50 text-amber-500/80 bg-amber-500/10'
+                          : 'border-green-500/50 text-green-500/80 bg-green-500/10'
+                      )}
+                    >
+                      {activity.metadata.dryRun ? 'Test Run' : 'Applied on Spotify'}
                     </span>
                   </div>
                 </>

@@ -18,7 +18,8 @@ export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
     maxTrackAgeDays: 365,
     removeDuplicates: true,
     maxTracksPerArtist: 2,
-    shuffleAtEnd: true
+    shuffleAtEnd: true,
+    sizeLimitStrategy: 'drop_random'
   },
   mandatoryTracks: []
 };

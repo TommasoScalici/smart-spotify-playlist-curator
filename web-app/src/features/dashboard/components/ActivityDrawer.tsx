@@ -57,7 +57,7 @@ export const ActivityDrawer = ({ open, onOpenChange }: ActivityDrawerProps) => {
 
         <div className="flex-1 overflow-hidden">
           <div className="h-full p-0">
-            <ActivityFeed isDrawer />
+            <ActivityFeed isDrawer onClose={() => onOpenChange(false)} />
           </div>
         </div>
       </div>

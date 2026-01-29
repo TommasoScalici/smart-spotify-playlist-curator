@@ -38,7 +38,8 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
     maxTrackAgeDays: 365,
     removeDuplicates: true,
     maxTracksPerArtist: 2,
-    shuffleAtEnd: true
+    shuffleAtEnd: true,
+    sizeLimitStrategy: 'drop_random'
   }
 };
 

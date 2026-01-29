@@ -100,7 +100,8 @@ export class TrackCleaner {
         name: item.name,
         album: item.album,
         addedAt: new Date(item.addedAt),
-        isVip
+        isVip,
+        popularity: item.popularity
       });
     }
 

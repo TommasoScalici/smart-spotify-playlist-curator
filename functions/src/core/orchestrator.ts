@@ -82,17 +82,33 @@ export class PlaylistOrchestrator {
         `Filtered tracks. Survivors: ${survivingTracks.length}. Total Removed via rules: ${removedTracks.length}`
       );
 
-      // 3. AI Generation (if needed)
-      const currentVipUrisInPlaylist = survivingTracks
-        .filter((t) => vipUris.includes(t.uri))
-        .map((t) => t.uri);
-      const missingVipsCount = config.mandatoryTracks.filter(
-        (m) => !currentVipUrisInPlaylist.includes(m.uri)
-      ).length;
+      if (config.ownerId && currentLogId) {
+        await this.firestoreLogger.logActivity(
+          config.ownerId,
+          'running',
+          `Cleaned playlist. ${survivingTracks.length} tracks survived settings filters.`,
+          {
+            progress: 20,
+            step: 'Cleaning existing tracks...',
+            triggeredBy: ownerName,
+            state: 'running'
+          },
+          currentLogId
+        );
+      }
 
-      const tracksNeeded =
-        config.settings.targetTotalTracks - survivingTracks.length - missingVipsCount;
-      const newAiTracks: { uri: string; artist: string; track: string }[] = [];
+      // Consistency FIX: Always fulfill the user's requested "tracksToAdd" count
+      // rather than just filling the gap to target. This allows SlotManager to apply
+      // the size limit strategy if the pool exceeds the target.
+      const tracksNeeded = config.aiGeneration.tracksToAdd;
+
+      const newAiTracks: {
+        uri: string;
+        artist: string;
+        track: string;
+        popularity?: number;
+        addedAt?: Date;
+      }[] = [];
 
       if (config.aiGeneration.enabled && tracksNeeded > 0) {
         logger.info(`Need ${tracksNeeded} more tracks. initiating AI generation...`, {
@@ -105,6 +121,9 @@ export class PlaylistOrchestrator {
             'running',
             `Generating AI suggestions for "${config.name}"...`,
             {
+              playlistId: config.id,
+              playlistName: config.name,
+              dryRun: !!dryRun,
               progress: 50,
               step: 'Generating suggestions...',
               triggeredBy: ownerName,
@@ -134,9 +153,33 @@ export class PlaylistOrchestrator {
         const currentUriSetExtended = new Set([...currentUriSet]);
 
         // Parallel Search in Batches to respect rate limits and improve performance
+        // Parallel Search in Batches to respect rate limits and improve performance
         const BATCH_SIZE = 5;
+        const totalBatches = Math.ceil(suggestions.length / BATCH_SIZE);
+
         for (let i = 0; i < suggestions.length; i += BATCH_SIZE) {
           if (newAiTracks.length >= tracksNeeded) break;
+
+          // Update Progress during generation (30% -> 70%)
+          if (config.ownerId && currentLogId) {
+            const currentBatch = Math.floor(i / BATCH_SIZE) + 1;
+            const aiProgress = Math.round(30 + (currentBatch / totalBatches) * 40);
+            await this.firestoreLogger.logActivity(
+              config.ownerId,
+              'running',
+              `Finding tracks on Spotify (${currentBatch}/${totalBatches})...`,
+              {
+                playlistId: config.id,
+                playlistName: config.name,
+                dryRun: !!dryRun,
+                progress: aiProgress,
+                step: `Searching tracks (${newAiTracks.length} found)...`,
+                triggeredBy: ownerName,
+                state: 'running'
+              },
+              currentLogId
+            );
+          }
 
           const batch = suggestions.slice(i, i + BATCH_SIZE);
           const searchPromises = batch.map((suggestion) =>
@@ -175,7 +218,9 @@ export class PlaylistOrchestrator {
               newAiTracks.push({
                 uri: trackInfo.uri,
                 artist: trackInfo.artist,
-                track: trackInfo.name
+                track: trackInfo.name,
+                popularity: trackInfo.popularity,
+                addedAt: new Date() // AI tracks are "new"
               });
               batchArtistCounts[suggestion.artist] =
                 (batchArtistCounts[suggestion.artist] || 0) + 1;
@@ -192,6 +237,9 @@ export class PlaylistOrchestrator {
           'running',
           `Arranging tracks for "${config.name || 'Untitled Playlist'}"...`,
           {
+            playlistId: config.id,
+            playlistName: config.name,
+            dryRun: !!dryRun,
             progress: 80,
             step: 'Arranging and sorting...',
             triggeredBy: ownerName,
@@ -204,9 +252,10 @@ export class PlaylistOrchestrator {
       const finalTrackList = this.slotManager.arrangePlaylist(
         config.mandatoryTracks,
         survivingTracks,
-        newAiTracks,
+        newAiTracks.map((t) => ({ ...t, name: t.track })),
         config.settings.targetTotalTracks,
-        curationRules.shuffleAtEnd
+        curationRules.shuffleAtEnd,
+        curationRules.sizeLimitStrategy
       );
 
       // 4b. Identify Size Limit Drops
@@ -217,7 +266,7 @@ export class PlaylistOrchestrator {
         }
       }
 
-      // 5. Calculate Diff & Commit
+      // 5. Calculate Diff & Plan Updates
       const {
         added: finalAdded,
         removed: finalRemoved,
@@ -231,34 +280,67 @@ export class PlaylistOrchestrator {
         removalReasons
       );
 
+      // Log Planning for Disaster Recovery / Backup
       if (config.ownerId && currentLogId) {
+        const kept = survivingTracks.filter(
+          (t) => finalTrackList.includes(t.uri) && !keptMandatory.some((m) => m.uri === t.uri)
+        );
+
         await this.firestoreLogger.logActivity(
           config.ownerId,
           'running',
-          `Updating Spotify for "${config.name}"...`,
+          `Plan finalized. Updating Spotify...`,
           {
-            progress: 90,
-            step: 'Updating Spotify API...',
+            playlistId: config.id,
+            playlistName: config.name,
+            dryRun: !!dryRun,
+            progress: 85,
+            step: 'Finalized update plan...',
             triggeredBy: ownerName,
-            state: 'running'
+            state: 'running',
+            diff: {
+              added: finalAdded,
+              removed: finalRemoved,
+              kept,
+              keptMandatory,
+              stats: {
+                target: config.settings.targetTotalTracks,
+                final: finalTrackList.length,
+                success: true
+              }
+            }
           },
           currentLogId
         );
-      }
+        // 6. Execute Updates via Spotify Service (The dangerous part)
+        if (config.ownerId && currentLogId) {
+          await this.firestoreLogger.logActivity(
+            config.ownerId,
+            'running',
+            `Applying changes to Spotify: removing, reordering, and adding tracks...`,
+            {
+              playlistId: config.id,
+              playlistName: config.name,
+              dryRun: !!dryRun,
+              progress: 90,
+              step: 'Updating Spotify playlist...',
+              triggeredBy: ownerName,
+              state: 'running'
+            },
+            currentLogId
+          );
+        }
+      } // This is the missing closing brace
 
-      await spotifyService.performSmartUpdate(playlistId, finalTrackList, !!dryRun, vipUris);
+      await spotifyService.performSmartUpdate(
+        playlistId,
+        finalTrackList, // The target list
+        !!dryRun,
+        vipUris // VIPs to preserve relative order/position if possible
+      );
 
       // 7. Success log
       if (config.ownerId && currentLogId) {
-        const aiTracksAdded = newAiTracks.length;
-        const addedCount = finalAdded.length;
-
-        // Calculate exclusive counts for better UX badges (no double counting)
-        const duplicatesCount = finalRemoved.filter((r) => r.reason === 'duplicate').length;
-        const expiredCount = finalRemoved.filter((r) => r.reason === 'expired').length;
-        const artistLimitCount = finalRemoved.filter((r) => r.reason === 'artist_limit').length;
-        const sizeLimitCount = finalRemoved.filter((r) => r.reason === 'size_limit').length;
-
         await this.firestoreLogger.logActivity(
           config.ownerId,
           'success',
@@ -269,14 +351,6 @@ export class PlaylistOrchestrator {
             state: 'completed',
             playlistId: config.id,
             playlistName: config.name,
-            addedCount,
-            removedCount: finalRemoved.length,
-            aiTracksAdded,
-            duplicatesRemoved: duplicatesCount,
-            expiredRemoved: expiredCount,
-            artistLimitRemoved: artistLimitCount,
-            sizeLimitRemoved: sizeLimitCount,
-            finalCount: finalTrackList.length,
             dryRun: !!dryRun,
             triggeredBy: ownerName,
             diff: {
@@ -293,6 +367,8 @@ export class PlaylistOrchestrator {
           currentLogId
         );
       }
+
+      logger.info('Curation completed successfully.');
     } catch (error) {
       const errMsg = (error as Error).message;
       logger.error(`Error processing playlist ${config.name}`, error);
@@ -315,7 +391,5 @@ export class PlaylistOrchestrator {
       }
       throw error;
     }
-
-    logger.info('Curation completed successfully.');
   }
 }

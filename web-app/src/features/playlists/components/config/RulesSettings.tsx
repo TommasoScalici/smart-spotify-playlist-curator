@@ -128,6 +128,34 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               )}
             />
           </div>
+
+          {/* Size Limit Strategy */}
+          <div className="space-y-2 md:col-span-2 border-t pt-4">
+            <Label htmlFor="sizeLimitStrategy" className="text-base font-semibold">
+              Size Limit Strategy
+            </Label>
+            <Controller
+              control={control}
+              name="curationRules.sizeLimitStrategy"
+              render={({ field }) => (
+                <select
+                  id="sizeLimitStrategy"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  {...field}
+                >
+                  <option value="drop_random">Drop Random (Default)</option>
+                  <option value="drop_newest">Drop Newest (Keep Oldest)</option>
+                  <option value="drop_oldest">Drop Oldest (Keep Newest)</option>
+                  <option value="drop_most_popular">Drop Most Popular (Keep Niche)</option>
+                  <option value="drop_least_popular">Drop Least Popular (Keep Hits)</option>
+                </select>
+              )}
+            />
+            <p className="text-xs text-muted-foreground">
+              Define which tracks are removed when the playlist exceeds the target track count.
+              Mandatory tracks are always preserved.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>

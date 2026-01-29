@@ -1,5 +1,7 @@
 {
   "projects": {
     "default": "smart-spotify-playlist-curator"
-  }
+  },
+  "targets": {},
+  "etags": {}
 }

@@ -26,7 +26,7 @@ vi.mock('@spotify/web-api-ts-sdk', () => ({
   }
 }));
 
-describe('SpotifyService - Skeleton Strategy', () => {
+describe('SpotifyService - Smart Update', () => {
   let spotifyService: SpotifyService;
 
   beforeEach(() => {
@@ -48,7 +48,7 @@ describe('SpotifyService - Skeleton Strategy', () => {
     vi.restoreAllMocks();
   });
 
-  it('should execute Skeleton Strategy: Remove Non-VIPs -> Reorder VIPs -> Insert Blocks', async () => {
+  it('should execute Smart Update: Remove -> Add -> Sort', async () => {
     // Setup
     const playlistId = 'test-playlist';
     const vipUris = ['spotify:track:A', 'spotify:track:D'];
@@ -112,7 +112,44 @@ describe('SpotifyService - Skeleton Strategy', () => {
       }
     ];
 
-    mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValue({ items: currentTracks });
+    // Mock response to change state between calls!
+    mockSpotifyInstance.playlists.getPlaylistItems
+      .mockResolvedValueOnce({ total: 5, items: currentTracks }) // Stage 1 fetch
+      .mockResolvedValueOnce({ total: 2, items: [currentTracks[0], currentTracks[3]] }) // After removals [A, D]
+      .mockResolvedValueOnce({
+        total: 5,
+        items: [
+          currentTracks[0],
+          currentTracks[3],
+          {
+            track: {
+              uri: 'spotify:track:X',
+              type: 'track',
+              artists: [{ name: 'Art' }],
+              name: 'X',
+              album: { name: 'X' }
+            }
+          },
+          {
+            track: {
+              uri: 'spotify:track:Y',
+              type: 'track',
+              artists: [{ name: 'Art' }],
+              name: 'Y',
+              album: { name: 'Y' }
+            }
+          },
+          {
+            track: {
+              uri: 'spotify:track:Z',
+              type: 'track',
+              artists: [{ name: 'Art' }],
+              name: 'Z',
+              album: { name: 'Z' }
+            }
+          }
+        ]
+      }); // After additions [A, D, X, Y, Z]
 
     // Target Order: [A(vip), X, Y, D(vip), Z]
     const targetOrderedUris = [
@@ -132,40 +169,51 @@ describe('SpotifyService - Skeleton Strategy', () => {
     // Execute
     await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
 
-    // 1. Remove Logic: B, C, E
-    const expectedRemove = [
-      { uri: 'spotify:track:B', positions: [1] },
-      { uri: 'spotify:track:C', positions: [2] },
-      { uri: 'spotify:track:E', positions: [4] }
-    ];
-    expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(playlistId, {
-      tracks: expectedRemove
-    });
-
-    // 2. Reorder Logic: [A, D] -> Sorted already. No call.
-    expect(mockSpotifyInstance.playlists.movePlaylistItems).not.toHaveBeenCalled();
-
-    // 3. Insert Logic
-    // Insert [X, Y] at index 1
-    // Insert [Z] at index 4
-    expect(mockSpotifyInstance.playlists.addItemsToPlaylist).toHaveBeenNthCalledWith(
-      1,
+    // 1. Remove Logic: B, C, E.
+    expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(
       playlistId,
-      ['spotify:track:X', 'spotify:track:Y'],
-      1
+      expect.objectContaining({
+        tracks: expect.arrayContaining([
+          { uri: 'spotify:track:E', positions: [4] },
+          { uri: 'spotify:track:C', positions: [2] },
+          { uri: 'spotify:track:B', positions: [1] }
+        ])
+      })
     );
 
-    expect(mockSpotifyInstance.playlists.addItemsToPlaylist).toHaveBeenNthCalledWith(
+    // 2. Addition Logic: Adds [X, Y, Z] to the end
+    expect(mockSpotifyInstance.playlists.addItemsToPlaylist).toHaveBeenCalledWith(
+      playlistId,
+      expect.arrayContaining(['spotify:track:X', 'spotify:track:Y', 'spotify:track:Z']),
+      undefined
+    );
+
+    // 3. Reorder Logic: Matches the sort steps
+    // Current is [A, D, X, Y, Z]. Target is [A, X, Y, D, Z].
+    // i=0: [A] matches.
+    // i=1: [D] != [X]. Find [X] at 2. Move 2 to 1. New: [A, X, D, Y, Z]
+    // i=2: [D] != [Y]. Find [Y] at 3. Move 3 to 2. New: [A, X, Y, D, Z]
+    // i=3: [D] matches.
+    // i=4: [Z] matches.
+    expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenCalledTimes(2);
+    expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenNthCalledWith(
+      1,
+      playlistId,
+      2,
+      1,
+      1
+    );
+    expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenNthCalledWith(
       2,
       playlistId,
-      ['spotify:track:Z'],
-      4
+      3,
+      2,
+      1
     );
   });
 
-  it('should reorder VIPs if they are out of order in skeleton', async () => {
+  it('should reorder tracks if they are out of order', async () => {
     const playlistId = 'test-playlist-reorder';
-    const vipUris = ['spotify:track:A', 'spotify:track:D'];
 
     const currentTracks = [
       {
@@ -193,22 +241,18 @@ describe('SpotifyService - Skeleton Strategy', () => {
     ];
 
     mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValue({ items: currentTracks });
-
-    // Explicitly mocking getPlaylist if the code calls it for snapshot_id?
-    // In my previous fix I REMOVED the getPlaylist call for snapshot_id.
-    // So no need to mock getPlaylist return value for that purpose.
-
-    const targetOrderedUris = ['spotify:track:A', 'spotify:track:D'];
-
     mockSpotifyInstance.playlists.movePlaylistItems.mockResolvedValue({ snapshot_id: 'snap2' });
 
-    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false, vipUris);
+    // Target: [A, D]
+    await spotifyService.performSmartUpdate(
+      playlistId,
+      ['spotify:track:A', 'spotify:track:D'],
+      false,
+      []
+    );
 
-    // Reorder: Skeleton [D, A]. Target [A, D].
-    // D is at 0. Target is A.
-    // A is at 1. Move A (idx 1) to 0.
-    // movePlaylistItems(id, start, insert, 1) -> move(id, 1, 0, 1)
-
+    // Initial: [D, A].
+    // i=0: [D] != [A]. Find [A] at 1. Move 1 to 0. -> [A, D]
     expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenCalledWith(
       playlistId,
       1,

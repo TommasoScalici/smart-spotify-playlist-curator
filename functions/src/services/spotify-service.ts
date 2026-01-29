@@ -1,4 +1,4 @@
-import { SpotifyApi } from '@spotify/web-api-ts-sdk';
+import { SpotifyApi, Track } from '@spotify/web-api-ts-sdk';
 import { config } from '../config/env';
 import * as logger from 'firebase-functions/logger';
 
@@ -8,6 +8,7 @@ export interface TrackInfo {
   artist: string;
   album: string;
   addedAt: string;
+  popularity?: number;
 }
 
 export interface SearchResult {
@@ -254,7 +255,8 @@ export class SpotifyService {
               name: t.name,
               artist: t.artists.map((a: { name: string }) => a.name).join(', '),
               album: t.album.name,
-              addedAt: item.added_at || new Date().toISOString()
+              addedAt: item.added_at || new Date().toISOString(),
+              popularity: 'popularity' in t ? (t as Track).popularity : undefined
             });
           }
         }
@@ -388,7 +390,8 @@ export class SpotifyService {
           name: t.name,
           artist: t.artists.map((a) => a.name).join(', '),
           album: t.album.name,
-          addedAt: new Date().toISOString()
+          addedAt: new Date().toISOString(),
+          popularity: 'popularity' in t ? (t as Track).popularity : undefined
         };
       }
       return null;
@@ -608,9 +611,10 @@ export class SpotifyService {
     targetOrderedUris.forEach((u) => targetFreq.set(u, (targetFreq.get(u) || 0) + 1));
 
     const currentFreq = new Map<string, number>();
-    const toRemove: { uri: string; positions: number[] }[] = [];
+    const posToRemove: number[] = [];
     const preservedUris: string[] = [];
 
+    // Stage 1: Categorization
     currentTracks.forEach((track, index) => {
       const count = currentFreq.get(track.uri) || 0;
       const targetCount = targetFreq.get(track.uri) || 0;
@@ -620,88 +624,98 @@ export class SpotifyService {
         currentFreq.set(track.uri, count + 1);
         preservedUris.push(track.uri);
       } else {
-        // Mark for removal by position
-        const existing = toRemove.find((r) => r.uri === track.uri);
-        if (existing) {
-          existing.positions.push(index);
-        } else {
-          toRemove.push({ uri: track.uri, positions: [index] });
-        }
+        posToRemove.push(index);
       }
     });
 
-    if (toRemove.length > 0) {
-      logger.info(`Removing ${toRemove.length} tracks/instances by position...`);
-      // Batch removal by position (max 100 entries in total)
-      // Extract all pairs of {uri, position}
-      const allEntries: { uri: string; positions: number[] }[] = [];
-      toRemove.forEach((r) => {
-        // Further chunk positions if one URI has > 100 positions? (Unlikely but safe)
-        for (let i = 0; i < r.positions.length; i += 100) {
-          allEntries.push({
-            uri: r.uri,
-            positions: r.positions.slice(i, i + 100)
-          });
-        }
-      });
+    // 2. Removal Phase: Remove non-survivors
+    if (posToRemove.length > 0) {
+      posToRemove.sort((a, b) => b - a);
+      logger.info(`Removing ${posToRemove.length} tracks to clean playlist.`);
 
-      for (let i = 0; i < allEntries.length; i += 100) {
-        const batch = allEntries.slice(i, i + 100);
+      for (let i = 0; i < posToRemove.length; i += 100) {
+        const indexBatch = posToRemove.slice(i, i + 100);
+        const urisWithPositions: { uri: string; positions: number[] }[] = [];
+
+        indexBatch.forEach((pos) => {
+          const track = currentTracks[pos];
+          if (!track?.uri) return;
+          const existing = urisWithPositions.find((u) => u.uri === track.uri);
+          if (existing) {
+            existing.positions.push(pos);
+          } else {
+            urisWithPositions.push({ uri: track.uri, positions: [pos] });
+          }
+        });
+
         await this.executeWithRetry(() =>
-          this.spotify.playlists.removeItemsFromPlaylist(playlistId, { tracks: batch })
+          this.spotify.playlists.removeItemsFromPlaylist(playlistId, {
+            tracks: urisWithPositions
+          })
         );
       }
     }
 
-    // 3. Skeleton Reorder (VIPs)
-    const skeleton = [...preservedUris];
-    const backboneTarget = targetOrderedUris.filter(
-      (uri) => vipsSet.has(uri) && skeleton.includes(uri)
-    );
+    // 3. Addition Phase: Add missing tracks to the end
+    // Growing the playlist to its full size FIRST makes reordering safe.
+    const freshTracksAfterRemoval = await this.getPlaylistTracks(playlistId);
+    const currentUris = freshTracksAfterRemoval.map((t) => t.uri);
 
-    if (skeleton.length > 1) {
-      for (let i = 0; i < backboneTarget.length; i++) {
-        const targetUri = backboneTarget[i];
-        if (i >= skeleton.length) break;
+    // Identify tracks that are in target but not in current
+    // Note: We handle duplicates by accounting for counts
+    const currentCounts = new Map<string, number>();
+    currentUris.forEach((u) => currentCounts.set(u, (currentCounts.get(u) || 0) + 1));
 
-        if (skeleton[i] !== targetUri) {
-          const currentIndex = skeleton.indexOf(targetUri, i);
-          if (currentIndex !== -1) {
-            await this.executeWithRetry(() =>
-              this.spotify.playlists.movePlaylistItems(playlistId, currentIndex, i, 1)
-            );
-            await this.delay(100);
+    const targetCounts = new Map<string, number>();
+    targetOrderedUris.forEach((u) => targetCounts.set(u, (targetCounts.get(u) || 0) + 1));
 
-            const [moved] = skeleton.splice(currentIndex, 1);
-            skeleton.splice(i, 0, moved);
-          }
+    const missingUris: string[] = [];
+    targetCounts.forEach((count, uri) => {
+      const currentCount = currentCounts.get(uri) || 0;
+      if (count > currentCount) {
+        for (let i = 0; i < count - currentCount; i++) {
+          missingUris.push(uri);
+        }
+      }
+    });
+
+    if (missingUris.length > 0) {
+      logger.info(`Adding ${missingUris.length} missing tracks to reach target set.`);
+      // Add to the END
+      await this.addTracks(playlistId, missingUris, dryRun);
+    }
+
+    // 4. Unified Reorder Phase: Sort the entire playlist
+    logger.info('Performing final sort to match target order...');
+    const finalStateTracks = await this.getPlaylistTracks(playlistId);
+    const finalSkeleton = finalStateTracks.map((t) => t.uri);
+
+    for (let i = 0; i < targetOrderedUris.length; i++) {
+      const targetUri = targetOrderedUris[i];
+
+      // If the track at current index i is not the target, find where it is and move it here
+      if (finalSkeleton[i] !== targetUri) {
+        // Find the next occurrence of the target URI
+        const sourceIdx = finalSkeleton.indexOf(targetUri, i);
+
+        if (sourceIdx !== -1) {
+          logger.info(`Sorting track ${targetUri}: moving from [${sourceIdx}] to [${i}]`);
+
+          await this.executeWithRetry(() =>
+            this.spotify.playlists.movePlaylistItems(playlistId, sourceIdx, i, 1)
+          );
+
+          await this.delay(50); // Faster sorting
+
+          // Update local skeleton
+          const [moved] = finalSkeleton.splice(sourceIdx, 1);
+          finalSkeleton.splice(i, 0, moved);
+        } else {
+          logger.warn(`Serious consistency error: ${targetUri} not found in playlist during sort!`);
         }
       }
     }
 
-    // 4. Block Insertion
-    let insertPointer = 0;
-    let pendingBlock: string[] = [];
-    const backboneTargetSet = new Set(backboneTarget);
-
-    const flushBlock = async () => {
-      if (pendingBlock.length > 0) {
-        logger.info(`Inserting block of ${pendingBlock.length} tracks at pos ${insertPointer}`);
-        await this.addTracks(playlistId, pendingBlock, dryRun, insertPointer);
-        insertPointer += pendingBlock.length;
-        pendingBlock = [];
-      }
-    };
-
-    for (const uri of targetOrderedUris) {
-      if (backboneTargetSet.has(uri)) {
-        await flushBlock();
-        insertPointer++;
-      } else {
-        pendingBlock.push(uri);
-      }
-    }
-    await flushBlock();
-    logger.info('Hybrid Smart Update Complete.');
+    logger.info('Playlist update and sort completed successfully.');
   }
 }

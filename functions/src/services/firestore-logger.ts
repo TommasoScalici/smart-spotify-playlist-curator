@@ -35,11 +35,27 @@ export class FirestoreLogger {
         message,
         metadata: sanitizedMetadata,
         timestamp: new Date().toISOString(),
-        read: false
+        read: false,
+        deleted: false
       };
 
       if (logId) {
-        await logsRef.doc(logId).set(data, { merge: true });
+        // Fetch existing metadata to perform a deep merge in memory
+        // This prevents overwriting essential fields like playlistId during progress updates
+        const existingDoc = await logsRef.doc(logId).get();
+        const existingData = existingDoc.data();
+
+        const mergedMetadata = {
+          ...(existingData?.metadata || {}),
+          ...sanitizedMetadata
+        };
+
+        const updateData = {
+          ...data,
+          metadata: mergedMetadata
+        };
+
+        await logsRef.doc(logId).update(updateData);
         return logId;
       } else {
         const docRef = await logsRef.add(data);

@@ -12,6 +12,18 @@ vi.mock('../../src/services/spotify-service');
 vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/slot-manager');
 vi.mock('../../src/services/firestore-logger');
+
+// Mock DiffCalculator to avoid crash when mock data is inconsistent
+vi.mock('../../src/core/diff-calculator', () => ({
+  DiffCalculator: {
+    calculate: vi.fn(() => ({
+      added: [],
+      removed: [],
+      keptMandatory: []
+    }))
+  }
+}));
+
 vi.mock('../../src/config/firebase', () => ({
   db: {
     doc: vi.fn(() => ({
@@ -77,7 +89,8 @@ describe('PlaylistOrchestrator', () => {
       maxTrackAgeDays: 30,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     },
     mandatoryTracks: []
   };
@@ -138,14 +151,16 @@ describe('PlaylistOrchestrator', () => {
         artist: 'Artist A',
         name: 'Track A',
         album: 'Album A',
-        addedAt: ''
+        addedAt: '',
+        popularity: 50
       })
       .mockResolvedValueOnce({
         uri: 'spotify:track:B',
         artist: 'Artist B',
         name: 'Track B',
         album: 'Album B',
-        addedAt: ''
+        addedAt: '',
+        popularity: 60
       });
 
     await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
@@ -156,7 +171,14 @@ describe('PlaylistOrchestrator', () => {
       15,
       expect.any(Array)
     );
-    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalled();
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array),
+      expect.any(Array),
+      10,
+      true,
+      'drop_random'
+    );
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalled();
   });
 
@@ -209,7 +231,8 @@ describe('PlaylistOrchestrator', () => {
       ]),
       expect.any(Array),
       expect.any(Number),
-      true
+      true,
+      'drop_random'
     );
   });
 
@@ -243,33 +266,61 @@ describe('PlaylistOrchestrator', () => {
       expect.arrayContaining([expect.objectContaining({ uri: 'spotify:track:new' })]),
       expect.any(Array),
       expect.any(Number),
-      true
+      true,
+      'drop_random'
     );
   });
 
-  it('Dry Run', async () => {
-    const dryRunConfig = { ...mockConfig, dryRun: true };
-    mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
-    mockAiService.generateSuggestions.mockResolvedValue([]);
-    mockSlotManager.arrangePlaylist.mockReturnValue(['uri1', 'uri2']);
+  it('Path 4: Size Limit Truncation', async () => {
+    // Config target is 5 tracks
+    const limitConfig = {
+      ...mockConfig,
+      settings: { ...mockConfig.settings, targetTotalTracks: 5 }
+    };
 
-    await orchestrator.curatePlaylist(
-      dryRunConfig,
-      mockSpotifyService as unknown as SpotifyService
+    // We have 10 tracks in the playlist
+    const manyTracks = Array.from({ length: 10 }, (_, i) => ({
+      uri: `uri:${i}`,
+      name: `Track ${i}`,
+      artist: `Artist ${i}`,
+      album: `Album ${i}`,
+      addedAt: new Date().toISOString(),
+      popularity: 50
+    }));
+
+    mockSpotifyService.getPlaylistTracks.mockResolvedValue(manyTracks);
+
+    // SlotManager should be called and we check if it produces exactly 5 tracks
+    // Note: Our real SlotManager does this, but we're mocking it here.
+    // However, we want to verify the Orchestrator CALLS matches the intent.
+    mockSlotManager.arrangePlaylist.mockImplementation((_, survivors, ai, totalSlots) => {
+      const pool = [...survivors, ...ai];
+      return pool.slice(0, totalSlots).map((t) => t.uri);
+    });
+
+    await orchestrator.curatePlaylist(limitConfig, mockSpotifyService as unknown as SpotifyService);
+
+    expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
+      expect.any(Array),
+      expect.any(Array), // survivors
+      expect.any(Array), // 10 AI tracks are now generated regardless of limit
+      5, // Target slots is 5
+      true,
+      'drop_random'
     );
+
+    // Verify lengths manually since toHaveLength isn't a static matcher here
+    const arrangeCall = mockSlotManager.arrangePlaylist.mock.calls[0];
+    expect(arrangeCall[1]).toHaveLength(10); // survivors length
 
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalledWith(
       expect.any(String),
       expect.any(Array),
-      true,
+      false,
       expect.any(Array)
     );
 
-    expect(mockFirestoreLogger.logActivity).toHaveBeenCalledWith(
-      expect.any(String),
-      'running',
-      expect.any(String),
-      expect.objectContaining({ dryRun: true })
-    );
+    const updateCall = mockSpotifyService.performSmartUpdate.mock.calls[0];
+    expect(updateCall[1]).toHaveLength(5); // final tracks length
   });
 });

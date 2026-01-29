@@ -1,6 +1,6 @@
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
-import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../index';
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 import { logger } from 'firebase-functions/v2';
 
 // Request Schema

@@ -6,7 +6,8 @@ export const TrackInfoSchema = z.object({
   artist: z.string(),
   album: z.string(),
   imageUrl: z.string().optional(),
-  addedAt: z.string()
+  addedAt: z.string(),
+  popularity: z.number().min(0).max(100).optional()
 });
 
 export type TrackInfo = z.infer<typeof TrackInfoSchema>;
@@ -40,7 +41,10 @@ export const CurationRulesSchema = z.object({
   maxTrackAgeDays: z.number().min(1).default(30),
   maxTracksPerArtist: z.number().min(1).default(2),
   removeDuplicates: z.boolean().default(true),
-  shuffleAtEnd: z.boolean().default(true)
+  shuffleAtEnd: z.boolean().default(true),
+  sizeLimitStrategy: z
+    .enum(['drop_newest', 'drop_oldest', 'drop_random', 'drop_most_popular', 'drop_least_popular'])
+    .default('drop_random')
 });
 
 export const PlaylistSettingsSchema = z.object({
@@ -98,6 +102,7 @@ export const ActivityLogSchema = z.object({
   id: z.string().optional(),
   timestamp: z.any().optional(), // Firestore Timestamp
   type: z.string().optional(),
+  deleted: z.boolean().default(false).optional(),
   metadata: ActivityMetadataSchema
 });
 
@@ -137,7 +142,8 @@ export const PlaylistConfigSchema = z.object({
     maxTrackAgeDays: 30,
     maxTracksPerArtist: 2,
     removeDuplicates: true,
-    shuffleAtEnd: true
+    shuffleAtEnd: true,
+    sizeLimitStrategy: 'drop_random'
   })
 });
 

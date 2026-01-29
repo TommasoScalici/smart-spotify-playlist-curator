@@ -19,7 +19,7 @@ service cloud.firestore {
       }
 
       match /logs/{logId} {
-        allow read: if request.auth != null && request.auth.uid == userId;
+        allow read, update: if request.auth != null && request.auth.uid == userId;
       }
     }
   }

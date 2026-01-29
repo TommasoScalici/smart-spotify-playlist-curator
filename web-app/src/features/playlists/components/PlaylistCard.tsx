@@ -67,6 +67,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   const queryClient = useQueryClient();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isOptimisticallyRunning, setIsOptimisticallyRunning] = useState(false);
 
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['playlistMetrics', config.id],
@@ -89,6 +90,13 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
 
     return () => unsubscribe();
   }, [user?.uid, config.id]);
+
+  // Sync optimistic state with real log state
+  useEffect(() => {
+    if (latestLog?.metadata?.state === 'running') {
+      setIsOptimisticallyRunning(false);
+    }
+  }, [latestLog?.metadata?.state]);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -146,14 +154,14 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         // Glassmorphism Base
         'bg-card/40 backdrop-blur-xl',
         // Border Gradient Trick
-        'before:absolute before:inset-0 before:p-[1px] before:-z-10 before:rounded-xl before:bg-gradient-to-b before:from-white/10 before:to-white/5',
+        'before:absolute before:inset-0 before:p-px before:-z-10 before:rounded-xl before:bg-linear-to-b before:from-white/10 before:to-white/5',
         !config.enabled && 'opacity-60 grayscale-[0.8] hover:grayscale-0'
       )}
     >
       {/* Dynamic Background Mesh */}
       <div
         className={cn(
-          'absolute inset-0 opacity-40 transition-opacity duration-500 group-hover:opacity-60 bg-gradient-to-br',
+          'absolute inset-0 opacity-40 transition-opacity duration-500 group-hover:opacity-60 bg-linear-to-br',
           gradientClass
         )}
       />
@@ -281,7 +289,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                     {isLoading ? (
                       <span className="animate-pulse">—</span>
                     ) : (
-                      <span className="truncate max-w-[65px]">{lastUpdatedText}</span>
+                      <span className="wrap-break-word">{lastUpdatedText}</span>
                     )}
                   </div>
                 </div>
@@ -322,52 +330,81 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
       </CardContent>
 
       <CardFooter className="relative z-10 p-5 pt-2 mt-auto flex gap-3">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Edit playlist settings"
-          className="group/btn border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            navigate(`/playlist/${config._docId}`);
-          }}
-        >
-          <Edit2 className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
-        </Button>
-
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label="Delete playlist"
-          className="group/del border-white/10 bg-white/5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
-          onClick={(e: React.MouseEvent) => {
-            e.stopPropagation();
-            setShowDeleteDialog(true);
-          }}
-        >
-          <Trash2 className="h-4 w-4 transition-transform group-hover/del:scale-110" />
-        </Button>
-
         <div className="flex-1 flex flex-col justify-center min-h-[44px]">
-          {latestLog?.metadata?.state === 'running' ? (
+          {latestLog?.metadata?.state === 'running' ||
+          latestLog?.metadata?.state === 'error' ||
+          isOptimisticallyRunning ? (
             <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
               <div className="flex justify-between text-[10px] items-center px-0.5">
-                <span className="font-semibold text-primary animate-pulse uppercase tracking-wider">
-                  {latestLog.metadata.step || 'Curating...'}
+                <span
+                  className={cn(
+                    'font-semibold uppercase tracking-wider',
+                    latestLog?.metadata?.state === 'error'
+                      ? 'text-destructive'
+                      : 'text-primary animate-pulse'
+                  )}
+                >
+                  {latestLog?.metadata?.state === 'error'
+                    ? 'Error'
+                    : latestLog?.metadata?.step || 'Initializing...'}
                 </span>
                 <span className="font-mono text-muted-foreground">
-                  {latestLog.metadata.progress}%
+                  {latestLog?.metadata?.state === 'error'
+                    ? '!'
+                    : `${latestLog?.metadata?.progress || 0}%`}
                 </span>
               </div>
-              <Progress value={latestLog.metadata.progress} className="h-1.5 bg-secondary/50" />
+              <Progress
+                value={
+                  latestLog?.metadata?.state === 'error' ? 100 : latestLog?.metadata?.progress || 0
+                }
+                className={cn(
+                  'h-1.5',
+                  latestLog?.metadata?.state === 'error' ? 'bg-destructive/20' : 'bg-secondary/50'
+                )}
+                indicatorClassName={latestLog?.metadata?.state === 'error' ? 'bg-destructive' : ''}
+              />
+              {latestLog?.metadata?.state === 'error' && (
+                <p className="text-[10px] text-destructive font-medium line-clamp-2 leading-tight">
+                  {latestLog.metadata.error || 'An unexpected error occurred.'}
+                </p>
+              )}
             </div>
           ) : (
             <div className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Edit playlist settings"
+                className="group/btn border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  navigate(`/playlist/${config._docId}`);
+                }}
+              >
+                <Edit2 className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
+              </Button>
+
+              <Button
+                variant="outline"
+                size="icon"
+                aria-label="Delete playlist"
+                className="group/del border-white/10 bg-white/5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  setShowDeleteDialog(true);
+                }}
+              >
+                <Trash2 className="h-4 w-4 transition-transform group-hover/del:scale-110" />
+              </Button>
+
               <RunButton
                 playlistId={config.id}
                 playlistName={config.name}
                 className="flex-1 h-10 min-h-[44px]"
                 disabled={!config.enabled}
+                onRunStart={() => setIsOptimisticallyRunning(true)}
+                onRunComplete={() => setIsOptimisticallyRunning(false)}
               />
 
               <TooltipProvider>
@@ -380,6 +417,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                       className="border-white/10 bg-white/5 text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
                       onClick={async (e) => {
                         e.stopPropagation();
+                        setIsOptimisticallyRunning(true);
 
                         const toastId = toast.loading('Running test curation...');
                         try {
@@ -407,6 +445,8 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
                             id: toastId,
                             description: (err as Error).message
                           });
+                        } finally {
+                          setIsOptimisticallyRunning(false);
                         }
                       }}
                     >

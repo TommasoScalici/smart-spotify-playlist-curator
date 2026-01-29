@@ -17,10 +17,16 @@ export class SlotManager {
    */
   public arrangePlaylist(
     mandatoryTracks: MandatoryTrack[],
-    survivorTracks: { uri: string; artist: string }[],
-    newAiTracks: { uri: string; artist: string }[],
+    survivorTracks: { uri: string; artist: string; addedAt?: Date; popularity?: number }[],
+    newAiTracks: { uri: string; artist: string; addedAt?: Date; popularity?: number }[],
     totalSlots: number,
-    shuffle: boolean = true
+    shuffle: boolean = true,
+    sizeLimitStrategy:
+      | 'drop_newest'
+      | 'drop_oldest'
+      | 'drop_random'
+      | 'drop_most_popular'
+      | 'drop_least_popular' = 'drop_random'
   ): string[] {
     const playlist: (string | null)[] = new Array(totalSlots).fill(null);
 
@@ -92,9 +98,37 @@ export class SlotManager {
 
     const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
 
-    // Pool = Survivors + AI (minus mandatory)
-    // IMPORTANT: If shuffle=false, order matters. Survivors first, then AI.
-    const pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
+    // Initial Pool = Survivors + AI (minus mandatory)
+    let pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
+
+    const totalEmptySlots = playlist.filter((s) => s === null).length;
+
+    // --- SELECTION PHASE (Deterministic Truncation) ---
+    if (pool.length > totalEmptySlots) {
+      switch (sizeLimitStrategy) {
+        case 'drop_newest':
+          // Keep oldest: Sort by date ASC (oldest first)
+          pool.sort((a, b) => (a.addedAt?.getTime() || 0) - (b.addedAt?.getTime() || 0));
+          break;
+        case 'drop_oldest':
+          // Keep newest: Sort by date DESC (newest first)
+          pool.sort((a, b) => (b.addedAt?.getTime() || 0) - (a.addedAt?.getTime() || 0));
+          break;
+        case 'drop_most_popular':
+          // Keep least popular: Sort by popularity ASC (least popular first)
+          pool.sort((a, b) => (a.popularity || 0) - (b.popularity || 0));
+          break;
+        case 'drop_least_popular':
+          // Keep most popular: Sort by popularity DESC (most popular first)
+          pool.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+          break;
+        case 'drop_random':
+        default:
+          this.shuffleArray(pool);
+          break;
+      }
+      pool = pool.slice(0, totalEmptySlots);
+    }
 
     if (!shuffle) {
       // SEQUENTIAL FILL

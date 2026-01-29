@@ -14,6 +14,8 @@ interface RunButtonProps {
   iconOnly?: boolean;
   className?: string;
   disabled?: boolean;
+  onRunStart?: () => void;
+  onRunComplete?: () => void;
 }
 
 /**
@@ -30,7 +32,9 @@ export const RunButton = ({
   playlistName = 'Playlist',
   iconOnly = false,
   className = '',
-  disabled = false
+  disabled = false,
+  onRunStart,
+  onRunComplete
 }: RunButtonProps) => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -68,12 +72,21 @@ export const RunButton = ({
   const handleConfirm = async () => {
     setShowModal(false);
     setLoading(true);
-    toast.promise(FunctionsService.triggerCuration(playlistId), {
+    onRunStart?.();
+    const promise = FunctionsService.triggerCuration(playlistId);
+    toast.promise(promise, {
       loading: 'Running automation...',
       success: 'Automation completed! Check your Spotify.',
-      error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`,
-      finally: () => setLoading(false)
+      error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`
     });
+
+    try {
+      await promise;
+    } catch {
+      onRunComplete?.();
+    } finally {
+      setLoading(false);
+    }
   };
 
   const buttonContent = loading ? (

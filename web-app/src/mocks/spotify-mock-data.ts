@@ -46,7 +46,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       maxTrackAgeDays: 30,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     }
   },
   {
@@ -74,7 +75,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       maxTrackAgeDays: 60,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     }
   },
   {
@@ -115,7 +117,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       maxTrackAgeDays: 90,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     }
   },
   {
@@ -143,7 +146,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       maxTrackAgeDays: 365,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     }
   },
   {
@@ -178,7 +182,8 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       maxTrackAgeDays: 45,
       removeDuplicates: true,
       maxTracksPerArtist: 2,
-      shuffleAtEnd: true
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
     }
   }
 ];
