@@ -1,6 +1,8 @@
 export {
   PositionRangeSchema,
   MandatoryTrackSchema,
+  BaseTrackSchema,
+  TrackDiffSchema,
   AiGenerationConfigSchema,
   CurationRulesSchema,
   PlaylistSettingsSchema,
@@ -14,12 +16,16 @@ export {
   CurationEstimateSchema,
   ActivityMetadataSchema,
   ActivityLogSchema,
-  TrackInfoSchema
+  TrackInfoSchema,
+  SearchResultSchema
 } from './schemas';
 
 export type {
   PlaylistConfig,
   MandatoryTrack,
+  BaseTrack,
+  TrackDiff,
+  SearchResult,
   AiGenerationConfig,
   CurationRules,
   PlaylistSettings,

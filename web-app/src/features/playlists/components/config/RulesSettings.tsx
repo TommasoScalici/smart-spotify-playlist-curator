@@ -21,7 +21,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
         <CardDescription>Define constraints for the automated curator.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Max Age */}
           <div className="space-y-2">
             <Label
@@ -39,7 +39,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               className={cn(errors.curationRules?.maxTrackAgeDays && 'border-destructive')}
             />
             {errors.curationRules?.maxTrackAgeDays && (
-              <p className="text-sm text-destructive font-medium">
+              <p className="text-destructive text-sm font-medium">
                 {errors.curationRules.maxTrackAgeDays.message}
               </p>
             )}
@@ -63,7 +63,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
             />
             {errors.settings?.targetTotalTracks && (
-              <p className="text-sm text-destructive font-medium">
+              <p className="text-destructive text-sm font-medium">
                 {errors.settings.targetTotalTracks.message}
               </p>
             )}
@@ -86,23 +86,23 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               {...register('curationRules.maxTracksPerArtist', { valueAsNumber: true })}
               className={cn(errors.curationRules?.maxTracksPerArtist && 'border-destructive')}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Limit how many songs from the same artist can be in the playlist.
             </p>
             {errors.curationRules?.maxTracksPerArtist && (
-              <p className="text-sm text-destructive font-medium">
+              <p className="text-destructive text-sm font-medium">
                 {errors.curationRules.maxTracksPerArtist.message}
               </p>
             )}
           </div>
 
           {/* Remove Duplicates */}
-          <div className="flex items-center justify-between p-3 border rounded-md">
+          <div className="flex items-center justify-between rounded-md border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="dedup-check" className="text-base">
                 Remove Duplicates
               </Label>
-              <p className="text-xs text-muted-foreground">Ensure only unique songs.</p>
+              <p className="text-muted-foreground text-xs">Ensure only unique songs.</p>
             </div>
             <Controller
               control={control}
@@ -114,12 +114,12 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
           </div>
 
           {/* Shuffle At End */}
-          <div className="flex items-center justify-between p-3 border rounded-md">
+          <div className="flex items-center justify-between rounded-md border p-3">
             <div className="space-y-0.5">
               <Label htmlFor="shuffle-check" className="text-base">
                 Shuffle Playlist
               </Label>
-              <p className="text-xs text-muted-foreground">Randomize order vs keep original.</p>
+              <p className="text-muted-foreground text-xs">Randomize order vs keep original.</p>
             </div>
             <Controller
               control={control}
@@ -131,7 +131,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
           </div>
 
           {/* Size Limit Strategy */}
-          <div className="space-y-2 md:col-span-2 border-t pt-4">
+          <div className="space-y-2 border-t pt-4 md:col-span-2">
             <Label htmlFor="sizeLimitStrategy" className="text-base font-semibold">
               Size Limit Strategy
             </Label>
@@ -141,7 +141,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
               render={({ field }) => (
                 <select
                   id="sizeLimitStrategy"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   {...field}
                 >
                   <option value="drop_random">Drop Random (Default)</option>
@@ -152,7 +152,7 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
                 </select>
               )}
             />
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               Define which tracks are removed when the playlist exceeds the target track count.
               Mandatory tracks are always preserved.
             </p>

@@ -91,7 +91,7 @@ export const RunButton = ({
   };
 
   const buttonContent = loading ? (
-    <Loader2 className="animate-spin text-primary" size={iconOnly ? 20 : 18} />
+    <Loader2 className="text-primary animate-spin" size={iconOnly ? 20 : 18} />
   ) : (
     <Zap className={cn('fill-current', iconOnly ? 'h-5 w-5' : 'h-4 w-4')} />
   );
@@ -110,9 +110,9 @@ export const RunButton = ({
                   disabled={loading || disabled}
                   aria-label="Run curation"
                   className={cn(
-                    'rounded-full border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary hover:scale-105 transition-all duration-200 shadow-sm',
+                    'border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary rounded-full shadow-sm transition-all duration-200 hover:scale-105',
                     disabled &&
-                      'opacity-50 cursor-not-allowed hover:bg-primary/10 hover:border-primary/20 hover:scale-100',
+                      'hover:bg-primary/10 hover:border-primary/20 cursor-not-allowed opacity-50 hover:scale-100',
                     className
                   )}
                 >

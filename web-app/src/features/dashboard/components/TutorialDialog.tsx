@@ -31,23 +31,23 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[90%] sm:w-full sm:max-w-[500px] p-0 overflow-hidden border-border bg-card rounded-lg sm:rounded-lg">
+      <DialogContent className="border-border bg-card w-[90%] overflow-hidden rounded-lg p-0 sm:w-full sm:max-w-[500px] sm:rounded-lg">
         {/* Header Image / Gradient */}
-        <div className="h-32 bg-linear-to-br from-primary/20 via-background to-secondary/20 relative flex items-center justify-center overflow-hidden">
+        <div className="from-primary/20 via-background to-secondary/20 relative flex h-32 items-center justify-center overflow-hidden bg-linear-to-br">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20"></div>
-          {step === 1 && <Music className="h-16 w-16 text-primary/40 animate-pulse" />}
-          {step === 2 && <Settings className="h-16 w-16 text-secondary/40 animate-spin-slow" />}
-          {step === 3 && <Sparkles className="h-16 w-16 text-tertiary/40 animate-bounce" />}
+          {step === 1 && <Music className="text-primary/40 h-16 w-16 animate-pulse" />}
+          {step === 2 && <Settings className="text-secondary/40 animate-spin-slow h-16 w-16" />}
+          {step === 3 && <Sparkles className="text-tertiary/40 h-16 w-16 animate-bounce" />}
         </div>
 
-        <div className="p-6 space-y-6">
-          <DialogHeader className="text-center sm:text-left space-y-2">
+        <div className="space-y-6 p-6">
+          <DialogHeader className="space-y-2 text-center sm:text-left">
             <DialogTitle className="text-2xl font-bold tracking-tight">
               {step === 1 && 'Welcome to Smart Curator'}
               {step === 2 && 'How It Works'}
               {step === 3 && 'Ready to Automate?'}
             </DialogTitle>
-            <DialogDescription className="text-base text-muted-foreground">
+            <DialogDescription className="text-muted-foreground text-base">
               {step === 1 &&
                 'Your personal AI music editor. Let’s set up your first automated playlist in seconds.'}
               {step === 2 && 'Build your perfect flow with simple rules:'}
@@ -59,37 +59,37 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
           {/* Step 2 Content: Workflow Icons */}
           {step === 2 && (
             <div className="space-y-4">
-              <div className="flex items-start gap-4 p-3 rounded-lg bg-accent/20 border border-white/5">
-                <div className="p-2 rounded bg-primary/10 text-primary shrink-0">
+              <div className="bg-accent/20 flex items-start gap-4 rounded-lg border border-white/5 p-3">
+                <div className="bg-primary/10 text-primary shrink-0 rounded p-2">
                   <Music className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm">1. Select a Playlist</h4>
-                  <p className="text-xs text-muted-foreground">
+                  <h4 className="text-sm font-semibold">1. Select a Playlist</h4>
+                  <p className="text-muted-foreground text-xs">
                     Choose one of your existing playlists as the target.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-3 rounded-lg bg-accent/20 border border-white/5">
-                <div className="p-2 rounded bg-secondary/10 text-secondary shrink-0">
+              <div className="bg-accent/20 flex items-start gap-4 rounded-lg border border-white/5 p-3">
+                <div className="bg-secondary/10 text-secondary shrink-0 rounded p-2">
                   <Sparkles className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm">2. Define Rules</h4>
-                  <p className="text-xs text-muted-foreground">
+                  <h4 className="text-sm font-semibold">2. Define Rules</h4>
+                  <p className="text-muted-foreground text-xs">
                     Set AI prompts, max track age, and VIP tracks.
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-start gap-4 p-3 rounded-lg bg-accent/20 border border-white/5">
-                <div className="p-2 rounded bg-tertiary/10 text-tertiary shrink-0">
+              <div className="bg-accent/20 flex items-start gap-4 rounded-lg border border-white/5 p-3">
+                <div className="bg-tertiary/10 text-tertiary shrink-0 rounded p-2">
                   <Play className="h-5 w-5" />
                 </div>
                 <div>
-                  <h4 className="font-semibold text-sm">3. Run Automation</h4>
-                  <p className="text-xs text-muted-foreground">
+                  <h4 className="text-sm font-semibold">3. Run Automation</h4>
+                  <p className="text-muted-foreground text-xs">
                     The AI updates your playlist automatically.
                   </p>
                 </div>
@@ -108,22 +108,22 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
                 <CheckCircle2 className="h-5 w-5 text-green-500" /> <span>Grant Permissions</span>
               </div>
               <div className="flex items-center gap-3 text-sm opacity-50">
-                <div className="h-5 w-5 rounded-full border border-current flex items-center justify-center">
-                  <div className="h-2 w-2 bg-current rounded-full" />
+                <div className="flex h-5 w-5 items-center justify-center rounded-full border border-current">
+                  <div className="h-2 w-2 rounded-full bg-current" />
                 </div>
                 <span>Create First Playlist</span>
               </div>
             </div>
           )}
 
-          <DialogFooter className="flex-row justify-between sm:justify-between items-center pt-2">
+          <DialogFooter className="flex-row items-center justify-between pt-2 sm:justify-between">
             {/* Stepper Dots */}
             <div className="flex gap-2">
               {[1, 2, 3].map((i) => (
                 <div
                   key={i}
                   className={`h-2 rounded-full transition-all duration-300 ${
-                    i === step ? 'w-6 bg-primary' : 'w-2 bg-muted'
+                    i === step ? 'bg-primary w-6' : 'bg-muted w-2'
                   }`}
                 />
               ))}
@@ -131,7 +131,7 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
 
             <Button
               onClick={handleNext}
-              className="gap-2 shadow-lg hover:scale-105 transition-transform"
+              className="gap-2 shadow-lg transition-transform hover:scale-105"
             >
               {step === 3 ? 'Create First Playlist' : 'Next'}
               <ArrowRight className="h-4 w-4" />

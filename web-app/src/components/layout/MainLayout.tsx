@@ -69,29 +69,29 @@ export const MainLayout = () => {
   };
 
   return (
-    <div className="layout min-h-screen flex flex-col bg-background text-foreground font-sans antialiased">
+    <div className="layout bg-background text-foreground flex min-h-screen flex-col font-sans antialiased">
       {/* Skip to Content Link for Keyboard Accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 z-100 px-4 py-2 bg-primary text-primary-foreground font-bold rounded-md shadow-lg ring-2 ring-white/20"
+        className="bg-primary text-primary-foreground sr-only z-100 rounded-md px-4 py-2 font-bold shadow-lg ring-2 ring-white/20 focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
       >
         Skip to content
       </a>
 
-      <header className="layout-header border-b bg-card/50 backdrop-blur-md sticky top-0 z-50">
-        <div className="layout-header__content container mx-auto px-4 h-16 flex items-center justify-between">
+      <header className="layout-header bg-card/50 sticky top-0 z-50 border-b backdrop-blur-md">
+        <div className="layout-header__content container mx-auto flex h-16 items-center justify-between px-4">
           <Link
             to="/"
-            className="brand-logo flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="brand-logo flex items-center gap-2 transition-opacity hover:opacity-80"
           >
             <span className="brand-logo__icon text-2xl">🎧</span>
-            <span className="font-bold text-lg">
+            <span className="text-lg font-bold">
               Smart <span className="text-primary">Curator</span>
             </span>
           </Link>
 
           <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden items-center gap-2 md:flex">
               <ModeToggle />
             </div>
 
@@ -104,37 +104,37 @@ export const MainLayout = () => {
               </SheetTrigger>
               <SheetContent
                 side="right"
-                className="w-80 p-0 border-l border-border bg-card/95 backdrop-blur-xl"
+                className="border-border bg-card/95 w-80 border-l p-0 backdrop-blur-xl"
               >
-                <SheetHeader className="p-4 border-b">
+                <SheetHeader className="border-b p-4">
                   <SheetTitle>Navigation</SheetTitle>
                   <SheetDescription>Access your dashboard and settings</SheetDescription>
                 </SheetHeader>
-                <div className="max-h-[calc(100vh-5rem)] overflow-y-auto p-4 space-y-4">
+                <div className="max-h-[calc(100vh-5rem)] space-y-4 overflow-y-auto p-4">
                   {/* Nav Links */}
                   <div className="space-y-2">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                    <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
                       Navigation
                     </p>
                     <Link
                       to="/"
                       onClick={() => setIsSheetOpen(false)}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-accent hover:bg-accent/80 border border-border/50 transition-all active:scale-95"
+                      className="bg-accent hover:bg-accent/80 border-border/50 flex items-center gap-3 rounded-xl border p-3 transition-all active:scale-95"
                     >
-                      <HistoryIcon className="h-4 w-4 text-primary" />
-                      <span className="font-semibold text-sm">Dashboard</span>
+                      <HistoryIcon className="text-primary h-4 w-4" />
+                      <span className="text-sm font-semibold">Dashboard</span>
                     </Link>
                   </div>
 
                   {/* Spotify Status (Mobile) */}
                   {user && (
                     <div className="space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                      <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
                         Spotify
                       </p>
                       <div
                         className={cn(
-                          'p-3 rounded-xl border transition-all',
+                          'rounded-xl border p-3 transition-all',
                           isSpotifyLinked
                             ? 'bg-primary/10 border-primary/30'
                             : 'bg-destructive/10 border-destructive/30'
@@ -144,7 +144,7 @@ export const MainLayout = () => {
                           <div className="flex items-center gap-2">
                             <div
                               className={cn(
-                                'h-8 w-8 rounded-lg flex items-center justify-center',
+                                'flex h-8 w-8 items-center justify-center rounded-lg',
                                 isSpotifyLinked
                                   ? 'bg-primary/20 text-primary'
                                   : 'bg-destructive/20 text-destructive'
@@ -160,7 +160,7 @@ export const MainLayout = () => {
                               <p className="text-xs font-bold">
                                 {isSpotifyLinked ? 'Connected' : 'Disconnected'}
                               </p>
-                              <p className="text-[10px] text-muted-foreground">
+                              <p className="text-muted-foreground text-[10px]">
                                 {isSpotifyLinked
                                   ? data?.profile?.displayName || 'Active'
                                   : 'Action Required'}
@@ -171,7 +171,7 @@ export const MainLayout = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                              className="text-destructive hover:bg-destructive/10 h-8 w-8"
                               aria-label="Unlink Spotify account"
                               onClick={() => {
                                 setIsSheetOpen(false);
@@ -186,7 +186,7 @@ export const MainLayout = () => {
                           <Button
                             asChild
                             size="sm"
-                            className="w-full mt-2 bg-primary hover:bg-primary/90 font-bold text-xs"
+                            className="bg-primary hover:bg-primary/90 mt-2 w-full text-xs font-bold"
                           >
                             <Link to="/" onClick={() => setIsSheetOpen(false)}>
                               Connect Account
@@ -200,21 +200,21 @@ export const MainLayout = () => {
                   {/* User Profile (Mobile) */}
                   {user && (
                     <div className="space-y-2">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground px-2">
+                      <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
                         Account
                       </p>
-                      <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
+                      <div className="bg-accent border-border/50 flex items-center justify-between rounded-xl border p-3">
                         <div className="flex items-center gap-2">
                           <img
                             src={user.photoURL || undefined}
                             alt="Profile"
-                            className="h-8 w-8 rounded-full object-cover ring-1 ring-border"
+                            className="ring-border h-8 w-8 rounded-full object-cover ring-1"
                           />
                           <div>
-                            <p className="text-xs font-bold truncate max-w-[120px]">
+                            <p className="max-w-[120px] truncate text-xs font-bold">
                               {user.displayName}
                             </p>
-                            <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">
+                            <p className="text-muted-foreground max-w-[120px] truncate text-[10px]">
                               {user.email}
                             </p>
                           </div>
@@ -227,7 +227,7 @@ export const MainLayout = () => {
                             signOut();
                           }}
                           aria-label="Log out"
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                          className="text-muted-foreground hover:text-destructive h-8 w-8"
                         >
                           <LogOut className="h-4 w-4" />
                         </Button>
@@ -236,7 +236,7 @@ export const MainLayout = () => {
                   )}
 
                   {/* Theme Toggle */}
-                  <div className="flex items-center justify-between p-3 rounded-xl bg-accent border border-border/50">
+                  <div className="bg-accent border-border/50 flex items-center justify-between rounded-xl border p-3">
                     <span className="text-xs font-semibold">Appearance</span>
                     <ModeToggle />
                   </div>
@@ -244,10 +244,10 @@ export const MainLayout = () => {
               </SheetContent>
             </Sheet>
 
-            <nav className="hidden md:flex items-center gap-6">
+            <nav className="hidden items-center gap-6 md:flex">
               <Link
                 to="/"
-                className="nav-link text-sm font-medium hover:text-primary transition-colors"
+                className="nav-link hover:text-primary text-sm font-medium transition-colors"
               >
                 Dashboard
               </Link>
@@ -259,18 +259,18 @@ export const MainLayout = () => {
                     <Badge
                       variant="outline"
                       className={cn(
-                        'gap-2 transition-all border-0 pl-1 pr-3 py-1 cursor-default',
+                        'cursor-default gap-2 border-0 py-1 pr-3 pl-1 transition-all',
                         data?.authError
-                          ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 ring-1 ring-destructive/20 animate-pulse'
+                          ? 'bg-destructive/10 text-destructive hover:bg-destructive/20 ring-destructive/20 animate-pulse ring-1'
                           : isSpotifyLinked
-                            ? 'bg-primary/10 text-primary hover:bg-primary/20 ring-1 ring-primary/20'
-                            : 'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 ring-1 ring-destructive/50'
+                            ? 'bg-primary/10 text-primary hover:bg-primary/20 ring-primary/20 ring-1'
+                            : 'bg-destructive text-destructive-foreground hover:bg-destructive/90 ring-destructive/50 shadow-sm ring-1'
                       )}
                     >
                       {data?.authError ? (
                         <Link to="/callback" className="flex items-center gap-2 hover:underline">
                           <XCircle className="h-4 w-4" />
-                          <span className="font-semibold text-xs">Reconnect Required</span>
+                          <span className="text-xs font-semibold">Reconnect Required</span>
                         </Link>
                       ) : isSpotifyLinked ? (
                         <div className="flex items-center gap-2">
@@ -278,12 +278,12 @@ export const MainLayout = () => {
                             <img
                               src={data.profile.avatarUrl}
                               alt="Spotify"
-                              className="h-5 w-5 rounded-full ring-1 ring-primary/30"
+                              className="ring-primary/30 h-5 w-5 rounded-full ring-1"
                             />
                           ) : (
                             <CheckCircle2 className="h-4 w-4" />
                           )}
-                          <span className="font-semibold text-xs transition-all whitespace-nowrap">
+                          <span className="text-xs font-semibold whitespace-nowrap transition-all">
                             Connected:{' '}
                             <span className="text-foreground">
                               {data?.profile?.displayName || 'Spotify'}
@@ -293,7 +293,7 @@ export const MainLayout = () => {
                       ) : (
                         <div className="flex items-center gap-2">
                           <Unlink className="h-4 w-4" />
-                          <span className="font-bold text-xs uppercase tracking-tight">
+                          <span className="text-xs font-bold tracking-tight uppercase">
                             Disconnected
                           </span>
                         </div>
@@ -306,7 +306,7 @@ export const MainLayout = () => {
                       <Button
                         variant="ghost"
                         aria-label="User profile menu"
-                        className="relative h-9 w-9 rounded-full p-0 overflow-hidden border border-input shadow-sm hover:ring-2 hover:ring-primary/20 transition-all"
+                        className="border-input hover:ring-primary/20 relative h-9 w-9 overflow-hidden rounded-full border p-0 shadow-sm transition-all hover:ring-2"
                       >
                         <img
                           src={user.photoURL || undefined}
@@ -318,8 +318,8 @@ export const MainLayout = () => {
                     <DropdownMenuContent className="w-56" align="end" forceMount>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
-                          <p className="text-sm font-medium leading-none">{user.displayName}</p>
-                          <p className="text-xs leading-none text-muted-foreground">{user.email}</p>
+                          <p className="text-sm leading-none font-medium">{user.displayName}</p>
+                          <p className="text-muted-foreground text-xs leading-none">{user.email}</p>
                         </div>
                       </DropdownMenuLabel>
                       <DropdownMenuSeparator />
@@ -359,8 +359,8 @@ export const MainLayout = () => {
       <main
         id="main-content"
         className={cn(
-          'main-content animate-fade-in flex-1 flex flex-col',
-          !isSpotifyLinked && !checkingLink && 'py-0 max-w-none'
+          'main-content animate-fade-in flex flex-1 flex-col',
+          !isSpotifyLinked && !checkingLink && 'max-w-none py-0'
         )}
       >
         <Outlet />
@@ -370,9 +370,9 @@ export const MainLayout = () => {
       <AlertDialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 rounded-full bg-destructive/10">
-                <AlertTriangle className="h-6 w-6 text-destructive" />
+            <div className="mb-2 flex items-center gap-3">
+              <div className="bg-destructive/10 rounded-full p-2">
+                <AlertTriangle className="text-destructive h-6 w-6" />
               </div>
               <AlertDialogTitle className="text-xl font-bold">
                 Unlink Spotify Account?
@@ -381,18 +381,18 @@ export const MainLayout = () => {
             <AlertDialogDescription className="text-muted-foreground text-sm leading-relaxed">
               This will stop all automated playlist curations and clear your Spotify profile data
               from our system.
-              <span className="block mt-2 font-medium text-destructive/80 italic">
+              <span className="text-destructive/80 mt-2 block font-medium italic">
                 You'll need to re-link your account to resume automation.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="mt-6 gap-3 sm:gap-0">
-            <AlertDialogCancel className="bg-white/5 border-white/10 hover:bg-white/10 text-white transition-all">
+            <AlertDialogCancel className="border-white/10 bg-white/5 text-white transition-all hover:bg-white/10">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleUnlink}
-              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground font-semibold shadow-lg shadow-destructive/20 active:scale-95 transition-all"
+              className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-destructive/20 font-semibold shadow-lg transition-all active:scale-95"
             >
               Unlink Now
             </AlertDialogAction>

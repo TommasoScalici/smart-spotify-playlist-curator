@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Check, ChevronsUpDown, Disc, Loader2, Music } from 'lucide-react';
 
+import { SearchResult } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -14,17 +15,6 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { cn } from '@/lib/utils';
 
 import { FunctionsService } from '../../../services/functions-service';
-
-interface SearchResult {
-  uri: string;
-  name: string;
-  artist?: string;
-  owner?: string;
-  ownerId?: string;
-  imageUrl?: string;
-  description?: string;
-  type: 'track' | 'playlist' | 'artist';
-}
 
 interface SpotifySearchProps {
   type: 'track' | 'playlist';
@@ -78,7 +68,7 @@ export const SpotifySearch = ({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className="w-full justify-between h-12 text-left font-normal bg-background/50 hover:bg-background/80 border-border/50"
+          className="bg-background/50 hover:bg-background/80 border-border/50 h-12 w-full justify-between text-left font-normal"
         >
           {query ? (
             <span className="truncate">{query}</span>
@@ -102,7 +92,7 @@ export const SpotifySearch = ({
           />
           <CommandList>
             {loading && (
-              <div className="py-6 text-center text-sm text-muted-foreground">Searching...</div>
+              <div className="text-muted-foreground py-6 text-center text-sm">Searching...</div>
             )}
 
             {!loading && results.length === 0 && query.length >= 3 && (
@@ -117,17 +107,17 @@ export const SpotifySearch = ({
                   onSelect={() => {
                     handleSelect(item);
                   }}
-                  className="cursor-pointer aria-selected:bg-accent aria-selected:text-accent-foreground data-disabled:opacity-100 data-disabled:pointer-events-auto"
+                  className="aria-selected:bg-accent aria-selected:text-accent-foreground cursor-pointer data-disabled:pointer-events-auto data-disabled:opacity-100"
                 >
-                  <div className="flex items-center gap-3 w-full overflow-hidden">
+                  <div className="flex w-full items-center gap-3 overflow-hidden">
                     {item.imageUrl ? (
                       <img
                         src={item.imageUrl}
                         alt={item.name}
-                        className="h-8 w-8 rounded object-cover bg-muted"
+                        className="bg-muted h-8 w-8 rounded object-cover"
                       />
                     ) : (
-                      <div className="h-8 w-8 rounded bg-muted flex items-center justify-center shrink-0">
+                      <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded">
                         {type === 'track' ? (
                           <Music className="h-4 w-4" />
                         ) : (
@@ -137,14 +127,14 @@ export const SpotifySearch = ({
                     )}
                     <div className="flex flex-col overflow-hidden text-left">
                       <span className="truncate font-medium">{item.name}</span>
-                      <span className="truncate text-xs text-muted-foreground">
+                      <span className="text-muted-foreground truncate text-xs">
                         {type === 'track' ? item.artist : `by ${item.owner}`}
                       </span>
                     </div>
                   </div>
                   <Check
                     className={cn(
-                      'ml-auto h-4 w-4 text-primary shrink-0',
+                      'text-primary ml-auto h-4 w-4 shrink-0',
                       query === item.name ? 'opacity-100' : 'opacity-0'
                     )}
                   />

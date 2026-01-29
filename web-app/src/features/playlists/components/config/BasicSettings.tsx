@@ -97,7 +97,7 @@ export const BasicSettings = ({
                 <div
                   className={cn(
                     'transition-all duration-200',
-                    errors.id && 'ring-2 ring-destructive ring-offset-2 rounded-md'
+                    errors.id && 'ring-destructive rounded-md ring-2 ring-offset-2'
                   )}
                 >
                   <SpotifySearch
@@ -125,16 +125,16 @@ export const BasicSettings = ({
           ) : (
             <div
               className={cn(
-                'flex items-center gap-4 p-4 border rounded-md bg-accent/20 relative group overflow-hidden transition-colors',
-                errors.id && 'border-destructive ring-1 ring-destructive'
+                'bg-accent/20 group relative flex items-center gap-4 overflow-hidden rounded-md border p-4 transition-colors',
+                errors.id && 'border-destructive ring-destructive ring-1'
               )}
             >
               {/* Premium "Glass" Background Effect */}
-              <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+              <div className="from-primary/5 pointer-events-none absolute inset-0 bg-linear-to-r to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
 
-              <div className="h-16 w-16 bg-black/40 rounded-md overflow-hidden flex items-center justify-center shrink-0 border border-white/10 shadow-sm relative">
+              <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-md border border-white/10 bg-black/40 shadow-sm">
                 {bgLoading ? (
-                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
                 ) : displayImage ? (
                   <img
                     src={displayImage}
@@ -142,22 +142,22 @@ export const BasicSettings = ({
                     className="h-full w-full object-cover transition-transform hover:scale-105"
                   />
                 ) : (
-                  <Music className="h-8 w-8 text-muted-foreground" />
+                  <Music className="text-muted-foreground h-8 w-8" />
                 )}
               </div>
 
-              <div className="flex-1 min-w-0 z-10">
+              <div className="z-10 min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="text-base font-semibold truncate leading-tight">{displayName}</h4>
+                  <h4 className="truncate text-base leading-tight font-semibold">{displayName}</h4>
                   {bgMetrics?.description && (
-                    <span className="text-[10px] uppercase tracking-wider text-muted-foreground border px-1.5 py-0.5 rounded-full hidden sm:inline-block">
+                    <span className="text-muted-foreground hidden rounded-full border px-1.5 py-0.5 text-[10px] tracking-wider uppercase sm:inline-block">
                       Original
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
+                <p className="text-muted-foreground flex items-center gap-1 truncate text-sm">
                   {bgLoading ? (
-                    <span className="h-3 w-20 bg-muted/50 rounded animate-pulse" />
+                    <span className="bg-muted/50 h-3 w-20 animate-pulse rounded" />
                   ) : (
                     <span>by {displayOwner}</span>
                   )}
@@ -173,7 +173,7 @@ export const BasicSettings = ({
               <Button
                 variant="ghost"
                 size="icon"
-                className="z-10 hover:bg-destructive/10 hover:text-destructive transition-colors shrink-0"
+                className="hover:bg-destructive/10 hover:text-destructive z-10 shrink-0 transition-colors"
                 onClick={() => {
                   setValue('id', '');
                   setValue('name', '');
@@ -186,7 +186,7 @@ export const BasicSettings = ({
               </Button>
             </div>
           )}
-          {errors.id && <p className="text-sm text-destructive font-medium">{errors.id.message}</p>}
+          {errors.id && <p className="text-destructive text-sm font-medium">{errors.id.message}</p>}
         </div>
 
         {/* Description */}
@@ -196,24 +196,24 @@ export const BasicSettings = ({
             id="description"
             {...register('settings.description')}
             placeholder="A brief description for the playlist cover."
-            className="min-h-[80px] bg-muted cursor-not-allowed resize-none"
+            className="bg-muted min-h-[80px] cursor-not-allowed resize-none"
             readOnly
           />
-          <p className="text-xs text-muted-foreground">
+          <p className="text-muted-foreground text-xs">
             Description is managed via Spotify or set during creation.
           </p>
           {errors.settings?.description && (
-            <p className="text-sm text-destructive">{errors.settings.description.message}</p>
+            <p className="text-destructive text-sm">{errors.settings.description.message}</p>
           )}
         </div>
 
         {/* Enabled Toggle */}
-        <div className="flex items-center justify-between p-4 border rounded-md">
+        <div className="flex items-center justify-between rounded-md border p-4">
           <div className="space-y-0.5">
             <Label htmlFor="enabled-mode" className="text-base">
               Enable Automation
             </Label>
-            <p className="text-sm text-muted-foreground">Allow the AI to update this playlist.</p>
+            <p className="text-muted-foreground text-sm">Allow the AI to update this playlist.</p>
           </div>
           <Controller
             control={control}

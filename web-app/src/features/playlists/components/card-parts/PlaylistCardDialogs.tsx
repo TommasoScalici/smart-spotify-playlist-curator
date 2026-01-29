@@ -77,7 +77,7 @@ export const PlaylistCardDialogs = ({
       {/* History / Diff Dialog */}
       {latestLog?.metadata?.diff && (
         <Dialog open={showHistory} onOpenChange={setShowHistory}>
-          <DialogContent className="max-w-7xl h-[85vh] max-h-[90vh] flex flex-col">
+          <DialogContent className="flex h-[85vh] max-h-[90vh] max-w-7xl flex-col">
             <DialogHeader>
               <DialogTitle>Curation History: {config.name}</DialogTitle>
               <DialogDescription>
@@ -86,42 +86,42 @@ export const PlaylistCardDialogs = ({
                 )
               </DialogDescription>
             </DialogHeader>
-            <div className="flex-1 overflow-y-auto md:overflow-hidden min-h-0 py-4 h-full pr-1">
+            <div className="h-full min-h-0 flex-1 overflow-y-auto py-4 pr-1 md:overflow-hidden">
               {isLoadingLog ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin h-8 w-8 rounded-full border-2 border-primary border-t-transparent" />
+                <div className="flex h-full items-center justify-center">
+                  <div className="border-primary h-8 w-8 animate-spin rounded-full border-2 border-t-transparent" />
                 </div>
               ) : latestLog?.metadata?.diff ? (
-                <div className="flex flex-col h-full">
+                <div className="flex h-full flex-col">
                   <DiffViewer diff={latestLog.metadata.diff} isDryRun={latestLog.metadata.dryRun} />
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-                  <History className="h-10 w-10 mb-2 opacity-50" />
+                <div className="text-muted-foreground flex h-full flex-col items-center justify-center">
+                  <History className="mb-2 h-10 w-10 opacity-50" />
                   <p>No details available for this run.</p>
-                  <p className="text-xs text-muted-foreground/60">
+                  <p className="text-muted-foreground/60 text-xs">
                     Log entry may have been deleted.
                   </p>
                 </div>
               )}
             </div>
-            <DialogFooter className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-white/5 pt-4">
+            <DialogFooter className="flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-4 sm:flex-row">
               {latestLog?.metadata?.diff?.stats && (
-                <div className="flex items-center gap-3 px-3 py-1.5 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium">
                   <span>
                     Target:{' '}
                     <span className="text-foreground">{latestLog.metadata.diff.stats.target}</span>
                   </span>
-                  <span className="opacity-20 text-lg leading-none">|</span>
+                  <span className="text-lg leading-none opacity-20">|</span>
                   <span>
                     Final:{' '}
                     <span className="text-foreground">{latestLog.metadata.diff.stats.final}</span>
                   </span>
-                  <span className="opacity-20 text-lg leading-none">|</span>
+                  <span className="text-lg leading-none opacity-20">|</span>
                   <span className="flex items-center gap-1.5">
                     Success:
                     {latestLog.metadata.diff.stats.success ? (
-                      <Badge className="bg-green-500/20 text-green-500 hover:bg-green-500/30 border-0 h-5 px-1.5">
+                      <Badge className="h-5 border-0 bg-green-500/20 px-1.5 text-green-500 hover:bg-green-500/30">
                         Yes
                       </Badge>
                     ) : (

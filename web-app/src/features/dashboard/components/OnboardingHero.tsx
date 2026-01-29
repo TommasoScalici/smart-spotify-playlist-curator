@@ -66,42 +66,42 @@ export const OnboardingHero = () => {
   }, [features.length]);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl w-full max-w-4xl bg-card/80 dark:bg-card/95 backdrop-blur-3xl border-2 border-border/50 shadow-2xl flex flex-col items-center p-6 sm:p-8 md:p-10 text-center animate-in fade-in zoom-in-95 duration-1000 transition-all min-h-[500px] sm:min-h-fit mx-4 sm:mx-auto my-auto ring-1 ring-black/5 dark:ring-white/5">
+    <div className="bg-card/80 dark:bg-card/95 border-border/50 animate-in fade-in zoom-in-95 relative mx-4 my-auto flex min-h-[500px] w-full max-w-4xl flex-col items-center overflow-hidden rounded-3xl border-2 p-6 text-center shadow-2xl ring-1 ring-black/5 backdrop-blur-3xl transition-all duration-1000 sm:mx-auto sm:min-h-fit sm:p-8 md:p-10 dark:ring-white/5">
       {/* Dynamic Ambient Background */}
-      <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-background to-secondary/10 z-0" />
-      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 z-0 pointer-events-none" />
+      <div className="from-primary/10 via-background to-secondary/10 absolute inset-0 z-0 bg-linear-to-br" />
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-2xl space-y-6 md:space-y-8">
         <div className="space-y-3 md:space-y-4">
-          <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-primary/10 text-primary mb-1 ring-1 ring-primary/20 shadow-2xl shadow-primary/20 backdrop-blur-xl animate-bounce-subtle">
+          <div className="bg-primary/10 text-primary ring-primary/20 shadow-primary/20 animate-bounce-subtle mb-1 inline-flex items-center justify-center rounded-2xl p-3 shadow-2xl ring-1 backdrop-blur-xl">
             <Music className="h-7 w-7 md:h-8 md:w-8" />
           </div>
           <div className="space-y-2 px-2">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-tight leading-[1.1] text-foreground">
+            <h1 className="text-foreground text-2xl leading-[1.1] font-black tracking-tight sm:text-3xl md:text-4xl">
               Elevate Your <span className="text-primary">Spotify Experience</span>
             </h1>
-            <p className="text-sm sm:text-base md:text-lg text-foreground/70 max-w-md mx-auto leading-relaxed font-medium">
+            <p className="text-foreground/70 mx-auto max-w-md text-sm leading-relaxed font-medium sm:text-base md:text-lg">
               Connect to unleash professional-grade playlist automation powered by AI.
             </p>
           </div>
         </div>
 
         {/* Feature Slideshow */}
-        <div className="relative min-h-[120px] md:min-h-[140px] w-full max-w-xl mx-auto flex items-center justify-center">
+        <div className="relative mx-auto flex min-h-[120px] w-full max-w-xl items-center justify-center md:min-h-[140px]">
           {features.map((feature, idx) => (
             <div
               key={idx}
               className={cn(
-                'absolute inset-0 transition-all duration-700 flex flex-col items-center justify-center gap-1 md:gap-3',
+                'absolute inset-0 flex flex-col items-center justify-center gap-1 transition-all duration-700 md:gap-3',
                 idx === currentSlide
-                  ? 'opacity-100 translate-y-0 pointer-events-auto scale-100'
-                  : 'opacity-0 translate-y-4 pointer-events-none scale-95'
+                  ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
+                  : 'pointer-events-none translate-y-4 scale-95 opacity-0'
               )}
             >
               <div
                 className={cn(
-                  'p-3 md:p-4 rounded-full ring-1 shadow-lg shrink-0',
+                  'shrink-0 rounded-full p-3 shadow-lg ring-1 md:p-4',
                   feature.bg,
                   feature.color,
                   feature.border
@@ -110,10 +110,10 @@ export const OnboardingHero = () => {
                 <feature.icon className="h-5 w-5 md:h-6 md:w-6" />
               </div>
               <div className="space-y-1 px-4">
-                <h3 className="text-base md:text-xl font-bold tracking-tight text-foreground">
+                <h3 className="text-foreground text-base font-bold tracking-tight md:text-xl">
                   {feature.title}
                 </h3>
-                <p className="text-foreground/60 text-xs md:text-sm max-w-sm mx-auto italic leading-tight">
+                <p className="text-foreground/60 mx-auto max-w-sm text-xs leading-tight italic md:text-sm">
                   "{feature.description}"
                 </p>
               </div>
@@ -131,29 +131,29 @@ export const OnboardingHero = () => {
               onClick={() => setCurrentSlide(idx)}
               aria-label={`Go to slide ${idx + 1}`}
               className={cn(
-                'p-0 h-2 md:h-2.5 rounded-full transition-all duration-500 hover:scale-110 active:scale-95',
+                'h-2 rounded-full p-0 transition-all duration-500 hover:scale-110 active:scale-95 md:h-2.5',
                 idx === currentSlide
-                  ? 'w-8 md:w-10 bg-primary shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 ring-primary/30'
-                  : 'w-2 md:w-2.5 bg-foreground/30 dark:bg-white/40 hover:bg-foreground/50 dark:hover:bg-white/60 shadow-md'
+                  ? 'bg-primary ring-primary/30 w-8 shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 md:w-10'
+                  : 'bg-foreground/30 hover:bg-foreground/50 w-2 shadow-md md:w-2.5 dark:bg-white/40 dark:hover:bg-white/60'
               )}
             />
           ))}
         </div>
 
         {/* CTA */}
-        <div className="pt-4 md:pt-6 space-y-4 md:space-y-6">
+        <div className="space-y-4 pt-4 md:space-y-6 md:pt-6">
           <Button
             onClick={login}
-            className="group relative w-full sm:w-auto h-12 md:h-13 px-8 md:px-10 text-base md:text-lg font-bold bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_20px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] hover:scale-105 active:scale-95 transition-all duration-300 rounded-full overflow-hidden"
+            className="group bg-primary hover:bg-primary/90 text-primary-foreground relative h-12 w-full overflow-hidden rounded-full px-8 text-base font-bold shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] active:scale-95 sm:w-auto md:h-13 md:px-10 md:text-lg"
           >
-            <div className="absolute inset-0 bg-linear-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+            <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-full" />
             <span className="relative flex items-center justify-center gap-2">
               Connect Spotify Account
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </span>
           </Button>
 
-          <div className="flex flex-wrap items-center justify-center gap-x-4 md:gap-x-6 gap-y-2 text-[10px] md:text-xs text-foreground/50 uppercase tracking-widest font-bold px-4">
+          <div className="text-foreground/50 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 text-[10px] font-bold tracking-widest uppercase md:gap-x-6 md:text-xs">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
               <Zap className="h-3 w-3" /> Fully Automated
             </span>

@@ -1,22 +1,12 @@
-import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { BaseTrack, MandatoryTrack, TrackDiff } from '@smart-spotify-curator/shared';
 
 import { TrackInfo } from '../services/spotify-service';
 import { TrackWithMeta } from './types-internal';
 
-export interface DiffItem {
-  uri: string;
-  name: string;
-  artist: string;
-}
-
-export interface RemovedDiffItem extends DiffItem {
-  reason?: 'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other';
-}
-
 export interface DiffResult {
-  added: DiffItem[];
-  removed: RemovedDiffItem[];
-  keptMandatory: DiffItem[];
+  added: BaseTrack[];
+  removed: TrackDiff[];
+  keptMandatory: BaseTrack[];
 }
 
 export class DiffCalculator {
@@ -64,7 +54,7 @@ export class DiffCalculator {
     const currentCounts = new Map<string, number>();
     currentTracks.forEach((t) => currentCounts.set(t.uri, (currentCounts.get(t.uri) || 0) + 1));
 
-    const removed: RemovedDiffItem[] = [];
+    const removed: TrackDiff[] = [];
     const processedUris = new Set<string>();
 
     currentTracks.forEach((t) => {

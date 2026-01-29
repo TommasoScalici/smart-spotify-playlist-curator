@@ -22,7 +22,8 @@ const mockSpotifyInstance = {
   },
   search: vi.fn(),
   tracks: { get: vi.fn() },
-  setAccessToken: vi.fn()
+  setAccessToken: vi.fn(),
+  switchAuthenticationStrategy: vi.fn()
   // Add other methods if needed by constructor or ensureAccessToken init
 };
 

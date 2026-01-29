@@ -69,23 +69,23 @@ export default function EditPlaylist() {
   if (loading) {
     return (
       <div className="flex h-[50vh] w-full items-center justify-center">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
+        <Loader2 className="text-primary h-10 w-10 animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="container max-w-4xl mx-auto py-8 min-h-screen animate-in fade-in slide-in-from-bottom-4 duration-700 space-y-8">
+    <div className="animate-in fade-in slide-in-from-bottom-4 container mx-auto min-h-screen max-w-4xl space-y-8 py-8 duration-700">
       {/* Header Section */}
       <div className="flex flex-col gap-2 select-none">
         <Button
           variant="ghost"
           onClick={() => navigate('/')}
-          className="w-fit pl-0 hover:bg-transparent hover:text-primary -ml-4 text-muted-foreground transition-colors"
+          className="hover:text-primary text-muted-foreground -ml-4 w-fit pl-0 transition-colors hover:bg-transparent"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
         </Button>
-        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-foreground to-foreground/70">
+        <h1 className="from-foreground to-foreground/70 bg-linear-to-r bg-clip-text text-3xl font-extrabold tracking-tight text-transparent md:text-4xl">
           {isNew ? 'Create New Playlist' : `Edit ${config?.name || 'Playlist'}`}
         </h1>
         <p className="text-muted-foreground">
@@ -96,10 +96,10 @@ export default function EditPlaylist() {
       </div>
 
       {/* Editor Wrapper with Glass Effect */}
-      <div className="relative rounded-xl border border-white/5 bg-card/30 backdrop-blur-xl shadow-2xl overflow-hidden p-6 md:p-8">
+      <div className="bg-card/30 relative overflow-hidden rounded-xl border border-white/5 p-6 shadow-2xl backdrop-blur-xl md:p-8">
         {/* Decorative Background Mesh */}
-        <div className="absolute top-0 right-0 p-32 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
-        <div className="absolute bottom-0 left-0 p-24 bg-secondary/5 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="bg-primary/5 pointer-events-none absolute top-0 right-0 -z-10 rounded-full p-32 blur-3xl" />
+        <div className="bg-secondary/5 pointer-events-none absolute bottom-0 left-0 -z-10 rounded-full p-24 blur-3xl" />
 
         <ConfigEditor initialConfig={config} onSubmit={handleSave} isAddMode={isNew} />
       </div>

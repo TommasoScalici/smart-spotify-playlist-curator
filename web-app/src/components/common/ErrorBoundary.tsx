@@ -41,18 +41,18 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen w-full flex items-center justify-center p-6 bg-background relative overflow-hidden">
+        <div className="bg-background relative flex min-h-screen w-full items-center justify-center overflow-hidden p-6">
           {/* Decorative Backdrops */}
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-destructive/20 rounded-full blur-[128px] pointer-events-none" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[128px] pointer-events-none" />
+          <div className="bg-destructive/20 pointer-events-none absolute top-1/4 left-1/4 h-96 w-96 rounded-full blur-[128px]" />
+          <div className="bg-primary/10 pointer-events-none absolute right-1/4 bottom-1/4 h-96 w-96 rounded-full blur-[128px]" />
 
-          <div className="relative z-10 w-full max-w-md animate-in fade-in zoom-in-95 duration-500">
-            <div className="glass-panel rounded-3xl p-8 md:p-12 text-center border-white/10 shadow-2xl backdrop-blur-xl bg-black/40">
-              <div className="inline-flex items-center justify-center p-4 rounded-full bg-destructive/10 text-destructive mb-6 ring-1 ring-destructive/20 shadow-lg shadow-destructive/5">
+          <div className="animate-in fade-in zoom-in-95 relative z-10 w-full max-w-md duration-500">
+            <div className="glass-panel rounded-3xl border-white/10 bg-black/40 p-8 text-center shadow-2xl backdrop-blur-xl md:p-12">
+              <div className="bg-destructive/10 text-destructive ring-destructive/20 shadow-destructive/5 mb-6 inline-flex items-center justify-center rounded-full p-4 shadow-lg ring-1">
                 <AlertTriangle className="h-10 w-10 stroke-[1.5px]" />
               </div>
 
-              <h1 className="text-3xl font-bold tracking-tight mb-3 bg-linear-to-br from-white to-white/60 bg-clip-text text-transparent">
+              <h1 className="mb-3 bg-linear-to-br from-white to-white/60 bg-clip-text text-3xl font-bold tracking-tight text-transparent">
                 Something went wrong
               </h1>
 
@@ -63,18 +63,18 @@ export class ErrorBoundary extends Component<Props, State> {
 
               {/* Developer Error Details (Only visible in Dev or if needed) */}
               {import.meta.env.DEV && this.state.error && (
-                <div className="mb-8 p-4 rounded-lg bg-black/50 border border-white/10 text-left overflow-auto max-h-40">
-                  <p className="font-mono text-xs text-red-300 break-all">
+                <div className="mb-8 max-h-40 overflow-auto rounded-lg border border-white/10 bg-black/50 p-4 text-left">
+                  <p className="font-mono text-xs break-all text-red-300">
                     {this.state.error.toString()}
                   </p>
                 </div>
               )}
 
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <div className="flex flex-col justify-center gap-3 sm:flex-row">
                 <Button
                   onClick={this.handleReload}
                   size="lg"
-                  className="w-full sm:w-auto gap-2 shadow-lg shadow-primary/20"
+                  className="shadow-primary/20 w-full gap-2 shadow-lg sm:w-auto"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Reload App
@@ -84,7 +84,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   onClick={this.handleGoHome}
                   variant="outline"
                   size="lg"
-                  className="w-full sm:w-auto gap-2 bg-white/5 border-white/10 hover:bg-white/10"
+                  className="w-full gap-2 border-white/10 bg-white/5 hover:bg-white/10 sm:w-auto"
                 >
                   <Home className="h-4 w-4" />
                   Go Home

@@ -56,19 +56,20 @@ export const PlaylistSettingsSchema = z.object({
 
 // --- Curation Status Schema ---
 
+export const BaseTrackSchema = z.object({
+  uri: z.string(),
+  name: z.string(),
+  artist: z.string()
+});
+
+export const TrackDiffSchema = BaseTrackSchema.extend({
+  reason: z.enum(['duplicate', 'expired', 'artist_limit', 'size_limit', 'other']).optional()
+});
+
 export const CurationDiffSchema = z.object({
-  added: z.array(z.object({ uri: z.string(), name: z.string(), artist: z.string() })),
-  removed: z.array(
-    z.object({
-      uri: z.string(),
-      name: z.string(),
-      artist: z.string(),
-      reason: z.enum(['duplicate', 'expired', 'artist_limit', 'size_limit', 'other']).optional()
-    })
-  ),
-  keptMandatory: z
-    .array(z.object({ uri: z.string(), name: z.string(), artist: z.string() }))
-    .optional(),
+  added: z.array(BaseTrackSchema),
+  removed: z.array(TrackDiffSchema),
+  keptMandatory: z.array(BaseTrackSchema).optional(),
   stats: z
     .object({
       target: z.number(),
@@ -220,5 +221,22 @@ export const CurationEstimateSchema = z.object({
 });
 
 export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;
+
+export type BaseTrack = z.infer<typeof BaseTrackSchema>;
+export type TrackDiff = z.infer<typeof TrackDiffSchema>;
+
+export const SearchResultSchema = z.object({
+  uri: z.string(),
+  name: z.string(),
+  artist: z.string().optional(),
+  owner: z.string().optional(),
+  ownerId: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  popularity: z.number().optional(),
+  type: z.enum(['track', 'playlist', 'artist'])
+});
+
+export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;

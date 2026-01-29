@@ -63,6 +63,7 @@
     "jsdom": "^27.4.0",
     "postcss": "^8.5.6",
     "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
     "tailwindcss": "^4.1.18",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^5.9.3",

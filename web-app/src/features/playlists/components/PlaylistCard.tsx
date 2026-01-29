@@ -61,19 +61,19 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   return (
     <Card
       className={cn(
-        'group relative overflow-hidden flex flex-col h-full min-h-[260px] border-0 transition-all duration-500',
-        'hover:shadow-2xl hover:-translate-y-1',
+        'group relative flex h-full min-h-[260px] flex-col overflow-hidden border-0 transition-all duration-500',
+        'hover:-translate-y-1 hover:shadow-2xl',
         // Glassmorphism Base
         'bg-card/40 backdrop-blur-xl',
         // Border Gradient Trick
-        'before:absolute before:inset-0 before:p-px before:-z-10 before:rounded-xl before:bg-linear-to-b before:from-white/10 before:to-white/5',
+        'before:absolute before:inset-0 before:-z-10 before:rounded-xl before:bg-linear-to-b before:from-white/10 before:to-white/5 before:p-px',
         !config.enabled && 'opacity-60 grayscale-[0.8] hover:grayscale-0'
       )}
     >
       {/* Dynamic Background Mesh */}
       <div
         className={cn(
-          'absolute inset-0 opacity-40 transition-opacity duration-500 group-hover:opacity-60 bg-linear-to-br',
+          'absolute inset-0 bg-linear-to-br opacity-40 transition-opacity duration-500 group-hover:opacity-60',
           gradientClass
         )}
       />
@@ -122,14 +122,14 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
 };
 
 export const PlaylistCardSkeleton = () => (
-  <Card className="group relative overflow-hidden border-border/50 bg-card/50 backdrop-blur-sm h-full">
-    <div className="h-40 w-full bg-muted animate-pulse" />
-    <CardContent className="p-4 space-y-3">
-      <div className="h-6 w-3/4 bg-muted animate-pulse rounded" />
-      <div className="h-4 w-1/2 bg-muted animate-pulse rounded" />
+  <Card className="group border-border/50 bg-card/50 relative h-full overflow-hidden backdrop-blur-sm">
+    <div className="bg-muted h-40 w-full animate-pulse" />
+    <CardContent className="space-y-3 p-4">
+      <div className="bg-muted h-6 w-3/4 animate-pulse rounded" />
+      <div className="bg-muted h-4 w-1/2 animate-pulse rounded" />
       <div className="flex justify-between pt-2">
-        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
-        <div className="h-4 w-16 bg-muted animate-pulse rounded" />
+        <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+        <div className="bg-muted h-4 w-16 animate-pulse rounded" />
       </div>
     </CardContent>
   </Card>

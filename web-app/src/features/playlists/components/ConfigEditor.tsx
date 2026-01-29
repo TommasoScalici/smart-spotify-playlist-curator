@@ -136,7 +136,7 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
   }, [fetchedPlaylist, getValues, setValue]);
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)} className="max-w-4xl mx-auto">
+    <form onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)} className="mx-auto max-w-4xl">
       <div className="space-y-8 pb-24">
         {/* Section 1: Basic Info */}
         <section className="space-y-4">
@@ -171,14 +171,14 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
       </div>
 
       {/* Floating Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/95 backdrop-blur-md border-t border-border shadow-2xl z-50">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+      <div className="bg-background/95 border-border fixed right-0 bottom-0 left-0 z-50 border-t p-4 shadow-2xl backdrop-blur-md">
+        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
           {/* Validation Error Indicator with Tooltip */}
           {totalErrors > 0 && (
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 text-sm text-destructive cursor-help animate-in fade-in slide-in-from-left-2">
+                  <div className="text-destructive animate-in fade-in slide-in-from-left-2 flex cursor-help items-center gap-2 text-sm">
                     <AlertCircle className="h-4 w-4" />
                     <span className="font-medium underline decoration-dotted underline-offset-4">
                       {totalErrors} validation error{totalErrors !== 1 ? 's' : ''}
@@ -188,9 +188,9 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
                 <TooltipContent
                   side="top"
                   align="start"
-                  className="max-w-[300px] p-3 space-y-1.5 bg-destructive text-destructive-foreground border-none shadow-xl"
+                  className="bg-destructive text-destructive-foreground max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
                 >
-                  <p className="font-bold text-xs uppercase tracking-wider opacity-70 mb-1">
+                  <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
                     Validation Details
                   </p>
                   {getFlatErrorMessages(errors as unknown as Record<string, unknown>).map(

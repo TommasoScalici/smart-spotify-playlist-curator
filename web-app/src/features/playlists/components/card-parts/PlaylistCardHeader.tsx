@@ -20,37 +20,37 @@ export const PlaylistCardHeader = ({
   onToggle
 }: PlaylistCardHeaderProps) => {
   return (
-    <div className="relative p-5 flex gap-4 items-start z-10">
+    <div className="relative z-10 flex items-start gap-4 p-5">
       {/* Album Art with Glow */}
       <div className="relative shrink-0">
-        <div className="h-20 w-20 rounded-lg overflow-hidden shadow-lg border border-white/10 group-hover:scale-105 transition-transform duration-500">
+        <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/10 shadow-lg transition-transform duration-500 group-hover:scale-105">
           {config.imageUrl || imageUrl ? (
             <img
               src={config.imageUrl || imageUrl || ''}
               alt={config.name}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover"
             />
           ) : (
-            <div className="w-full h-full bg-black/40 flex items-center justify-center">
+            <div className="flex h-full w-full items-center justify-center bg-black/40">
               <Music className="h-8 w-8 text-white/50" />
             </div>
           )}
         </div>
         {/* Pulsing Status Dot */}
         {config.enabled && (
-          <span className="absolute -bottom-1 -right-1 flex h-4 w-4">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-4 w-4 bg-green-500 border-2 border-background"></span>
+          <span className="absolute -right-1 -bottom-1 flex h-4 w-4">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75"></span>
+            <span className="border-background relative inline-flex h-4 w-4 rounded-full border-2 bg-green-500"></span>
           </span>
         )}
       </div>
 
       {/* Text Info */}
-      <div className="flex-1 min-w-0 pt-1">
+      <div className="min-w-0 flex-1 pt-1">
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <h3 className="text-xl font-bold tracking-tight text-foreground leading-tight line-clamp-1 md:line-clamp-2 drop-shadow-sm group-hover:text-primary transition-colors cursor-help">
+              <h3 className="text-foreground group-hover:text-primary line-clamp-1 cursor-help text-xl leading-tight font-bold tracking-tight drop-shadow-sm transition-colors md:line-clamp-2">
                 {config.name}
               </h3>
             </TooltipTrigger>
@@ -60,7 +60,7 @@ export const PlaylistCardHeader = ({
           </Tooltip>
         </TooltipProvider>
 
-        <p className="text-xs font-medium text-muted-foreground mt-1 uppercase tracking-wider flex items-center gap-1.5">
+        <p className="text-muted-foreground mt-1 flex items-center gap-1.5 text-xs font-medium tracking-wider uppercase">
           <Radio className="h-3 w-3" />
           {owner || 'Smart Curator'}
         </p>
@@ -68,7 +68,7 @@ export const PlaylistCardHeader = ({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <p className="text-sm text-muted-foreground/80 mt-2 line-clamp-2 md:line-clamp-3 cursor-help hover:text-foreground transition-colors">
+              <p className="text-muted-foreground/80 hover:text-foreground mt-2 line-clamp-2 cursor-help text-sm transition-colors md:line-clamp-3">
                 {config.settings.description || 'Automation rules active'}
               </p>
             </TooltipTrigger>
@@ -87,7 +87,7 @@ export const PlaylistCardHeader = ({
           <TooltipTrigger asChild>
             <div className="flex items-center gap-2">
               {isToggling && (
-                <div className="animate-spin h-3 w-3 rounded-full border-2 border-primary border-t-transparent" />
+                <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
               )}
               <Switch
                 checked={config.enabled}

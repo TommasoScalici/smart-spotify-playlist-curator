@@ -98,12 +98,12 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Master Toggle: Enable AI */}
-        <div className="flex items-center justify-between p-4 border rounded-md bg-accent/10">
+        <div className="bg-accent/10 flex items-center justify-between rounded-md border p-4">
           <div className="space-y-0.5">
             <Label htmlFor="ai-enabled" className="text-base font-medium">
               Enable AI Suggestions
             </Label>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Allow AI to add new tracks during automation.
             </p>
           </div>
@@ -120,9 +120,9 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
         {isAiEnabled && (
           <>
             {/* Reference Artists */}
-            <div className="space-y-3 p-4 border rounded-md bg-primary/5">
+            <div className="bg-primary/5 space-y-3 rounded-md border p-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-primary" />
+                <Sparkles className="text-primary h-4 w-4" />
                 <Label htmlFor="referenceArtists" className="text-sm font-semibold">
                   Reference Artists
                 </Label>
@@ -145,7 +145,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                   />
                 )}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 Give the AI specific artists to emulate the "vibe" of.
               </p>
             </div>
@@ -170,11 +170,11 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                   errors.aiGeneration?.tracksToAdd && 'border-destructive'
                 )}
               />
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 How many new tracks should the AI add during each automation run? (0-50)
               </p>
               {errors.aiGeneration?.tracksToAdd && (
-                <p className="text-sm text-destructive font-medium">
+                <p className="text-destructive text-sm font-medium">
                   {errors.aiGeneration.tracksToAdd.message}
                 </p>
               )}
@@ -208,20 +208,20 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                   referenceArtists
                 )}
                 readOnly
-                className="min-h-[120px] font-mono text-sm bg-muted cursor-not-allowed resize-none"
+                className="bg-muted min-h-[120px] cursor-not-allowed resize-none font-mono text-sm"
               />
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <p className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Sparkles className="h-3 w-3" />
                 Prompts are auto-generated from playlist name, reference artists, and description.
               </p>
             </div>
 
             {/* Advanced Settings (Collapsible in future, for now inline) */}
-            <div className="pt-4 border-t">
-              <Label className="text-xs uppercase tracking-wider text-muted-foreground mb-4 block">
+            <div className="border-t pt-4">
+              <Label className="text-muted-foreground mb-4 block text-xs tracking-wider uppercase">
                 Advanced Settings
               </Label>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Model */}
                 <div className="space-y-2">
                   <Label htmlFor="model">AI Model</Label>

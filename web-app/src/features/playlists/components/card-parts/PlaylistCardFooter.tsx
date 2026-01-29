@@ -36,20 +36,20 @@ export const PlaylistCardFooter = ({
   const isError = latestLog?.metadata?.state === 'error';
 
   return (
-    <CardFooter className="relative z-10 p-5 pt-2 mt-auto flex gap-3">
-      <div className="flex-1 flex flex-col justify-center min-h-[44px]">
+    <CardFooter className="relative z-10 mt-auto flex gap-3 p-5 pt-2">
+      <div className="flex min-h-[44px] flex-1 flex-col justify-center">
         {isRunning || isError ? (
-          <div className="space-y-1.5 animate-in fade-in slide-in-from-bottom-2 duration-300">
-            <div className="flex justify-between text-[10px] items-center px-0.5">
+          <div className="animate-in fade-in slide-in-from-bottom-2 space-y-1.5 duration-300">
+            <div className="flex items-center justify-between px-0.5 text-[10px]">
               <span
                 className={cn(
-                  'font-semibold uppercase tracking-wider',
+                  'font-semibold tracking-wider uppercase',
                   isError ? 'text-destructive' : 'text-primary animate-pulse'
                 )}
               >
                 {isError ? 'Error' : latestLog?.metadata?.step || 'Initializing...'}
               </span>
-              <span className="font-mono text-muted-foreground">
+              <span className="text-muted-foreground font-mono">
                 {isError ? '!' : `${latestLog?.metadata?.progress || 0}%`}
               </span>
             </div>
@@ -59,18 +59,18 @@ export const PlaylistCardFooter = ({
               indicatorClassName={isError ? 'bg-destructive' : ''}
             />
             {isError && (
-              <p className="text-[10px] text-destructive font-medium line-clamp-2 leading-tight">
+              <p className="text-destructive line-clamp-2 text-[10px] leading-tight font-medium">
                 {latestLog?.metadata?.error || 'An unexpected error occurred.'}
               </p>
             )}
           </div>
         ) : (
-          <div className="flex gap-2 w-full">
+          <div className="flex w-full gap-2">
             <Button
               variant="outline"
               size="icon"
               aria-label="Edit playlist settings"
-              className="group/btn border-white/10 bg-white/5 text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-lg hover:shadow-secondary/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+              className="group/btn text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-secondary/10 h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
               onClick={onEdit}
             >
               <Edit2 className="h-4 w-4 transition-transform group-hover/btn:-rotate-12" />
@@ -80,7 +80,7 @@ export const PlaylistCardFooter = ({
               variant="outline"
               size="icon"
               aria-label="Delete playlist"
-              className="group/del border-white/10 bg-white/5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-lg hover:shadow-destructive/10 hover:scale-105 active:scale-95 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+              className="group/del text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-destructive/10 h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
               onClick={onDelete}
             >
               <Trash2 className="h-4 w-4 transition-transform group-hover/del:scale-110" />
@@ -89,7 +89,7 @@ export const PlaylistCardFooter = ({
             <RunButton
               playlistId={config.id}
               playlistName={config.name}
-              className="flex-1 h-10 min-h-[44px]"
+              className="h-10 min-h-[44px] flex-1"
               disabled={!config.enabled}
               onRunStart={onRunStart}
               onRunComplete={onRunComplete}
@@ -102,7 +102,7 @@ export const PlaylistCardFooter = ({
                     variant="outline"
                     size="icon"
                     aria-label="Start test run"
-                    className="border-white/10 bg-white/5 text-muted-foreground hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 transition-all h-10 w-10 min-h-[44px] min-w-[44px]"
+                    className="text-muted-foreground h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all hover:border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-400"
                     onClick={onRunTest}
                   >
                     <FlaskConical className="h-4 w-4" />
@@ -120,10 +120,10 @@ export const PlaylistCardFooter = ({
                 size="icon"
                 aria-label="View curation history"
                 className={cn(
-                  'border-white/10 bg-white/5 text-muted-foreground transition-all h-10 w-10 min-h-[44px] min-w-[44px]',
+                  'text-muted-foreground h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all',
                   latestLog.metadata.dryRun
-                    ? 'hover:text-amber-400 hover:bg-amber-400/10 hover:border-amber-400/30 text-amber-500/80'
-                    : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-lg hover:shadow-primary/10'
+                    ? 'text-amber-500/80 hover:border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-400'
+                    : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-lg'
                 )}
                 onClick={onShowHistory}
               >

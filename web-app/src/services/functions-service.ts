@@ -5,21 +5,11 @@ import {
   CurationEstimateSchema,
   OrchestrationResult,
   OrchestrationResultSchema,
+  SearchResult,
   SpotifyProfile
 } from '@smart-spotify-curator/shared';
 
 import { functions } from './firebase';
-
-export interface SpotifySearchResult {
-  uri: string;
-  name: string;
-  type: 'track' | 'playlist' | 'artist';
-  imageUrl?: string;
-  owner?: string;
-  ownerId?: string;
-  artist?: string;
-  description?: string;
-}
 
 export const FunctionsService = {
   /**
@@ -49,10 +39,10 @@ export const FunctionsService = {
    * @param type - Type of search ('track' or 'playlist')
    * @returns Array of search results
    */
-  async searchSpotify(query: string, type: 'track' | 'playlist'): Promise<SpotifySearchResult[]> {
+  async searchSpotify(query: string, type: 'track' | 'playlist'): Promise<SearchResult[]> {
     const search = httpsCallable<
       { query: string; type: string; limit: number },
-      { results: SpotifySearchResult[] }
+      { results: SearchResult[] }
     >(functions, 'searchSpotify');
     const result = await search({ query, type, limit: 10 });
     return result.data.results;

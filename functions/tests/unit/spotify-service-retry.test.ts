@@ -24,7 +24,8 @@ const mockSpotifyInstance = {
     playlists: { playlists: vi.fn() }
   },
   tracks: { get: vi.fn() },
-  search: vi.fn()
+  search: vi.fn(),
+  switchAuthenticationStrategy: vi.fn()
 };
 
 vi.mock('@spotify/web-api-ts-sdk', () => {
