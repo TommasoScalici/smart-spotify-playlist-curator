@@ -1,5 +1,11 @@
 # Changelog
 
+# [1.6.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.5.0...v1.6.0) (2026-01-29)
+
+### Features
+
+- migrate to Tailwind v4, update Firebase configuration & refactor backend controllers. Integrated @tailwindcss/vite, updated Firestore rules/indexes, refactored playlist controllers, and added Spotify service unit tests. ([cfeff09](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/cfeff093beb5605252c97c9fb390374b7ce3eeb0))
+
 # [1.5.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.3.2...v1.5.0) (2026-01-25)
 
 ### Bug Fixes
