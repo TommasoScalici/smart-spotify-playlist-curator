@@ -25,3 +25,4 @@ export {
   estimateCuration
 } from './controllers/curation-controller.js';
 export { searchSpotify, getTrackDetails } from './controllers/spotify-controller.js';
+export { suggestReferenceArtists } from './controllers/discovery-controller.js';

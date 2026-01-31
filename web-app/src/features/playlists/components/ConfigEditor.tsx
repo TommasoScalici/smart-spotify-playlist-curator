@@ -136,8 +136,11 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
   }, [fetchedPlaylist, getValues, setValue]);
 
   return (
-    <form onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)} className="mx-auto max-w-4xl">
-      <div className="space-y-8 pb-24">
+    <form
+      onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)}
+      className="mx-auto w-full max-w-5xl"
+    >
+      <div className="space-y-6 pb-32 sm:space-y-8">
         {/* Section 1: Basic Info */}
         <section className="space-y-4">
           <BasicSettings
@@ -161,34 +164,30 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
 
         {/* Section 4: Mandatory Tracks */}
         <section className="space-y-4">
-          <TrackListSettings
-            control={control}
-            register={register}
-            setValue={setValue}
-            errors={errors}
-          />
+          <TrackListSettings control={control} setValue={setValue} errors={errors} />
         </section>
       </div>
 
       {/* Floating Action Bar */}
-      <div className="bg-background/95 border-border fixed right-0 bottom-0 left-0 z-50 border-t p-4 shadow-2xl backdrop-blur-md">
-        <div className="mx-auto flex max-w-4xl items-center justify-between gap-4">
+      <div className="bg-background/80 border-border fixed right-0 bottom-0 left-0 z-50 border-t p-4 shadow-2xl backdrop-blur-xl supports-[padding-bottom:env(safe-area-inset-bottom)]:pb-[env(safe-area-inset-bottom,20px)]">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
           {/* Validation Error Indicator with Tooltip */}
           {totalErrors > 0 && (
             <TooltipProvider>
-              <Tooltip>
+              <Tooltip delayDuration={0}>
                 <TooltipTrigger asChild>
-                  <div className="text-destructive animate-in fade-in slide-in-from-left-2 flex cursor-help items-center gap-2 text-sm">
+                  <div className="text-destructive animate-in fade-in slide-in-from-left-2 bg-destructive/10 flex cursor-help items-center gap-2 rounded-full px-3 py-2 text-sm">
                     <AlertCircle className="h-4 w-4" />
-                    <span className="font-medium underline decoration-dotted underline-offset-4">
-                      {totalErrors} validation error{totalErrors !== 1 ? 's' : ''}
+                    <span className="font-bold">
+                      {totalErrors}{' '}
+                      <span className="hidden sm:inline">error{totalErrors !== 1 ? 's' : ''}</span>
                     </span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
                   side="top"
                   align="start"
-                  className="bg-destructive text-destructive-foreground max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
+                  className="bg-destructive text-destructive-foreground mb-4 max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
                 >
                   <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
                     Validation Details
@@ -210,14 +209,17 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
             type="submit"
             disabled={isSubmitting}
             size="lg"
-            className={cn('shadow-lg transition-all', totalErrors > 0 && 'opacity-80')}
+            className={cn(
+              'w-full shadow-lg transition-all sm:w-auto',
+              totalErrors > 0 && 'opacity-90'
+            )}
           >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}
-            Save Configuration
+            <span className="sm:inline">Save Configuration</span>
           </Button>
         </div>
       </div>

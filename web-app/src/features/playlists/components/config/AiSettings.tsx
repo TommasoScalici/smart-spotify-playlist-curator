@@ -2,14 +2,18 @@ import { Bot, RefreshCw, Sparkles } from 'lucide-react';
 import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
+import { NumberInput } from '@/components/ui/number-input';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+
+import { ArtistSelector } from './ArtistSelector';
 
 interface AiSettingsProps {
   control: Control<PlaylistConfig>;
@@ -45,7 +49,7 @@ function generatePromptPreview(
   name?: string,
   description?: string,
   isInstrumental?: boolean,
-  referenceArtists?: string[]
+  referenceArtists?: SearchResult[]
 ): string {
   if (!name) return '(Prompt will be auto-generated from playlist name and description)';
 
@@ -62,7 +66,8 @@ function generatePromptPreview(
   }
 
   if (referenceArtists && referenceArtists.length > 0) {
-    prompt += `\n\nReference Artists: ${referenceArtists.join(', ')}`;
+    const artistNames = referenceArtists.map((a) => a.name).join(', ');
+    prompt += `\n\nReference Artists: ${artistNames}`;
     prompt += '\nUse these artists to define the sonic profile and quality bar for suggestions.';
   }
 
@@ -85,6 +90,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
   const playlistDescription = watch('settings.description');
   const isInstrumental = watch('aiGeneration.isInstrumentalOnly');
   const isAiEnabled = watch('aiGeneration.enabled');
+  const aiConfig = watch('aiGeneration');
   const referenceArtists = watch('settings.referenceArtists') || [];
 
   return (
@@ -98,12 +104,17 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Master Toggle: Enable AI */}
-        <div className="bg-accent/10 flex items-center justify-between rounded-md border p-4">
+        <div className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-xl border p-4 transition-colors sm:p-5">
           <div className="space-y-0.5">
-            <Label htmlFor="ai-enabled" className="text-base font-medium">
+            <LabelWithTooltip
+              tooltip="Allow the AI to analyze your playlist and suggest new tracks based on your criteria."
+              htmlFor="ai-enabled"
+              className="cursor-pointer text-base font-medium"
+            >
               Enable AI Suggestions
-            </Label>
-            <p className="text-muted-foreground text-sm">
+            </LabelWithTooltip>
+            {/* Kept p tag as it acts as a subtitle here */}
+            <p className="text-muted-foreground text-xs sm:text-sm">
               Allow AI to add new tracks during automation.
             </p>
           </div>
@@ -123,56 +134,55 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
             <div className="bg-primary/5 space-y-3 rounded-md border p-4">
               <div className="flex items-center gap-2">
                 <Sparkles className="text-primary h-4 w-4" />
-                <Label htmlFor="referenceArtists" className="text-sm font-semibold">
+                <LabelWithTooltip
+                  tooltip="Select artists that define the vibe of your playlist. The AI will use these to find similar music."
+                  htmlFor="referenceArtists"
+                  className="text-sm font-semibold"
+                >
                   Reference Artists
-                </Label>
+                </LabelWithTooltip>
               </div>
               <Controller
                 control={control}
                 name="settings.referenceArtists"
                 render={({ field }) => (
-                  <Input
-                    placeholder="e.g. Lofi Girl, J Dilla, Nujabes (comma separated)"
-                    value={field.value?.join(', ') || ''}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      const artists = val
-                        .split(',')
-                        .map((s) => s.trim())
-                        .filter(Boolean);
-                      field.onChange(artists);
-                    }}
+                  <ArtistSelector
+                    value={field.value || []}
+                    onChange={(artists) => field.onChange(artists)}
+                    playlistName={playlistName}
+                    description={playlistDescription}
+                    aiConfig={aiConfig}
                   />
                 )}
               />
-              <p className="text-muted-foreground text-xs">
-                Give the AI specific artists to emulate the "vibe" of.
-              </p>
             </div>
 
             {/* Tracks to Add */}
             <div className="space-y-2">
-              <Label
+              <LabelWithTooltip
                 htmlFor="tracksToAdd"
+                tooltip="The number of new tracks the AI will attempt to add in each run."
                 className={cn(errors.aiGeneration?.tracksToAdd && 'text-destructive')}
               >
                 Number of AI Tracks to Add
-              </Label>
-              <Input
-                id="tracksToAdd"
-                type="number"
-                min="0"
-                max="50"
-                onWheel={(e) => e.currentTarget.blur()}
-                {...register('aiGeneration.tracksToAdd', { valueAsNumber: true })}
-                className={cn(
-                  'max-w-[150px]',
-                  errors.aiGeneration?.tracksToAdd && 'border-destructive'
+              </LabelWithTooltip>
+              <Controller
+                control={control}
+                name="aiGeneration.tracksToAdd"
+                render={({ field }) => (
+                  <NumberInput
+                    id="tracksToAdd"
+                    min={0}
+                    max={50}
+                    value={field.value || 0}
+                    onChange={field.onChange}
+                    className={cn(
+                      'max-w-[150px]',
+                      errors.aiGeneration?.tracksToAdd && 'border-destructive'
+                    )}
+                  />
                 )}
               />
-              <p className="text-muted-foreground text-xs">
-                How many new tracks should the AI add during each automation run? (0-50)
-              </p>
               {errors.aiGeneration?.tracksToAdd && (
                 <p className="text-destructive text-sm font-medium">
                   {errors.aiGeneration.tracksToAdd.message}
@@ -183,7 +193,12 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
             {/* Auto-Generated Prompt Preview */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label htmlFor="prompt-preview">Auto-Generated Prompt (Read-Only)</Label>
+                <LabelWithTooltip
+                  tooltip="This prompt is generated from your settings and used to instruct the AI. Read-only."
+                  htmlFor="prompt-preview"
+                >
+                  Auto-Generated Prompt (Read-Only)
+                </LabelWithTooltip>
                 <Button
                   type="button"
                   variant="outline"
@@ -224,7 +239,12 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
               <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                 {/* Model */}
                 <div className="space-y-2">
-                  <Label htmlFor="model">AI Model</Label>
+                  <LabelWithTooltip
+                    htmlFor="model"
+                    tooltip="The AI model used for generating suggestions. Currently fixed."
+                  >
+                    AI Model
+                  </LabelWithTooltip>
                   <Input
                     id="model"
                     {...register('aiGeneration.model')}
@@ -234,21 +254,27 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                 </div>
                 {/* Temperature */}
                 <div className="space-y-2">
-                  <Label
+                  <LabelWithTooltip
                     htmlFor="temperature"
+                    tooltip="Controls the randomness of the AI. Lower values are more focused, higher values are more creative."
                     className={cn(errors.aiGeneration?.temperature && 'text-destructive')}
                   >
                     Temperature
-                  </Label>
-                  <Input
-                    id="temperature"
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="1"
-                    onWheel={(e) => e.currentTarget.blur()}
-                    {...register('aiGeneration.temperature', { valueAsNumber: true })}
-                    className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
+                  </LabelWithTooltip>
+                  <Controller
+                    control={control}
+                    name="aiGeneration.temperature"
+                    render={({ field }) => (
+                      <NumberInput
+                        id="temperature"
+                        step={0.1}
+                        min={0}
+                        max={1}
+                        value={field.value || 0}
+                        onChange={field.onChange}
+                        className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
+                      />
+                    )}
                   />
                 </div>
               </div>

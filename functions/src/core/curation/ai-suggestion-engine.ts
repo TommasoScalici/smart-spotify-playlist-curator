@@ -1,4 +1,4 @@
-import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
 
 import { AiService } from '../../services/ai-service';
 import { FirestoreLogger } from '../../services/firestore-logger';
@@ -15,7 +15,7 @@ export class AISuggestionEngine {
   public async generateAndFindTracks(
     playlistName: string,
     description: string | undefined,
-    referenceArtists: string[] | undefined,
+    referenceArtists: SearchResult[] | undefined,
     aiConfig: AiGenerationConfig,
     tracksNeeded: number,
     existingTrackSignatures: string[],

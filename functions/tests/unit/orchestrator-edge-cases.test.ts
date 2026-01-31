@@ -45,7 +45,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
     name: 'Test Playlist',
     ownerId: 'user1',
     enabled: true,
-    settings: { targetTotalTracks: 5, description: '' },
+    settings: { targetTotalTracks: 5, description: '', referenceArtists: [] },
     aiGeneration: { enabled: true, tracksToAdd: 5, model: 'gemini', temperature: 0.7 },
     curationRules: {
       maxTrackAgeDays: 30,

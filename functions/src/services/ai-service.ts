@@ -27,6 +27,12 @@ const AiResponseSchema = z.array(
   })
 );
 
+const ArtistResponseSchema = z.array(
+  z.object({
+    name: z.string().min(1)
+  })
+);
+
 export class AiService {
   private genAI: GoogleGenerativeAI;
 
@@ -51,8 +57,7 @@ export class AiService {
     config: AiGenerationConfig,
     prompt: string,
     count: number,
-    excludedTracks: string[] = [], // Semantic "Artist - Track" strings
-    referenceArtists?: string[]
+    excludedTracks: string[] = [] // Semantic "Artist - Track" strings
   ): Promise<AiSuggestion[]> {
     logger.info(`Sending request to Gemini AI...`, { count, model: config.model });
 
@@ -71,10 +76,6 @@ export class AiService {
 
     // Dynamic Prompt Assembly
     fullPrompt += `\nPlease generate exactly ${count} tracks.`;
-
-    if (referenceArtists && referenceArtists.length > 0) {
-      fullPrompt += `\nFor this generation, please bias your selection towards style/vibe of these artists: ${referenceArtists.join(', ')}.`;
-    }
 
     // Apply Global Quality Constraints
     fullPrompt += `\n\nGlobal Constraints (STRICT):`;
@@ -127,7 +128,54 @@ export class AiService {
       return suggestions.slice(0, count);
     } catch (error) {
       logger.error('Error generating AI suggestions:', error);
-      // Fallback or rethrow? For now rethrow.
+      throw error;
+    }
+  }
+
+  /**
+   * Suggests reference artists based on playlist metadata.
+   */
+  public async suggestArtists(
+    config: AiGenerationConfig,
+    playlistName: string,
+    description: string | undefined,
+    count: number
+  ): Promise<string[]> {
+    logger.info(`Sending artist suggestion request to Gemini AI...`, {
+      count,
+      model: config.model
+    });
+
+    const model = this.genAI.getGenerativeModel({
+      model: config.model,
+      generationConfig: {
+        responseMimeType: 'application/json',
+        temperature: config.temperature
+      }
+    });
+
+    let prompt = `Suggest exactly ${count} famous or representative artists for a Spotify playlist.
+Playlist Name: "${playlistName}"`;
+    if (description) {
+      prompt += `\nPlaylist Description: ${description}`;
+    }
+    prompt += `\n\nIdentify artists that perfectly capture the sonic profile and "vibe" of this playlist.
+Suggest ONLY real, well-known artists that are likely to be on Spotify.
+Output Format: Return ONLY a valid JSON array of objects with a 'name' field.`;
+
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      const cleanText = text
+        .replace(/```json/g, '')
+        .replace(/```/g, '')
+        .trim();
+      const parsed = JSON.parse(cleanText);
+      const data = ArtistResponseSchema.parse(parsed);
+
+      return data.map((a) => a.name).slice(0, count);
+    } catch (error) {
+      logger.error('Error suggesting artists:', error);
       throw error;
     }
   }

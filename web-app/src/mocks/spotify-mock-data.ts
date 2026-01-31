@@ -25,7 +25,10 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       targetTotalTracks: 50,
       description: 'Relaxing instrumental music perfect for focus and productivity',
       allowExplicit: false,
-      referenceArtists: ['Lofi Girl', 'Chillhop Music']
+      referenceArtists: [
+        { uri: 'spotify:artist:lofi1', name: 'Lofi Girl', type: 'artist' },
+        { uri: 'spotify:artist:chill1', name: 'Chillhop Music', type: 'artist' }
+      ]
     },
     mandatoryTracks: [
       {
@@ -61,7 +64,11 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       targetTotalTracks: 30,
       description: 'High-energy tracks to power through intense workouts and cardio sessions',
       allowExplicit: true,
-      referenceArtists: ['The Prodigy', 'Pendulum', 'Skrillex']
+      referenceArtists: [
+        { uri: 'spotify:artist:prod1', name: 'The Prodigy', type: 'artist' },
+        { uri: 'spotify:artist:pend1', name: 'Pendulum', type: 'artist' },
+        { uri: 'spotify:artist:skril1', name: 'Skrillex', type: 'artist' }
+      ]
     },
     mandatoryTracks: [],
     aiGeneration: {
@@ -90,7 +97,11 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       targetTotalTracks: 75,
       description: 'Upbeat party anthems and dance hits to keep the energy high',
       allowExplicit: true,
-      referenceArtists: ['Calvin Harris', 'David Guetta', 'Tiësto']
+      referenceArtists: [
+        { uri: 'spotify:artist:cal1', name: 'Calvin Harris', type: 'artist' },
+        { uri: 'spotify:artist:dav1', name: 'David Guetta', type: 'artist' },
+        { uri: 'spotify:artist:tiej1', name: 'Tiësto', type: 'artist' }
+      ]
     },
     mandatoryTracks: [
       {
@@ -132,7 +143,11 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       targetTotalTracks: 40,
       description: 'Smooth jazz and neo-soul for late night relaxation',
       allowExplicit: false,
-      referenceArtists: ['Miles Davis', 'John Coltrane', 'Billie Holiday']
+      referenceArtists: [
+        { uri: 'spotify:artist:mil1', name: 'Miles Davis', type: 'artist' },
+        { uri: 'spotify:artist:col1', name: 'John Coltrane', type: 'artist' },
+        { uri: 'spotify:artist:bil1', name: 'Billie Holiday', type: 'artist' }
+      ]
     },
     mandatoryTracks: [],
     aiGeneration: {
@@ -161,7 +176,11 @@ export const MOCK_PLAYLISTS: (PlaylistConfig & { _docId: string })[] = [
       targetTotalTracks: 25,
       description: 'Gentle acoustic and indie folk to ease into the morning',
       allowExplicit: false,
-      referenceArtists: ['Bon Iver', 'Iron & Wine', 'Fleet Foxes']
+      referenceArtists: [
+        { uri: 'spotify:artist:bon1', name: 'Bon Iver', type: 'artist' },
+        { uri: 'spotify:artist:iron1', name: 'Iron & Wine', type: 'artist' },
+        { uri: 'spotify:artist:fleet1', name: 'Fleet Foxes', type: 'artist' }
+      ]
     },
     mandatoryTracks: [
       {

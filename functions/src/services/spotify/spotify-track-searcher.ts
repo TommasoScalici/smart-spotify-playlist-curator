@@ -89,6 +89,18 @@ export class SpotifyTrackSearcher {
       );
     }
 
+    if (response.artists) {
+      results.push(
+        ...response.artists.items.map((a) => ({
+          uri: a.uri,
+          name: a.name,
+          imageUrl: a.images[0]?.url,
+          popularity: a.popularity,
+          type: 'artist' as const
+        }))
+      );
+    }
+
     return results;
   }
 

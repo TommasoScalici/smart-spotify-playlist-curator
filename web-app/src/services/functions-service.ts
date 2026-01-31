@@ -1,6 +1,7 @@
 import { httpsCallable } from 'firebase/functions';
 
 import {
+  AiGenerationConfig,
   CurationEstimate,
   CurationEstimateSchema,
   OrchestrationResult,
@@ -39,7 +40,10 @@ export const FunctionsService = {
    * @param type - Type of search ('track' or 'playlist')
    * @returns Array of search results
    */
-  async searchSpotify(query: string, type: 'track' | 'playlist'): Promise<SearchResult[]> {
+  async searchSpotify(
+    query: string,
+    type: 'track' | 'playlist' | 'artist'
+  ): Promise<SearchResult[]> {
     const search = httpsCallable<
       { query: string; type: string; limit: number },
       { results: SearchResult[] }
@@ -132,5 +136,27 @@ export const FunctionsService = {
     const estimate = httpsCallable<{ playlistId: string }, unknown>(functions, 'estimateCuration');
     const result = await estimate({ playlistId });
     return CurationEstimateSchema.parse(result.data);
+  },
+
+  /**
+   * Suggests reference artists based on playlist metadata via AI.
+   */
+  async suggestReferenceArtists(
+    playlistName: string,
+    description?: string,
+    count: number = 5,
+    aiConfig?: AiGenerationConfig
+  ): Promise<SearchResult[]> {
+    const suggest = httpsCallable<
+      {
+        playlistName: string;
+        description?: string;
+        count: number;
+        aiConfig?: AiGenerationConfig;
+      },
+      { artists: SearchResult[] }
+    >(functions, 'suggestReferenceArtists');
+    const result = await suggest({ playlistName, description, count, aiConfig });
+    return result.data.artists;
   }
 };

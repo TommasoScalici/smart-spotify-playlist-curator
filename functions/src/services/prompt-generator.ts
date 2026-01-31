@@ -1,3 +1,5 @@
+import { SearchResult } from '@smart-spotify-curator/shared';
+
 export class PromptGenerator {
   // Common words to filter out (articles, prepositions, etc.)
   private static readonly STOP_WORDS = new Set([
@@ -43,7 +45,7 @@ export class PromptGenerator {
     playlistName: string,
     description?: string,
     isInstrumentalOnly?: boolean,
-    referenceArtists?: string[]
+    referenceArtists?: SearchResult[]
   ): string {
     // Extract meaningful words from title
     const titleWords = playlistName
@@ -60,7 +62,8 @@ export class PromptGenerator {
     }
 
     if (referenceArtists && referenceArtists.length > 0) {
-      prompt += `\n\nReference Artists: ${referenceArtists.join(', ')}`;
+      const artistNames = referenceArtists.map((a) => a.name).join(', ');
+      prompt += `\n\nReference Artists: ${artistNames}`;
       prompt += '\nUse these artists to define the sonic profile and quality bar for suggestions.';
     }
 

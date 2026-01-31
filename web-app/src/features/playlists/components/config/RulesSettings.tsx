@@ -1,9 +1,10 @@
+import { ChevronDown } from 'lucide-react';
 import { Control, Controller, FieldErrors, UseFormRegister } from 'react-hook-form';
 
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
+import { NumberInput } from '@/components/ui/number-input';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
 
@@ -13,30 +14,37 @@ interface RulesSettingsProps {
   errors: FieldErrors<PlaylistConfig>;
 }
 
-export const RulesSettings = ({ control, register, errors }: RulesSettingsProps) => {
+export const RulesSettings = ({ control, errors }: RulesSettingsProps) => {
   return (
-    <Card className="mb-6">
-      <CardHeader>
+    <Card className="sm:bg-card mb-6 border-0 bg-transparent shadow-none sm:border sm:shadow-sm">
+      <CardHeader className="px-0 sm:px-6">
         <CardTitle>Curation Rules</CardTitle>
         <CardDescription>Define constraints for the automated curator.</CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className="space-y-6 px-0 sm:px-6">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           {/* Max Age */}
           <div className="space-y-2">
-            <Label
+            <LabelWithTooltip
               htmlFor="maxTrackAgeDays"
+              tooltip="Tracks older than this number of days will be automatically removed from the playlist."
               className={cn(errors.curationRules?.maxTrackAgeDays && 'text-destructive')}
             >
               Max Track Age (Days)
-            </Label>
-            <Input
-              id="maxTrackAgeDays"
-              type="number"
-              min="1"
-              onWheel={(e) => e.currentTarget.blur()}
-              {...register('curationRules.maxTrackAgeDays', { valueAsNumber: true })}
-              className={cn(errors.curationRules?.maxTrackAgeDays && 'border-destructive')}
+            </LabelWithTooltip>
+            <Controller
+              control={control}
+              name="curationRules.maxTrackAgeDays"
+              render={({ field }) => (
+                <NumberInput
+                  id="maxTrackAgeDays"
+                  min={1}
+                  max={3650}
+                  value={field.value || 0}
+                  onChange={field.onChange}
+                  className={cn(errors.curationRules?.maxTrackAgeDays && 'border-destructive')}
+                />
+              )}
             />
             {errors.curationRules?.maxTrackAgeDays && (
               <p className="text-destructive text-sm font-medium">
@@ -47,20 +55,27 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
 
           {/* Target Track Count */}
           <div className="space-y-2">
-            <Label
+            <LabelWithTooltip
               htmlFor="targetTotalTracks"
+              tooltip="The target number of tracks for your playlist. We will try to keep the playlist near this size."
               className={cn(errors.settings?.targetTotalTracks && 'text-destructive')}
             >
               Target Track Count
-            </Label>
-            <Input
-              id="targetTotalTracks"
-              type="number"
-              min="5"
-              max="999"
-              onWheel={(e) => e.currentTarget.blur()}
-              {...register('settings.targetTotalTracks', { valueAsNumber: true })}
-              className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
+            </LabelWithTooltip>
+            <Controller
+              control={control}
+              name="settings.targetTotalTracks"
+              render={({ field }) => (
+                <NumberInput
+                  id="targetTotalTracks"
+                  min={5}
+                  max={300}
+                  step={5}
+                  value={field.value || 0}
+                  onChange={field.onChange}
+                  className={cn(errors.settings?.targetTotalTracks && 'border-destructive')}
+                />
+              )}
             />
             {errors.settings?.targetTotalTracks && (
               <p className="text-destructive text-sm font-medium">
@@ -71,24 +86,27 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
 
           {/* Max Tracks Per Artist */}
           <div className="space-y-2">
-            <Label
+            <LabelWithTooltip
               htmlFor="maxTracksPerArtist"
+              tooltip="Limit the number of songs from a single artist to ensure variety."
               className={cn(errors.curationRules?.maxTracksPerArtist && 'text-destructive')}
             >
               Max Tracks Per Artist
-            </Label>
-            <Input
-              id="maxTracksPerArtist"
-              type="number"
-              min="1"
-              max="10"
-              onWheel={(e) => e.currentTarget.blur()}
-              {...register('curationRules.maxTracksPerArtist', { valueAsNumber: true })}
-              className={cn(errors.curationRules?.maxTracksPerArtist && 'border-destructive')}
+            </LabelWithTooltip>
+            <Controller
+              control={control}
+              name="curationRules.maxTracksPerArtist"
+              render={({ field }) => (
+                <NumberInput
+                  id="maxTracksPerArtist"
+                  min={1}
+                  max={20}
+                  value={field.value || 0}
+                  onChange={field.onChange}
+                  className={cn(errors.curationRules?.maxTracksPerArtist && 'border-destructive')}
+                />
+              )}
             />
-            <p className="text-muted-foreground text-xs">
-              Limit how many songs from the same artist can be in the playlist.
-            </p>
             {errors.curationRules?.maxTracksPerArtist && (
               <p className="text-destructive text-sm font-medium">
                 {errors.curationRules.maxTracksPerArtist.message}
@@ -97,11 +115,15 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
           </div>
 
           {/* Remove Duplicates */}
-          <div className="flex items-center justify-between rounded-md border p-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="dedup-check" className="text-base">
+          <div className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-xl border p-4 transition-colors sm:p-5">
+            <div className="space-y-1">
+              <LabelWithTooltip
+                htmlFor="dedup-check"
+                tooltip="Automatically identify and remove duplicate tracks based on ISRC codes and metadata."
+                className="cursor-pointer text-base font-medium"
+              >
                 Remove Duplicates
-              </Label>
+              </LabelWithTooltip>
               <p className="text-muted-foreground text-xs">Ensure only unique songs.</p>
             </div>
             <Controller
@@ -114,11 +136,15 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
           </div>
 
           {/* Shuffle At End */}
-          <div className="flex items-center justify-between rounded-md border p-3">
-            <div className="space-y-0.5">
-              <Label htmlFor="shuffle-check" className="text-base">
+          <div className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-xl border p-4 transition-colors sm:p-5">
+            <div className="space-y-1">
+              <LabelWithTooltip
+                htmlFor="shuffle-check"
+                tooltip="Randomize the order of tracks in the final playlist. Mandatory tracks will stay in their fixed positions."
+                className="cursor-pointer text-base font-medium"
+              >
                 Shuffle Playlist
-              </Label>
+              </LabelWithTooltip>
               <p className="text-muted-foreground text-xs">Randomize order vs keep original.</p>
             </div>
             <Controller
@@ -131,31 +157,34 @@ export const RulesSettings = ({ control, register, errors }: RulesSettingsProps)
           </div>
 
           {/* Size Limit Strategy */}
-          <div className="space-y-2 border-t pt-4 md:col-span-2">
-            <Label htmlFor="sizeLimitStrategy" className="text-base font-semibold">
+          <div className="space-y-2 pt-4 md:col-span-2">
+            <LabelWithTooltip
+              htmlFor="sizeLimitStrategy"
+              tooltip="Decide which tracks to remove first when the playlist exceeds the target size. Mandatory tracks are always preserved."
+              className="text-base font-semibold"
+            >
               Size Limit Strategy
-            </Label>
-            <Controller
-              control={control}
-              name="curationRules.sizeLimitStrategy"
-              render={({ field }) => (
-                <select
-                  id="sizeLimitStrategy"
-                  className="border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring flex h-10 w-full rounded-md border px-3 py-2 text-sm focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                  {...field}
-                >
-                  <option value="drop_random">Drop Random (Default)</option>
-                  <option value="drop_newest">Drop Newest (Keep Oldest)</option>
-                  <option value="drop_oldest">Drop Oldest (Keep Newest)</option>
-                  <option value="drop_most_popular">Drop Most Popular (Keep Niche)</option>
-                  <option value="drop_least_popular">Drop Least Popular (Keep Hits)</option>
-                </select>
-              )}
-            />
-            <p className="text-muted-foreground text-xs">
-              Define which tracks are removed when the playlist exceeds the target track count.
-              Mandatory tracks are always preserved.
-            </p>
+            </LabelWithTooltip>
+            <div className="relative">
+              <Controller
+                control={control}
+                name="curationRules.sizeLimitStrategy"
+                render={({ field }) => (
+                  <select
+                    id="sizeLimitStrategy"
+                    className="border-input bg-background/50 ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring hover:bg-accent/5 flex h-11 w-full appearance-none rounded-md border px-3 py-2 pr-10 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    {...field}
+                  >
+                    <option value="drop_random">Drop Random (Default)</option>
+                    <option value="drop_newest">Drop Newest (Keep Oldest)</option>
+                    <option value="drop_oldest">Drop Oldest (Keep Newest)</option>
+                    <option value="drop_most_popular">Drop Most Popular (Keep Niche)</option>
+                    <option value="drop_least_popular">Drop Least Popular (Keep Hits)</option>
+                  </select>
+                )}
+              />
+              <ChevronDown className="pointer-events-none absolute top-3 right-3 h-5 w-5 opacity-50" />
+            </div>
           </div>
         </div>
       </CardContent>

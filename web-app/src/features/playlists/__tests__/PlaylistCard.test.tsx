@@ -27,7 +27,8 @@ const mockConfig: PlaylistConfig & { _docId: string } = {
   enabled: true,
   settings: {
     description: 'My cool playlist',
-    targetTotalTracks: 20
+    targetTotalTracks: 20,
+    referenceArtists: []
   },
   mandatoryTracks: [],
   aiGeneration: {

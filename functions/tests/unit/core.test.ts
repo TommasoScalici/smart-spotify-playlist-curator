@@ -14,7 +14,8 @@ describe('Core Logic', () => {
     enabled: true,
     settings: {
       targetTotalTracks: 10,
-      description: 'Unit Test'
+      description: 'Unit Test',
+      referenceArtists: []
     },
     aiGeneration: {
       enabled: true,

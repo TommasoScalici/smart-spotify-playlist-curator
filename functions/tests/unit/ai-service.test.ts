@@ -95,17 +95,4 @@ describe('AiService', () => {
     expect(callArg).toContain('Specific Exclusions (Do NOT suggest these):');
     expect(callArg).toContain('Global Constraints (STRICT):');
   });
-
-  it('should include reference artists in prompt', async () => {
-    mockGenerateContent.mockResolvedValue({
-      response: { text: () => '[]' }
-    });
-
-    const referenceArtists = ['Artist 1', 'Artist 2'];
-    await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 5, [], referenceArtists);
-
-    const callArg = mockGenerateContent.mock.calls[0][0];
-    expect(callArg).toContain('please bias your selection towards style/vibe of these artists');
-    expect(callArg).toContain('Artist 1, Artist 2');
-  });
 });

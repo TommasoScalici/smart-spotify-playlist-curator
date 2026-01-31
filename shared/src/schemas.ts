@@ -37,6 +37,22 @@ export const AiGenerationConfigSchema = z.object({
   isInstrumentalOnly: z.boolean().default(false).optional()
 });
 
+// --- Search Result Schema ---
+
+export const SearchResultSchema = z.object({
+  uri: z.string(),
+  name: z.string(),
+  artist: z.string().optional(),
+  owner: z.string().optional(),
+  ownerId: z.string().optional(),
+  description: z.string().optional(),
+  imageUrl: z.string().optional(),
+  popularity: z.number().optional(),
+  type: z.enum(['track', 'playlist', 'artist'])
+});
+
+export type SearchResult = z.infer<typeof SearchResultSchema>;
+
 export const CurationRulesSchema = z.object({
   maxTrackAgeDays: z.number().min(1).default(30),
   maxTracksPerArtist: z.number().min(1).default(2),
@@ -51,7 +67,7 @@ export const PlaylistSettingsSchema = z.object({
   targetTotalTracks: z.number().min(5).max(999),
   description: z.string().optional(),
   allowExplicit: z.boolean().optional(),
-  referenceArtists: z.array(z.string()).optional()
+  referenceArtists: z.array(SearchResultSchema).default([])
 });
 
 // --- Curation Status Schema ---
@@ -128,7 +144,8 @@ export const PlaylistConfigSchema = z.object({
   imageUrl: z.string().optional().nullable(),
   ownerId: z.string().min(1, 'Owner ID is required'),
   settings: PlaylistSettingsSchema.default({
-    targetTotalTracks: 20
+    targetTotalTracks: 20,
+    referenceArtists: []
   }),
   mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
   aiGeneration: AiGenerationConfigSchema.default({
@@ -224,19 +241,5 @@ export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;
 
 export type BaseTrack = z.infer<typeof BaseTrackSchema>;
 export type TrackDiff = z.infer<typeof TrackDiffSchema>;
-
-export const SearchResultSchema = z.object({
-  uri: z.string(),
-  name: z.string(),
-  artist: z.string().optional(),
-  owner: z.string().optional(),
-  ownerId: z.string().optional(),
-  description: z.string().optional(),
-  imageUrl: z.string().optional(),
-  popularity: z.number().optional(),
-  type: z.enum(['track', 'playlist', 'artist'])
-});
-
-export type SearchResult = z.infer<typeof SearchResultSchema>;
 
 export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;
