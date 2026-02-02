@@ -1,6 +1,5 @@
-import * as logger from 'firebase-functions/logger';
-
 import { CurationDiff, PlaylistConfig } from '@smart-spotify-curator/shared';
+import * as logger from 'firebase-functions/logger';
 
 import { AiService } from '../services/ai-service';
 import { FirestoreLogger } from '../services/firestore-logger';
@@ -19,90 +18,69 @@ export class PlaylistOrchestrator {
     private firestoreLogger: FirestoreLogger
   ) {}
 
+  public async createPlan(
+    config: PlaylistConfig,
+    spotifyService: SpotifyService,
+    dryRun: boolean,
+    ownerName?: string,
+    existingLogId?: string
+  ): Promise<CurationSession> {
+    const session: CurationSession = {
+      config,
+      currentTracks: [],
+      dryRun: !!dryRun,
+      finalTrackList: [],
+      newAiTracks: [],
+      ownerName,
+      playlistId: config.id.replace('spotify:playlist:', ''),
+      survivingTracks: []
+    };
+
+    if (existingLogId) {
+      session.logId = existingLogId;
+    } else {
+      await this.initializeSession(session);
+    }
+
+    // Logic split from curatePlaylist
+    try {
+      const { removedTracks } = await this.fetchAndCleanTracks(session, spotifyService);
+      await this.generateSuggestions(session, spotifyService);
+      await this.assembleAndPlan(session, removedTracks);
+    } catch (e) {
+      if (session.logId) {
+        await this.handleCurationError(session, e as Error);
+      }
+      throw e;
+    }
+
+    return session;
+  }
+
   public async curatePlaylist(
     config: PlaylistConfig,
     spotifyService: SpotifyService,
     dryRun: boolean,
     ownerName?: string
   ): Promise<void> {
-    const session: CurationSession = {
-      config,
-      playlistId: config.id.replace('spotify:playlist:', ''),
-      dryRun,
-      ownerName,
-      currentTracks: [],
-      survivingTracks: [],
-      newAiTracks: [],
-      finalTrackList: []
-    };
+    logger.info(`Starting legacy curation: ${config.name}`, { dryRun });
 
-    logger.info(`Starting curation: ${config.name}`, { id: session.playlistId, dryRun });
+    // Legacy flow wrapper
+    const session = await this.createPlan(config, spotifyService, dryRun, ownerName);
+    await this.executePlan(session, spotifyService);
+  }
 
+  public async executePlan(
+    session: CurationSession,
+    spotifyService: SpotifyService
+  ): Promise<void> {
     try {
-      await this.initializeSession(session);
-      const { removedTracks } = await this.fetchAndCleanTracks(session, spotifyService);
-      await this.generateSuggestions(session, spotifyService);
-      await this.assembleAndPlan(session, removedTracks);
       await this.executeUpdates(session, spotifyService);
       await this.finalizeSession(session);
     } catch (error) {
       await this.handleCurationError(session, error as Error);
       throw error;
     }
-  }
-
-  private async initializeSession(session: CurationSession) {
-    if (!session.config.ownerId) return;
-
-    session.logId = await this.firestoreLogger.logActivity(
-      session.config.ownerId,
-      'running',
-      `Curating "${session.config.name}"...`,
-      {
-        playlistId: session.config.id,
-        playlistName: session.config.name,
-        dryRun: session.dryRun,
-        progress: 0,
-        step: 'Initializing...',
-        triggeredBy: session.ownerName,
-        state: 'running'
-      }
-    );
-  }
-
-  private async fetchAndCleanTracks(session: CurationSession, spotifyService: SpotifyService) {
-    session.currentTracks = await spotifyService.getPlaylistTracks(session.playlistId);
-
-    const vipUris = session.config.mandatoryTracks.map((m) => m.uri);
-    const { survivingTracks, removedTracks } = this.trackCleaner.processCurrentTracks(
-      session.currentTracks,
-      session.config,
-      vipUris
-    );
-    session.survivingTracks = survivingTracks;
-
-    await this.updateProgress(session, 20, 'Cleaning existing tracks...');
-    return { removedTracks };
-  }
-
-  private async generateSuggestions(session: CurationSession, spotifyService: SpotifyService) {
-    const { aiGeneration } = session.config;
-    if (!aiGeneration.enabled || aiGeneration.tracksToAdd <= 0) return;
-
-    const engine = new AISuggestionEngine(this.aiService, spotifyService, this.firestoreLogger);
-
-    session.newAiTracks = await engine.generateAndFindTracks(
-      session.config.name,
-      session.config.settings.description,
-      session.config.settings.referenceArtists,
-      aiGeneration,
-      aiGeneration.tracksToAdd,
-      session.survivingTracks.map((t) => `${t.artist} - ${t.name}`),
-      session.config.ownerId,
-      session.logId,
-      session.config.curationRules.maxTracksPerArtist,
-      session.ownerName
-    );
   }
 
   private async assembleAndPlan(session: CurationSession, initiallyRemoved: RemovedTrack[]) {
@@ -117,7 +95,7 @@ export class PlaylistOrchestrator {
       session.config.curationRules.sizeLimitStrategy
     );
 
-    const removalReasons = new Map<string, RemovalReason | 'size_limit' | 'other'>();
+    const removalReasons = new Map<string, 'other' | 'size_limit' | RemovalReason>();
     initiallyRemoved.forEach((rt) => removalReasons.set(rt.uri, rt.reason));
 
     const finalSet = new Set(session.finalTrackList);
@@ -140,11 +118,22 @@ export class PlaylistOrchestrator {
   private async executeUpdates(session: CurationSession, spotifyService: SpotifyService) {
     await this.updateProgress(session, 90, 'Updating Spotify playlist...', session.diff);
 
-    await spotifyService.performSmartUpdate(
-      session.playlistId,
-      session.finalTrackList,
-      session.dryRun
+    await spotifyService.performSmartUpdate(session.playlistId, session.finalTrackList);
+  }
+
+  private async fetchAndCleanTracks(session: CurationSession, spotifyService: SpotifyService) {
+    session.currentTracks = await spotifyService.getPlaylistTracks(session.playlistId);
+
+    const vipUris = session.config.mandatoryTracks.map((m) => m.uri);
+    const { removedTracks, survivingTracks } = this.trackCleaner.processCurrentTracks(
+      session.currentTracks,
+      session.config,
+      vipUris
     );
+    session.survivingTracks = survivingTracks;
+
+    await this.updateProgress(session, 20, 'Cleaning existing tracks...');
+    return { removedTracks };
   }
 
   private async finalizeSession(session: CurationSession) {
@@ -155,13 +144,33 @@ export class PlaylistOrchestrator {
       'success',
       `Curation completed for "${session.config.name}"`,
       {
-        progress: 100,
-        step: 'Done',
-        state: 'completed',
         diff: session.diff,
+        progress: 100,
+        state: 'completed',
+        step: 'Done',
         triggeredBy: session.ownerName
       },
       session.logId
+    );
+  }
+
+  private async generateSuggestions(session: CurationSession, spotifyService: SpotifyService) {
+    const { aiGeneration } = session.config;
+    if (!aiGeneration.enabled || aiGeneration.tracksToAdd <= 0) return;
+
+    const engine = new AISuggestionEngine(this.aiService, spotifyService, this.firestoreLogger);
+
+    session.newAiTracks = await engine.generateAndFindTracks(
+      session.config.name,
+      session.config.settings.description,
+      session.config.settings.referenceArtists,
+      aiGeneration,
+      aiGeneration.tracksToAdd,
+      session.survivingTracks.map((t) => `${t.artist} - ${t.name}`),
+      session.config.ownerId,
+      session.logId,
+      session.config.curationRules.maxTracksPerArtist,
+      session.ownerName
     );
   }
 
@@ -174,11 +183,31 @@ export class PlaylistOrchestrator {
       'error',
       `Failed to curate "${session.config.name}"`,
       {
-        state: 'error',
+        dryRun: !!session.dryRun,
         error: error.message,
+        state: 'error',
         triggeredBy: session.ownerName
       },
       session.logId
+    );
+  }
+
+  private async initializeSession(session: CurationSession) {
+    if (!session.config.ownerId) return;
+
+    session.logId = await this.firestoreLogger.logActivity(
+      session.config.ownerId,
+      'running',
+      `Curating "${session.config.name}"...`,
+      {
+        dryRun: session.dryRun,
+        playlistId: session.config.id,
+        playlistName: session.config.name,
+        progress: 0,
+        state: 'running',
+        step: 'Initializing...',
+        triggeredBy: session.ownerName
+      }
     );
   }
 
@@ -193,7 +222,7 @@ export class PlaylistOrchestrator {
       session.config.ownerId,
       'running',
       undefined,
-      { progress, step, diff, state: 'running' },
+      { diff, progress, state: 'running', step },
       session.logId
     );
   }

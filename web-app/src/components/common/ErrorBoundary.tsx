@@ -1,5 +1,5 @@
-import { Component, ErrorInfo, ReactNode } from 'react';
 import { AlertTriangle, Home, RefreshCw } from 'lucide-react';
+import { Component, ErrorInfo, ReactNode } from 'react';
 
 import { Button } from '@/components/ui/button';
 
@@ -8,35 +8,27 @@ interface Props {
 }
 
 interface State {
-  hasError: boolean;
   error: Error | null;
   errorInfo: ErrorInfo | null;
+  hasError: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
   public state: State = {
-    hasError: false,
     error: null,
-    errorInfo: null
+    errorInfo: null,
+    hasError: false
   };
 
   public static getDerivedStateFromError(error: Error): State {
     // Update state so the next render will show the fallback UI.
-    return { hasError: true, error, errorInfo: null };
+    return { error, errorInfo: null, hasError: true };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Uncaught error:', error, errorInfo);
     this.setState({ errorInfo });
   }
-
-  private handleReload = () => {
-    window.location.reload();
-  };
-
-  private handleGoHome = () => {
-    window.location.href = '/';
-  };
 
   public render() {
     if (this.state.hasError) {
@@ -72,19 +64,19 @@ export class ErrorBoundary extends Component<Props, State> {
 
               <div className="flex flex-col justify-center gap-3 sm:flex-row">
                 <Button
+                  className="shadow-primary/20 w-full gap-2 shadow-lg sm:w-auto"
                   onClick={this.handleReload}
                   size="lg"
-                  className="shadow-primary/20 w-full gap-2 shadow-lg sm:w-auto"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Reload App
                 </Button>
 
                 <Button
-                  onClick={this.handleGoHome}
-                  variant="outline"
-                  size="lg"
                   className="w-full gap-2 border-white/10 bg-white/5 hover:bg-white/10 sm:w-auto"
+                  onClick={this.handleGoHome}
+                  size="lg"
+                  variant="outline"
                 >
                   <Home className="h-4 w-4" />
                   Go Home
@@ -98,4 +90,12 @@ export class ErrorBoundary extends Component<Props, State> {
 
     return this.props.children;
   }
+
+  private handleGoHome = () => {
+    window.location.href = '/';
+  };
+
+  private handleReload = () => {
+    window.location.reload();
+  };
 }

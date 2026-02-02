@@ -1,6 +1,5 @@
-import { CheckCircle2, History, MinusCircle, Music, PlusCircle } from 'lucide-react';
-
 import { CurationDiff } from '@smart-spotify-curator/shared';
+import { CheckCircle2, History, MinusCircle, Music, PlusCircle } from 'lucide-react';
 
 import { DiffColumn } from './diff-viewer/DiffColumn';
 import { TrackItem } from './diff-viewer/TrackItem';
@@ -44,13 +43,13 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
       <div className="grid min-h-0 flex-1 grid-cols-1 gap-6 md:grid-cols-3 md:overflow-hidden">
         {/* Added Tracks Column */}
         <DiffColumn
-          title="Added"
-          count={diff.added.length}
-          icon={PlusCircle}
-          colorClass="text-green-500"
           bgClass="bg-green-500/10"
+          colorClass="text-green-500"
+          count={diff.added.length}
           emptyIcon={PlusCircle}
           emptyMessage="No tracks added."
+          icon={PlusCircle}
+          title="Added"
         >
           {diff.added.map((track) => (
             <TrackItem key={track.uri} track={track} />
@@ -59,13 +58,13 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
 
         {/* Removed Tracks Column */}
         <DiffColumn
-          title="Removed"
-          count={diff.removed.length}
-          icon={MinusCircle}
-          colorClass="text-red-500"
           bgClass="bg-red-500/10"
+          colorClass="text-red-500"
+          count={diff.removed.length}
           emptyIcon={MinusCircle}
           emptyMessage="No tracks removed."
+          icon={MinusCircle}
+          title="Removed"
         >
           {diff.removed.map((track) => (
             <TrackItem key={track.uri} track={track} variant="removed" />
@@ -74,13 +73,13 @@ export const DiffViewer = ({ diff, isDryRun }: DiffViewerProps) => {
 
         {/* Kept Mandatory Column */}
         <DiffColumn
-          title="Kept VIPs"
-          count={diff.keptMandatory?.length || 0}
-          icon={CheckCircle2}
-          colorClass="text-sky-500"
           bgClass="bg-sky-500/10"
+          colorClass="text-sky-500"
+          count={diff.keptMandatory?.length || 0}
           emptyIcon={History}
           emptyMessage="No required tracks to show."
+          icon={CheckCircle2}
+          title="Kept VIPs"
         >
           {diff.keptMandatory?.map((track) => (
             <TrackItem key={track.uri} track={track} />

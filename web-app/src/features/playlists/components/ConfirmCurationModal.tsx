@@ -1,6 +1,6 @@
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 import { AlertTriangle, ArrowRight, Info, Loader2, Music2, Play, X } from 'lucide-react';
 
-import { CurationEstimate } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,20 +14,20 @@ import {
 import { ChangeRow } from './curation-modal/ChangeRow';
 
 interface ConfirmCurationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onConfirm: () => void;
   estimate: CurationEstimate | null;
   isLoading?: boolean;
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (planId?: string) => void;
   playlistName?: string;
 }
 
 export const ConfirmCurationModal = ({
+  estimate,
+  isLoading = false,
   isOpen,
   onClose,
   onConfirm,
-  estimate,
-  isLoading = false,
   playlistName = 'Playlist'
 }: ConfirmCurationModalProps) => {
   // Helper to calculate total changes for visual impact
@@ -40,8 +40,17 @@ export const ConfirmCurationModal = ({
       estimate.aiTracksToAdd
     : 0;
 
+  // Derived lists for accordion details
+  const duplicates = estimate?.removed?.filter((t) => t.reason === 'duplicate');
+  const agedOut = estimate?.removed?.filter((t) => t.reason === 'expired');
+  const artistLimit = estimate?.removed?.filter((t) => t.reason === 'artist_limit');
+  const sizeLimit = estimate?.removed?.filter((t) => t.reason === 'size_limit');
+
+  const vipTracks = estimate?.added?.filter((t) => t.source === 'mandatory');
+  const aiTracks = estimate?.added?.filter((t) => t.source === 'ai');
+
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
       <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-white/10 bg-black/80 text-white shadow-2xl backdrop-blur-xl duration-300 sm:max-w-[500px]">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-3 text-2xl font-light tracking-wide">
@@ -111,52 +120,58 @@ export const ConfirmCurationModal = ({
 
               <div className="space-y-3">
                 <ChangeRow
-                  label="Duplicates"
-                  count={estimate.duplicatesToRemove}
-                  type="remove"
-                  icon={<X className="h-3 w-3" />}
-                  color="text-blue-400"
                   bg="bg-blue-400/10"
+                  color="text-blue-400"
+                  count={estimate.duplicatesToRemove}
+                  icon={<X className="h-3 w-3" />}
+                  label="Duplicates"
+                  tracks={duplicates}
+                  type="remove"
                 />
                 <ChangeRow
-                  label="Aged Out"
-                  count={estimate.agedOutTracks}
-                  type="remove"
-                  icon={<X className="h-3 w-3" />}
-                  color="text-amber-400"
                   bg="bg-amber-400/10"
+                  color="text-amber-400"
+                  count={estimate.agedOutTracks}
+                  icon={<X className="h-3 w-3" />}
+                  label="Aged Out"
+                  tracks={agedOut}
+                  type="remove"
                 />
                 <ChangeRow
-                  label="Artist limit"
+                  bg="bg-purple-400/10"
+                  color="text-purple-400"
                   count={estimate.artistLimitRemoved}
-                  type="remove"
                   icon={<X className="h-3 w-3" />}
-                  color="text-purple-400"
-                  bg="bg-purple-400/10"
+                  label="Artist limit"
+                  tracks={artistLimit}
+                  type="remove"
                 />
                 <ChangeRow
-                  label="Size limit"
-                  count={estimate.sizeLimitRemoved}
-                  type="remove"
-                  icon={<X className="h-3 w-3" />}
-                  color="text-rose-400"
                   bg="bg-rose-400/10"
+                  color="text-rose-400"
+                  count={estimate.sizeLimitRemoved}
+                  icon={<X className="h-3 w-3" />}
+                  label="Size limit"
+                  tracks={sizeLimit}
+                  type="remove"
                 />
                 <ChangeRow
-                  label="VIP Tracks"
-                  count={estimate.mandatoryToAdd}
-                  type="add"
-                  icon={<ArrowRight className="h-3 w-3" />}
-                  color="text-emerald-400"
                   bg="bg-emerald-400/10"
+                  color="text-emerald-400"
+                  count={estimate.mandatoryToAdd}
+                  icon={<ArrowRight className="h-3 w-3" />}
+                  label="VIP Tracks"
+                  tracks={vipTracks}
+                  type="add"
                 />
                 <ChangeRow
-                  label="AI Suggestions"
-                  count={estimate.aiTracksToAdd}
-                  type="add"
-                  icon={<Music2 className="h-3 w-3" />}
-                  color="text-purple-400"
                   bg="bg-purple-400/10"
+                  color="text-purple-400"
+                  count={estimate.aiTracksToAdd}
+                  icon={<Music2 className="h-3 w-3" />}
+                  label="AI Suggestions"
+                  tracks={aiTracks}
+                  type="add"
                 />
               </div>
 
@@ -176,17 +191,17 @@ export const ConfirmCurationModal = ({
 
         <DialogFooter className="gap-3 pt-2 sm:gap-0">
           <Button
-            variant="ghost"
-            onClick={onClose}
-            disabled={isLoading}
             className="hover:bg-white/5 hover:text-white"
+            disabled={isLoading}
+            onClick={onClose}
+            variant="ghost"
           >
             Cancel
           </Button>
           <Button
-            onClick={onConfirm}
-            disabled={isLoading || !estimate}
             className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(29,185,84,0.3)] transition-all hover:scale-105 active:scale-95"
+            disabled={isLoading || !estimate}
+            onClick={() => onConfirm(estimate?.planId)}
           >
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

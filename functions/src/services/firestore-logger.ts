@@ -2,7 +2,7 @@ import * as logger from 'firebase-functions/logger';
 
 import { db } from '../config/firebase';
 
-export type ActivityType = 'success' | 'info' | 'warning' | 'error' | 'running';
+export type ActivityType = 'error' | 'info' | 'running' | 'success' | 'warning';
 
 export class FirestoreLogger {
   /**
@@ -22,7 +22,7 @@ export class FirestoreLogger {
     logId?: string
   ): Promise<string> {
     if (!ownerId) {
-      logger.warn('Cannot log activity without ownerId', { type, message });
+      logger.warn('Cannot log activity without ownerId', { message, type });
       return '';
     }
 
@@ -32,11 +32,11 @@ export class FirestoreLogger {
       const sanitizedMetadata = JSON.parse(JSON.stringify(metadata || {}));
 
       const data: Record<string, unknown> = {
-        type,
+        deleted: false,
         metadata: sanitizedMetadata,
-        timestamp: new Date().toISOString(),
         read: false,
-        deleted: false
+        timestamp: new Date().toISOString(),
+        type
       };
 
       if (message !== undefined && message !== null) {

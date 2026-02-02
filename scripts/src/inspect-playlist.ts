@@ -1,9 +1,9 @@
-import { createRequire } from 'module';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
 import * as dotenv from 'dotenv';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
+import { createRequire } from 'module';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -38,11 +38,11 @@ async function main() {
 
     const seenUris = new Map<
       string,
-      { idx: number; uri: string; name: string; artist: string; album: string }
+      { album: string; artist: string; idx: number; name: string; uri: string }
     >();
     const seenSignatures = new Map<
       string,
-      { idx: number; uri: string; name: string; artist: string; album: string }
+      { album: string; artist: string; idx: number; name: string; uri: string }
     >();
 
     // Reproduce the exact logic in Orchestrator.ts

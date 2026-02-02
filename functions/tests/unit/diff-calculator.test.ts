@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest';
-
 import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { describe, expect, it } from 'vitest';
 
 import { DiffCalculator } from '../../src/core/diff-calculator';
 import { TrackWithMeta } from '../../src/core/types-internal';
@@ -9,20 +8,20 @@ import { TrackInfo } from '../../src/services/spotify-service';
 describe('DiffCalculator', () => {
   // Mock Data Generators
   const createSpotifyTrack = (id: string, name: string, artist: string): TrackInfo => ({
-    uri: `spotify:track:${id}`,
-    name,
-    artist,
+    addedAt: new Date().toISOString(),
     album: 'Unknown Album',
-    addedAt: new Date().toISOString()
+    artist,
+    name,
+    uri: `spotify:track:${id}`
   });
 
   const createKeptTrack = (id: string, name: string, artist: string): TrackWithMeta => ({
-    uri: `spotify:track:${id}`,
-    name,
-    artist,
-    album: 'Unknown Album',
     addedAt: new Date(),
-    isVip: false
+    album: 'Unknown Album',
+    artist,
+    isVip: false,
+    name,
+    uri: `spotify:track:${id}`
   });
 
   it('should identify newly added AI tracks', () => {
@@ -30,7 +29,7 @@ describe('DiffCalculator', () => {
     const kept = [createKeptTrack('1', 'Old', 'Artist 1')];
 
     // AI adds track 2
-    const newAiTracks = [{ uri: 'spotify:track:2', artist: 'Artist 2', track: 'New AI' }];
+    const newAiTracks = [{ artist: 'Artist 2', track: 'New AI', uri: 'spotify:track:2' }];
     const finalUris = ['spotify:track:1', 'spotify:track:2'];
     const mandatory: MandatoryTrack[] = [];
 
@@ -38,9 +37,9 @@ describe('DiffCalculator', () => {
 
     expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({
-      uri: 'spotify:track:2',
+      artist: 'Artist 2',
       name: 'New AI',
-      artist: 'Artist 2'
+      uri: 'spotify:track:2'
     });
     expect(result.removed).toHaveLength(0);
   });
@@ -52,24 +51,24 @@ describe('DiffCalculator', () => {
 
     const mandatory: MandatoryTrack[] = [
       {
-        uri: 'spotify:track:vip',
-        name: 'VIP Song',
         artist: 'VIP Artist',
-        positionRange: { min: 1, max: 1 }
+        name: 'VIP Song',
+        positionRange: { max: 1, min: 1 },
+        uri: 'spotify:track:vip'
       }
     ];
 
     // AI adds nothing, but SlotManager puts VIP back
-    const newAiTracks: { uri: string; artist: string; track: string }[] = [];
+    const newAiTracks: { artist: string; track: string; uri: string }[] = [];
     const finalUris = ['spotify:track:vip'];
 
     const result = DiffCalculator.calculate(current, kept, finalUris, mandatory, newAiTracks);
 
     expect(result.added).toHaveLength(1);
     expect(result.added[0]).toEqual({
-      uri: 'spotify:track:vip',
+      artist: 'VIP Artist',
       name: 'VIP Song',
-      artist: 'VIP Artist'
+      uri: 'spotify:track:vip'
     });
   });
 
@@ -86,10 +85,10 @@ describe('DiffCalculator', () => {
 
     expect(result.removed).toHaveLength(1);
     expect(result.removed[0]).toEqual({
-      uri: 'spotify:track:2',
-      name: 'Delete Me',
       artist: 'A2',
-      reason: 'other'
+      name: 'Delete Me',
+      reason: 'other',
+      uri: 'spotify:track:2'
     });
     expect(result.added).toHaveLength(0);
   });
@@ -103,9 +102,9 @@ describe('DiffCalculator', () => {
     const result = DiffCalculator.calculate(current, kept, finalUris, [], []);
 
     expect(result.added[0]).toEqual({
-      uri: 'spotify:track:mystery',
+      artist: 'Unknown Artist',
       name: 'Unknown Track',
-      artist: 'Unknown Artist'
+      uri: 'spotify:track:mystery'
     });
   });
 
@@ -114,10 +113,10 @@ describe('DiffCalculator', () => {
     const kept = [createKeptTrack('1', 'VIP Song', 'VIP Artist')];
     const mandatory: MandatoryTrack[] = [
       {
-        uri: 'spotify:track:1',
-        name: 'VIP Song',
         artist: 'VIP Artist',
-        positionRange: { min: 1, max: 1 }
+        name: 'VIP Song',
+        positionRange: { max: 1, min: 1 },
+        uri: 'spotify:track:1'
       }
     ];
     const finalUris = ['spotify:track:1'];
@@ -126,9 +125,9 @@ describe('DiffCalculator', () => {
 
     expect(result.keptMandatory).toHaveLength(1);
     expect(result.keptMandatory[0]).toEqual({
-      uri: 'spotify:track:1',
+      artist: 'VIP Artist',
       name: 'VIP Song',
-      artist: 'VIP Artist'
+      uri: 'spotify:track:1'
     });
   });
 

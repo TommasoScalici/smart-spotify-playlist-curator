@@ -1,6 +1,6 @@
+import * as esbuild from 'esbuild';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as esbuild from 'esbuild';
 
 const ROOT_DIR = process.cwd();
 const FUNCTIONS_DIR = path.join(ROOT_DIR, 'functions');
@@ -8,7 +8,7 @@ const DIST_DIR = path.join(FUNCTIONS_DIR, 'dist');
 
 // Ensure dist directory exists
 if (fs.existsSync(DIST_DIR)) {
-  fs.rmSync(DIST_DIR, { recursive: true, force: true });
+  fs.rmSync(DIST_DIR, { force: true, recursive: true });
 }
 fs.mkdirSync(DIST_DIR, { recursive: true });
 
@@ -18,12 +18,8 @@ async function build() {
   try {
     // 1. Bundle Functions + Shared Logic
     await esbuild.build({
-      entryPoints: [path.join(FUNCTIONS_DIR, 'src', 'index.ts')],
-      outfile: path.join(DIST_DIR, 'index.js'),
       bundle: true,
-      platform: 'node',
-      target: 'node20', // Cloud Functions Gen 2 (Node 20+)
-      format: 'cjs', // CommonJS for standard Firebase Functions
+      entryPoints: [path.join(FUNCTIONS_DIR, 'src', 'index.ts')],
       external: [
         'firebase-admin',
         'firebase-functions',
@@ -32,8 +28,12 @@ async function build() {
         '@google/generative-ai',
         'dotenv'
       ],
+      format: 'cjs', // CommonJS for standard Firebase Functions
       logLevel: 'info',
-      sourcemap: 'inline' // Good for debugging in Cloud Console
+      outfile: path.join(DIST_DIR, 'index.js'),
+      platform: 'node',
+      sourcemap: 'inline', // Good for debugging in Cloud Console
+      target: 'node20' // Cloud Functions Gen 2 (Node 20+)
     });
 
     console.log('✅ Bundle complete: functions/dist/index.js');
@@ -44,11 +44,11 @@ async function build() {
     );
 
     const deployPackageJson = {
-      name: originalPackageJson.name,
-      main: 'index.js',
+      dependencies: originalPackageJson.dependencies,
       engines: originalPackageJson.engines,
-      type: 'commonjs', // Explicitly state CJS
-      dependencies: originalPackageJson.dependencies
+      main: 'index.js',
+      name: originalPackageJson.name,
+      type: 'commonjs' // Explicitly state CJS
     };
 
     // Remove the workspace dependency before writing

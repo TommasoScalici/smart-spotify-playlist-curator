@@ -1,13 +1,13 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
-
-import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 
 import { config } from '../config/env';
 
 export interface AiSuggestion {
   artist: string;
+  reasoning: string;
   track: string;
 }
 
@@ -19,10 +19,25 @@ const QUALITY_CONSTRAINTS = [
   'Ensure the track and artist names match Spotify metadata exactly.'
 ];
 
-// Validation Schema for AI Response
+// Strict Negative Constraints (The "No-Go" List)
+const BANNED_TERMS = [
+  'Live',
+  'Remix',
+  'Radio Edit',
+  'Single Version',
+  'Remaster',
+  'Orchestral Version',
+  'Demo',
+  'Commentary'
+];
+
+const INSTRUMENTAL_KEYWORDS = ['instrumental', 'lofi', 'beats', 'study', 'focus'];
+
+// Validation Schema for AI Response (Zod acts as a runtime safety net)
 const AiResponseSchema = z.array(
   z.object({
     artist: z.string().min(1),
+    reasoning: z.string().min(1),
     track: z.string().min(1)
   })
 );
@@ -45,7 +60,7 @@ export class AiService {
 
   /**
    * Generates track suggestions using Google's Gemini AI.
-   * Uses JSON mode to ensure structured output.
+   * Uses Native Structured Output and Chain-of-Thought prompting.
    * @param config - The AI generation settings (model, temperature, etc.)
    * @param prompt - The base prompt describing the playlist
    * @param count - Number of tracks to request
@@ -57,25 +72,59 @@ export class AiService {
     config: AiGenerationConfig,
     prompt: string,
     count: number,
-    excludedTracks: string[] = [] // Semantic "Artist - Track" strings
+    excludedTracks: string[] = [], // Semantic "Artist - Track" strings
+    referenceArtists: string[] = []
   ): Promise<AiSuggestion[]> {
     logger.info(`Sending request to Gemini AI...`, { count, model: config.model });
 
     const requestStart = Date.now();
 
     // Create model instance with config-specified model
+    // Using native responseSchema for structured output
     const model = this.genAI.getGenerativeModel({
-      model: config.model,
       generationConfig: {
         responseMimeType: 'application/json',
+        responseSchema: {
+          items: {
+            properties: {
+              artist: { type: SchemaType.STRING },
+              reasoning: { type: SchemaType.STRING },
+              track: { type: SchemaType.STRING }
+            },
+            required: ['artist', 'track', 'reasoning'],
+            type: SchemaType.OBJECT
+          },
+          type: SchemaType.ARRAY
+        },
         temperature: config.temperature
-      }
+      },
+      model: config.model
     });
 
-    let fullPrompt = prompt;
+    let fullPrompt = `Task: Generate exactly ${count} tracks for a Spotify playlist based on the user's description.
 
-    // Dynamic Prompt Assembly
-    fullPrompt += `\nPlease generate exactly ${count} tracks.`;
+Context: You are an expert music curator with deep knowledge of Spotify's catalog.
+CRITICAL CONSTRAINT: We are running in Spotify Development Mode. This means we CANNOT access the Spotify Audio Features API (tempo, energy, valence, instrumentalness).
+You MUST rely entirely on your internal knowledge to ensure tracks match the requested vibe, genre, and sonic characteristics.
+
+User Prompt: "${prompt}"`;
+
+    // Inject Reference Artists ("Style Anchors")
+    if (referenceArtists.length > 0) {
+      fullPrompt += `\n\nStyle Anchors (Vibe References):
+The following artists represent the core sound of this playlist. Use them to ground your suggestions:
+${referenceArtists.map((artist) => `- ${artist}`).join('\n')}`;
+    }
+
+    // Smart Instrumental Logic
+    const isInstrumental = INSTRUMENTAL_KEYWORDS.some((keyword) =>
+      prompt.toLowerCase().includes(keyword)
+    );
+
+    if (isInstrumental) {
+      fullPrompt += `\n\nHIGH PRIORITY: This playlist is INSTRUMENTAL.
+Do NOT suggest tracks with vocals or lyrics. Focus on beats, melodies, and atmosphere.`;
+    }
 
     // Apply Global Quality Constraints
     fullPrompt += `\n\nGlobal Constraints (STRICT):`;
@@ -83,12 +132,20 @@ export class AiService {
       fullPrompt += `\n- ${constraint}`;
     });
 
+    // Apply Banned Terms Logic
+    fullPrompt += `\n\nNegative Constraints (The "No-Go" List):
+Unless the user explicitly asks for them, strictly REJECT any track title containing:
+${BANNED_TERMS.join(', ')}.`;
+
     if (excludedTracks.length > 0) {
-      // Only send a subset to avoid token limits, e.g. last 50
-      fullPrompt += `\n\nSpecific Exclusions (Do NOT suggest these): ${JSON.stringify(excludedTracks.slice(0, 50))}`;
+      // Increased slice limit for Gemini 2.5 Flash context window
+      const recentExclusions = excludedTracks.slice(0, 200);
+      fullPrompt += `\n\nSpecific Exclusions (Do NOT suggest these - already in playlist):
+${JSON.stringify(recentExclusions)}`;
     }
 
-    fullPrompt += `\n\nOutput Format: Return ONLY a valid JSON array of objects with 'artist' and 'track' fields.`;
+    fullPrompt += `\n\nReasoning Requirement:
+For each suggestion, you MUST provide a 'reasoning' field explaining WHY this track fits the vibe and why you are confident it matches the criteria (especially regarding instrumental/vocal status and genre fit), since we cannot verify with audio features.`;
 
     try {
       const result = await model.generateContent(fullPrompt);
@@ -96,27 +153,20 @@ export class AiService {
       const text = response.text();
 
       logger.info('AI Response received', {
-        durationMs: Date.now() - requestStart,
-        candidateCount: response.candidates?.length
+        candidateCount: response.candidates?.length,
+        durationMs: Date.now() - requestStart
       });
 
-      // Since we enforced JSON mimeType, we should be able to parse directly
-      // But good to be safe with basic cleanup if model adds markdown blocks
-      const cleanText = text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-
+      // Native structured output should return valid JSON directly, but we still parse safely
       let suggestions: AiSuggestion[];
       try {
-        const parsed = JSON.parse(cleanText);
+        const parsed = JSON.parse(text);
         // Strict Schema Validation
         suggestions = AiResponseSchema.parse(parsed);
       } catch (parseError) {
         logger.error('Failed to parse or validate AI response', {
-          rawText: text,
-          cleanText,
-          error: parseError
+          error: parseError,
+          rawText: text
         });
         throw new Error('AI response was not valid JSON matching the schema.');
       }
@@ -146,12 +196,23 @@ export class AiService {
       model: config.model
     });
 
+    // Using native responseSchema for artists too
     const model = this.genAI.getGenerativeModel({
-      model: config.model,
       generationConfig: {
         responseMimeType: 'application/json',
+        responseSchema: {
+          items: {
+            properties: {
+              name: { type: SchemaType.STRING }
+            },
+            required: ['name'],
+            type: SchemaType.OBJECT
+          },
+          type: SchemaType.ARRAY
+        },
         temperature: config.temperature
-      }
+      },
+      model: config.model
     });
 
     let prompt = `Suggest exactly ${count} famous or representative artists for a Spotify playlist.
@@ -160,17 +221,13 @@ Playlist Name: "${playlistName}"`;
       prompt += `\nPlaylist Description: ${description}`;
     }
     prompt += `\n\nIdentify artists that perfectly capture the sonic profile and "vibe" of this playlist.
-Suggest ONLY real, well-known artists that are likely to be on Spotify.
-Output Format: Return ONLY a valid JSON array of objects with a 'name' field.`;
+Suggest ONLY real, well-known artists that are likely to be on Spotify.`;
 
     try {
       const result = await model.generateContent(prompt);
       const text = result.response.text();
-      const cleanText = text
-        .replace(/```json/g, '')
-        .replace(/```/g, '')
-        .trim();
-      const parsed = JSON.parse(cleanText);
+
+      const parsed = JSON.parse(text);
       const data = ArtistResponseSchema.parse(parsed);
 
       return data.map((a) => a.name).slice(0, count);

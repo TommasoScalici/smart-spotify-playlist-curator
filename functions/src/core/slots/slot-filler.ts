@@ -4,7 +4,7 @@ export class SlotFiller {
   /**
    * Fills empty slots in a playlist grid sequentially.
    */
-  public static fillSequentially(playlist: (string | null)[], pool: PoolTrack[]): string[] {
+  public static fillSequentially(playlist: (null | string)[], pool: PoolTrack[]): string[] {
     const workingPool = [...pool];
     const result = [...playlist];
     for (let i = 0; i < result.length; i++) {
@@ -20,7 +20,7 @@ export class SlotFiller {
    * Fills empty slots in a playlist grid using shuffle priority and artist distance rules.
    */
   public static fillWithShuffle(
-    playlist: (string | null)[],
+    playlist: (null | string)[],
     pool: PoolTrack[],
     aiTrackUris: Set<string>,
     allTracks: PoolTrack[]
@@ -56,7 +56,7 @@ export class SlotFiller {
         if (activeArtists.length === 0) break;
 
         // Get artist of previous track for anti-clumping
-        let prevArtist: string | null = null;
+        let prevArtist: null | string = null;
         if (i > 0 && result[i - 1]) {
           const prevUri = result[i - 1];
           const match = allTracks.find((t) => t.uri === prevUri);

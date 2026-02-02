@@ -10,8 +10,8 @@ interface LabelWithTooltipProps extends React.ComponentPropsWithoutRef<typeof La
 
 export function LabelWithTooltip({
   children,
-  tooltip,
   className,
+  tooltip,
   ...props
 }: LabelWithTooltipProps) {
   return (
@@ -24,7 +24,7 @@ export function LabelWithTooltip({
           <TooltipTrigger asChild>
             <Info className="text-muted-foreground/50 hover:text-foreground/80 h-4 w-4 cursor-help transition-colors" />
           </TooltipTrigger>
-          <TooltipContent side="top" align="start" className="max-w-[280px] p-3 text-xs">
+          <TooltipContent align="start" className="max-w-[280px] p-3 text-xs" side="top">
             {tooltip}
           </TooltipContent>
         </Tooltip>

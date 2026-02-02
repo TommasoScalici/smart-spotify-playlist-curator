@@ -2,7 +2,7 @@ import { MandatoryTrack } from '@smart-spotify-curator/shared';
 
 export class MandatoryTrackPlacer {
   public static place(
-    playlist: (string | null)[],
+    playlist: (null | string)[],
     mandatoryTracks: MandatoryTrack[],
     shuffle: boolean = true
   ): void {
@@ -10,7 +10,7 @@ export class MandatoryTrackPlacer {
 
     // Phase A: Fixed Positions
     for (const meta of mandatoryTracks) {
-      const { min, max } = meta.positionRange;
+      const { max, min } = meta.positionRange;
       if (min === max) {
         const index = min - 1;
         if (index >= 0 && index < totalSlots && playlist[index] === null) {
@@ -21,7 +21,7 @@ export class MandatoryTrackPlacer {
 
     // Phase B: Ranged VIPs
     for (const meta of mandatoryTracks) {
-      const { min, max } = meta.positionRange;
+      const { max, min } = meta.positionRange;
       if (min !== max) {
         const start = Math.max(0, min - 1);
         const end = Math.min(totalSlots - 1, max - 1);
@@ -57,7 +57,7 @@ export class MandatoryTrackPlacer {
   }
 
   private static placeUsingNearestNeighbor(
-    playlist: (string | null)[],
+    playlist: (null | string)[],
     uri: string,
     start: number,
     end: number

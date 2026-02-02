@@ -1,4 +1,11 @@
 import {
+  ActivityLog,
+  ActivityLogSchema,
+  PlaylistConfig,
+  PlaylistConfigSchema,
+  SpotifyProfile
+} from '@smart-spotify-curator/shared';
+import {
   collection,
   deleteDoc,
   doc,
@@ -14,14 +21,6 @@ import {
   writeBatch
 } from 'firebase/firestore';
 
-import {
-  ActivityLog,
-  ActivityLogSchema,
-  PlaylistConfig,
-  PlaylistConfigSchema,
-  SpotifyProfile
-} from '@smart-spotify-curator/shared';
-
 import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
 import { db } from './firebase';
 
@@ -29,11 +28,134 @@ const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 export const FirestoreService = {
   /**
+   * Check if user has linked Spotify account, and if it's valid.
+   * @param uid - The user ID
+   * @returns Object with isLinked status and optional authError
+   */
+  async checkSpotifyConnection(uid: string): Promise<{ authError?: string; isLinked: boolean }> {
+    if (IS_DEBUG_MODE) {
+      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Connection');
+      return { isLinked: true };
+    }
+
+    try {
+      const profile = await this.getSpotifyProfile(uid);
+
+      if (!profile) {
+        return { isLinked: false };
+      }
+
+      if (profile.status === 'invalid') {
+        return { authError: profile.authError || 'Authentication failed', isLinked: true };
+      }
+
+      return { isLinked: true };
+    } catch (e) {
+      console.error('Error checking connection', e);
+      return { isLinked: false };
+    }
+  },
+
+  /**
+   * Soft delete all activity log entries for a user.
+   * @param uid - The user ID
+   */
+  async clearAllActivities(uid: string): Promise<void> {
+    const logsRef = collection(db, 'users', uid, 'logs');
+    // We fetch current logs to mark them as deleted.
+    // We don't use a 'where' query for deletion to ensure we catch legacy logs missing the field.
+    const snapshot = await getDocs(query(logsRef, limit(500)));
+
+    const batch = writeBatch(db);
+    let count = 0;
+
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      if (data.deleted !== true) {
+        batch.update(doc.ref, { deleted: true });
+        count++;
+      }
+    });
+
+    if (count > 0) {
+      await batch.commit();
+    }
+  },
+
+  /**
+   * Delete a playlist configuration for a user.
+   * @param uid - The user ID
+   * @param docId - The Firestore document ID to delete
+   */
+  async deleteUserPlaylist(uid: string, docId: string): Promise<void> {
+    const docRef = doc(db, 'users', uid, 'playlists', docId);
+    await deleteDoc(docRef);
+  },
+
+  /**
+   * Fetches the public Spotify Profile info stored on the user document.
+   * @param uid - The user ID
+   * @returns The Spotify profile or null if not found
+   */
+  async getSpotifyProfile(uid: string): Promise<null | SpotifyProfile> {
+    if (IS_DEBUG_MODE) {
+      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Profile');
+      return {
+        avatarUrl: MOCK_SPOTIFY_PROFILE.avatarUrl,
+        displayName: MOCK_SPOTIFY_PROFILE.displayName,
+        email: MOCK_SPOTIFY_PROFILE.email,
+        id: 'debug-spotify-id',
+        linkedAt: new Date(),
+        product: 'premium',
+        status: 'active'
+      };
+    }
+
+    const userRef = doc(db, 'users', uid);
+    const snapshot = await getDoc(userRef);
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      const rawProfile = data.spotifyProfile;
+      if (!rawProfile) return null;
+      const linkedAt =
+        rawProfile.linkedAt && typeof rawProfile.linkedAt.toDate === 'function'
+          ? rawProfile.linkedAt.toDate()
+          : (rawProfile.linkedAt as Date);
+
+      return {
+        ...rawProfile,
+        linkedAt
+      } as SpotifyProfile;
+    }
+    return null;
+  },
+
+  /**
+   * Fetch a single playlist by its ID for a user.
+   * @param uid - The user ID
+   * @param docId - The Firestore document ID
+   * @returns The playlist configuration or null if not found
+   */
+  async getUserPlaylistById(uid: string, docId: string): Promise<null | PlaylistConfig> {
+    const docRef = doc(db, 'users', uid, 'playlists', docId);
+    const snapshot = await getDoc(docRef);
+
+    if (snapshot.exists()) {
+      const data = snapshot.data();
+      const parseResult = PlaylistConfigSchema.safeParse(data);
+      if (parseResult.success) {
+        return parseResult.data as PlaylistConfig;
+      }
+    }
+    return null;
+  },
+
+  /**
    * Fetch all playlists for a specific user.
    * @param uid - The user ID
    * @returns Array of playlist configurations with Firestore document IDs
    */
-  async getUserPlaylists(uid: string): Promise<(PlaylistConfig & { _docId: string })[]> {
+  async getUserPlaylists(uid: string): Promise<({ _docId: string } & PlaylistConfig)[]> {
     if (IS_DEBUG_MODE) {
       console.warn('[FIRESTORE] Debug Mode: Returning Mock Playlists');
       return MOCK_PLAYLISTS;
@@ -41,7 +163,7 @@ export const FirestoreService = {
 
     const playlistsRef = collection(db, 'users', uid, 'playlists');
     const querySnapshot = await getDocs(playlistsRef);
-    const playlists: (PlaylistConfig & { _docId: string })[] = [];
+    const playlists: ({ _docId: string } & PlaylistConfig)[] = [];
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
@@ -52,41 +174,6 @@ export const FirestoreService = {
     });
 
     return playlists;
-  },
-
-  /**
-   * Subscribe to real-time updates for a user's playlists.
-   * @param uid - The user ID
-   * @param callback - Function called with updated playlists array
-   * @returns Unsubscribe function
-   */
-  subscribeUserPlaylists(
-    uid: string,
-    callback: (playlists: (PlaylistConfig & { _docId: string })[]) => void
-  ): () => void {
-    if (IS_DEBUG_MODE) {
-      callback(MOCK_PLAYLISTS);
-      return () => {};
-    }
-
-    const playlistsRef = collection(db, 'users', uid, 'playlists');
-    return onSnapshot(
-      playlistsRef,
-      (snapshot) => {
-        const playlists: (PlaylistConfig & { _docId: string })[] = [];
-        snapshot.forEach((doc) => {
-          const data = doc.data();
-          const parseResult = PlaylistConfigSchema.safeParse(data);
-          if (parseResult.success) {
-            playlists.push({ ...parseResult.data, _docId: doc.id });
-          }
-        });
-        callback(playlists);
-      },
-      (error) => {
-        console.error('Error in playlists subscription:', error);
-      }
-    );
   },
 
   /**
@@ -124,114 +211,13 @@ export const FirestoreService = {
   },
 
   /**
-   * Fetch a single playlist by its ID for a user.
+   * Soft delete an activity log entry.
    * @param uid - The user ID
-   * @param docId - The Firestore document ID
-   * @returns The playlist configuration or null if not found
+   * @param logId - The Firestore document ID of the log
    */
-  async getUserPlaylistById(uid: string, docId: string): Promise<PlaylistConfig | null> {
-    const docRef = doc(db, 'users', uid, 'playlists', docId);
-    const snapshot = await getDoc(docRef);
-
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      const parseResult = PlaylistConfigSchema.safeParse(data);
-      if (parseResult.success) {
-        return parseResult.data as PlaylistConfig;
-      }
-    }
-    return null;
-  },
-
-  /**
-   * Delete a playlist configuration for a user.
-   * @param uid - The user ID
-   * @param docId - The Firestore document ID to delete
-   */
-  async deleteUserPlaylist(uid: string, docId: string): Promise<void> {
-    const docRef = doc(db, 'users', uid, 'playlists', docId);
-    await deleteDoc(docRef);
-  },
-
-  /**
-   * Check if user has linked Spotify account, and if it's valid.
-   * @param uid - The user ID
-   * @returns Object with isLinked status and optional authError
-   */
-  async checkSpotifyConnection(uid: string): Promise<{ isLinked: boolean; authError?: string }> {
-    if (IS_DEBUG_MODE) {
-      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Connection');
-      return { isLinked: true };
-    }
-
-    try {
-      const profile = await this.getSpotifyProfile(uid);
-
-      if (!profile) {
-        return { isLinked: false };
-      }
-
-      if (profile.status === 'invalid') {
-        return { isLinked: true, authError: profile.authError || 'Authentication failed' };
-      }
-
-      return { isLinked: true };
-    } catch (e) {
-      console.error('Error checking connection', e);
-      return { isLinked: false };
-    }
-  },
-
-  /**
-   * Unlinks Spotify account by deleting the credentials and clearing profile info.
-   * @param uid - The user ID
-   */
-  async unlinkSpotifyAccount(uid: string): Promise<void> {
-    const secretRef = doc(db, 'users', uid, 'secrets', 'spotify');
-    const userRef = doc(db, 'users', uid);
-
-    await Promise.all([
-      deleteDoc(secretRef),
-      setDoc(userRef, { spotifyProfile: null }, { merge: true }) // Clear profile
-    ]);
-  },
-
-  /**
-   * Fetches the public Spotify Profile info stored on the user document.
-   * @param uid - The user ID
-   * @returns The Spotify profile or null if not found
-   */
-  async getSpotifyProfile(uid: string): Promise<SpotifyProfile | null> {
-    if (IS_DEBUG_MODE) {
-      console.warn('[FIRESTORE] Debug Mode: Returning Mock Spotify Profile');
-      return {
-        id: 'debug-spotify-id',
-        displayName: MOCK_SPOTIFY_PROFILE.displayName,
-        email: MOCK_SPOTIFY_PROFILE.email,
-        avatarUrl: MOCK_SPOTIFY_PROFILE.avatarUrl,
-        product: 'premium',
-        linkedAt: new Date(),
-        status: 'active'
-      };
-    }
-
-    const userRef = doc(db, 'users', uid);
-    const snapshot = await getDoc(userRef);
-    if (snapshot.exists()) {
-      const data = snapshot.data();
-      const rawProfile = data.spotifyProfile;
-      if (!rawProfile) return null;
-      const linkedAt =
-        rawProfile.linkedAt && typeof rawProfile.linkedAt.toDate === 'function'
-          ? rawProfile.linkedAt.toDate()
-          : (rawProfile.linkedAt as Date);
-
-      return {
-        ...rawProfile,
-        linkedAt
-      } as SpotifyProfile;
-    }
-    return null;
+  async softDeleteActivity(uid: string, logId: string): Promise<void> {
+    const logRef = doc(db, 'users', uid, 'logs', logId);
+    await updateDoc(logRef, { deleted: true });
   },
 
   /**
@@ -271,38 +257,51 @@ export const FirestoreService = {
   },
 
   /**
-   * Soft delete an activity log entry.
+   * Subscribe to real-time updates for a user's playlists.
    * @param uid - The user ID
-   * @param logId - The Firestore document ID of the log
+   * @param callback - Function called with updated playlists array
+   * @returns Unsubscribe function
    */
-  async softDeleteActivity(uid: string, logId: string): Promise<void> {
-    const logRef = doc(db, 'users', uid, 'logs', logId);
-    await updateDoc(logRef, { deleted: true });
+  subscribeUserPlaylists(
+    uid: string,
+    callback: (playlists: ({ _docId: string } & PlaylistConfig)[]) => void
+  ): () => void {
+    if (IS_DEBUG_MODE) {
+      callback(MOCK_PLAYLISTS);
+      return () => {};
+    }
+
+    const playlistsRef = collection(db, 'users', uid, 'playlists');
+    return onSnapshot(
+      playlistsRef,
+      (snapshot) => {
+        const playlists: ({ _docId: string } & PlaylistConfig)[] = [];
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          const parseResult = PlaylistConfigSchema.safeParse(data);
+          if (parseResult.success) {
+            playlists.push({ ...parseResult.data, _docId: doc.id });
+          }
+        });
+        callback(playlists);
+      },
+      (error) => {
+        console.error('Error in playlists subscription:', error);
+      }
+    );
   },
 
   /**
-   * Soft delete all activity log entries for a user.
+   * Unlinks Spotify account by deleting the credentials and clearing profile info.
    * @param uid - The user ID
    */
-  async clearAllActivities(uid: string): Promise<void> {
-    const logsRef = collection(db, 'users', uid, 'logs');
-    // We fetch current logs to mark them as deleted.
-    // We don't use a 'where' query for deletion to ensure we catch legacy logs missing the field.
-    const snapshot = await getDocs(query(logsRef, limit(500)));
+  async unlinkSpotifyAccount(uid: string): Promise<void> {
+    const secretRef = doc(db, 'users', uid, 'secrets', 'spotify');
+    const userRef = doc(db, 'users', uid);
 
-    const batch = writeBatch(db);
-    let count = 0;
-
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.deleted !== true) {
-        batch.update(doc.ref, { deleted: true });
-        count++;
-      }
-    });
-
-    if (count > 0) {
-      await batch.commit();
-    }
+    await Promise.all([
+      deleteDoc(secretRef),
+      setDoc(userRef, { spotifyProfile: null }, { merge: true }) // Clear profile
+    ]);
   }
 };

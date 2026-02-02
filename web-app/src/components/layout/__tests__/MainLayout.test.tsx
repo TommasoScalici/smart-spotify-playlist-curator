@@ -14,13 +14,13 @@ import { MainLayout } from '../MainLayout';
 // Mock dependencies
 vi.mock('../../../hooks/useSpotifyStatus');
 vi.mock('../../../services/firestore-service');
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
+  disconnect() {}
   observe() {}
   unobserve() {}
-  disconnect() {}
 };
 
 // Mock ScrollIntoView and Pointer Capture for Radix UI
@@ -44,10 +44,10 @@ const createWrapper = () => {
 describe('Layout', () => {
   const mockSignOut = vi.fn();
 
-  const renderLayout = (user: Partial<User> | null) => {
+  const renderLayout = (user: null | Partial<User>) => {
     return render(
       <AuthContext.Provider
-        value={{ user: user as User, loading: false, signIn: vi.fn(), signOut: mockSignOut }}
+        value={{ loading: false, signIn: vi.fn(), signOut: mockSignOut, user: user as User }}
       >
         <MainLayout />
       </AuthContext.Provider>,
@@ -69,13 +69,13 @@ describe('Layout', () => {
 
   it('renders user profile and spotify connected badge', () => {
     const user = {
-      uid: '123',
-      email: 'test@test.com',
       displayName: 'Test User',
-      photoURL: 'img.jpg'
+      email: 'test@test.com',
+      photoURL: 'img.jpg',
+      uid: '123'
     };
     (useSpotifyStatus as Mock).mockReturnValue({
-      data: { isLinked: true, profile: { displayName: 'Spotify User', avatarUrl: 's.jpg' } },
+      data: { isLinked: true, profile: { avatarUrl: 's.jpg', displayName: 'Spotify User' } },
       isLoading: false
     });
 
@@ -86,7 +86,7 @@ describe('Layout', () => {
   });
 
   it('renders disconnected state correctly', () => {
-    const user = { uid: '123', email: 'test@test.com', displayName: 'Test User' };
+    const user = { displayName: 'Test User', email: 'test@test.com', uid: '123' };
     (useSpotifyStatus as Mock).mockReturnValue({
       data: { isLinked: false },
       isLoading: false
@@ -98,7 +98,7 @@ describe('Layout', () => {
   });
 
   it('handles logout', async () => {
-    const user = { uid: '123', email: 'test@test.com', displayName: 'Test User' };
+    const user = { displayName: 'Test User', email: 'test@test.com', uid: '123' };
     (useSpotifyStatus as Mock).mockReturnValue({ data: { isLinked: false }, isLoading: false });
 
     const userActor = userEvent.setup();
@@ -116,7 +116,7 @@ describe('Layout', () => {
   });
 
   it('handles unlink spotify account', async () => {
-    const user = { uid: '123', email: 'test@test.com', displayName: 'Test User' };
+    const user = { displayName: 'Test User', email: 'test@test.com', uid: '123' };
     (useSpotifyStatus as Mock).mockReturnValue({
       data: { isLinked: true, profile: { displayName: 'Spotify User' } },
       isLoading: false

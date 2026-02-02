@@ -1,9 +1,9 @@
 import { randomBytes } from 'crypto';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import express, { type Request, type Response } from 'express';
 import open from 'open';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,10 +36,10 @@ async function main() {
 
   app.get('/login', (_req: Request, res: Response) => {
     const params = new URLSearchParams({
-      response_type: 'code',
       client_id: clientId,
-      scope: scopes.join(' '),
       redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: scopes.join(' '),
       state: state
     });
     res.redirect(`https://accounts.spotify.com/authorize?${params.toString()}`);
@@ -69,18 +69,18 @@ async function main() {
       // Exchange code for tokens
       const authHeader = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
       const params = new URLSearchParams({
-        grant_type: 'authorization_code',
         code: code,
+        grant_type: 'authorization_code',
         redirect_uri: redirectUri
       });
 
       const response = await fetch('https://accounts.spotify.com/api/token', {
-        method: 'POST',
+        body: params,
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Basic ${authHeader}`
+          Authorization: `Basic ${authHeader}`,
+          'Content-Type': 'application/x-www-form-urlencoded'
         },
-        body: params
+        method: 'POST'
       });
 
       if (!response.ok) {
@@ -90,8 +90,8 @@ async function main() {
 
       const data = (await response.json()) as {
         access_token: string;
-        refresh_token: string;
         expires_in: number;
+        refresh_token: string;
       };
       const accessToken = data.access_token;
       const refreshToken = data.refresh_token;

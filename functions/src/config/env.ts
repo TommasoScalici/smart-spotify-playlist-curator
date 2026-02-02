@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
+  GOOGLE_AI_API_KEY: z.string().optional(),
   SPOTIFY_CLIENT_ID: z.string().min(1, 'SPOTIFY_CLIENT_ID is missing'),
   SPOTIFY_CLIENT_SECRET: z.string().min(1, 'SPOTIFY_CLIENT_SECRET is missing'),
-  GOOGLE_AI_API_KEY: z.string().optional(),
   SPOTIFY_REDIRECT_URI: z.string().optional()
 });
 
@@ -37,14 +37,14 @@ export const getConfig = (): Config => {
 // Backwards compatibility for now (though we should migrate away from eager access)
 // We expose a getter property to prevent eager evaluation on import
 export const config = {
+  get GOOGLE_AI_API_KEY() {
+    return getConfig().GOOGLE_AI_API_KEY;
+  },
   get SPOTIFY_CLIENT_ID() {
     return getConfig().SPOTIFY_CLIENT_ID;
   },
   get SPOTIFY_CLIENT_SECRET() {
     return getConfig().SPOTIFY_CLIENT_SECRET;
-  },
-  get GOOGLE_AI_API_KEY() {
-    return getConfig().GOOGLE_AI_API_KEY;
   },
   get SPOTIFY_REDIRECT_URI() {
     return getConfig().SPOTIFY_REDIRECT_URI;

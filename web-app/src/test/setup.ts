@@ -1,31 +1,30 @@
 import { vi } from 'vitest';
-
 import '@testing-library/jest-dom';
 
 // Mock Firebase
 vi.mock('firebase/app', () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
+  getApp: vi.fn(),
+  initializeApp: vi.fn()
 }));
 
 vi.mock('firebase/auth', () => ({
   getAuth: vi.fn(() => ({
     currentUser: null
   })),
+  GoogleAuthProvider: vi.fn(),
   onAuthStateChanged: vi.fn((_auth, callback) => {
     if (callback) callback(null);
     return () => {};
   }),
-  GoogleAuthProvider: vi.fn(),
   signInWithPopup: vi.fn()
 }));
 
 vi.mock('firebase/firestore', () => ({
-  getFirestore: vi.fn(),
   collection: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
+  getFirestore: vi.fn(),
   query: vi.fn(),
   where: vi.fn()
 }));
@@ -45,9 +44,9 @@ vi.stubGlobal('import.meta', {
 });
 
 class ResizeObserver {
+  disconnect() {}
   observe() {}
   unobserve() {}
-  disconnect() {}
 }
 
 vi.stubGlobal('ResizeObserver', ResizeObserver);

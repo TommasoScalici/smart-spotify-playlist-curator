@@ -1,3 +1,4 @@
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Music, Plus, Trash2 } from 'lucide-react';
 import {
@@ -9,7 +10,6 @@ import {
   useWatch
 } from 'react-hook-form';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
@@ -20,21 +20,21 @@ import { FunctionsService } from '@/services/functions-service';
 
 interface TrackListSettingsProps {
   control: Control<PlaylistConfig>;
-  setValue: UseFormSetValue<PlaylistConfig>;
   errors: FieldErrors<PlaylistConfig>;
+  setValue: UseFormSetValue<PlaylistConfig>;
 }
 
 interface TrackRowProps {
-  index: number;
   control: Control<PlaylistConfig>;
-  setValue: UseFormSetValue<PlaylistConfig>;
-  remove: (index: number) => void;
   errors: FieldErrors<PlaylistConfig>;
+  index: number;
+  remove: (index: number) => void;
+  setValue: UseFormSetValue<PlaylistConfig>;
 }
 
 // Internal TrackRow Component
 // ... (TrackRow component start)
-const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) => {
+const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) => {
   const trackValue = useWatch({
     control,
     name: `mandatoryTracks.${index}`
@@ -57,19 +57,19 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
     !!trackValue.uri && trackValue.uri.startsWith('spotify:track:') && !trackValue.name;
 
   const { data: fetchedData, isLoading: loading } = useQuery({
-    queryKey: ['spotify', 'track', trackValue.uri],
+    enabled: shouldFetch,
     queryFn: async () => {
       if (!trackValue.uri) return null;
       return await FunctionsService.getTrackDetails(trackValue.uri);
     },
-    enabled: shouldFetch,
+    queryKey: ['spotify', 'track', trackValue.uri],
     staleTime: 1000 * 60 * 60
   });
 
   const displayMeta = {
-    name: trackValue.name || fetchedData?.name || trackValue.uri,
     artist: trackValue.artist || fetchedData?.artist,
-    imageUrl: trackValue.imageUrl || fetchedData?.imageUrl
+    imageUrl: trackValue.imageUrl || fetchedData?.imageUrl,
+    name: trackValue.name || fetchedData?.name || trackValue.uri
   };
 
   return (
@@ -90,8 +90,6 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
               )}
             >
               <SpotifySearch
-                type="track"
-                placeholder="Search track to pin..."
                 onSelect={(result) => {
                   setValue(`mandatoryTracks.${index}.uri`, result.uri, { shouldValidate: true });
                   setValue(`mandatoryTracks.${index}.name`, result.name);
@@ -99,6 +97,8 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
                   if (result.imageUrl)
                     setValue(`mandatoryTracks.${index}.imageUrl`, result.imageUrl);
                 }}
+                placeholder="Search track to pin..."
+                type="track"
               />
             </div>
             {trackErrors?.uri && (
@@ -112,7 +112,7 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
               {loading ? (
                 <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
               ) : displayMeta.imageUrl ? (
-                <img src={displayMeta.imageUrl} alt="Art" className="h-full w-full object-cover" />
+                <img alt="Art" className="h-full w-full object-cover" src={displayMeta.imageUrl} />
               ) : (
                 <Music className="text-muted-foreground h-5 w-5" />
               )}
@@ -127,14 +127,14 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
                 <p className="text-muted-foreground truncate text-xs">{displayMeta.artist}</p>
               )}
               <Button
-                type="button"
-                variant="link"
-                size="sm"
                 className="text-primary h-auto w-fit p-0 text-left text-[10px] opacity-100 transition-opacity hover:underline sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => {
                   // Clear fields to show search again
                   setValue(`mandatoryTracks.${index}.uri`, '');
                 }}
+                size="sm"
+                type="button"
+                variant="link"
               >
                 Change Track
               </Button>
@@ -148,15 +148,25 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
         <div className="flex items-center gap-2">
           <div className="space-y-1">
             <LabelWithTooltip
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
               htmlFor={`min-${index}`}
               tooltip="The earliest position this track can appear in the playlist (1 = Start)."
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
             >
               Min Pos
             </LabelWithTooltip>
             <Controller
               control={control}
               name={`mandatoryTracks.${index}.positionRange.min`}
+              render={({ field }) => (
+                <NumberInput
+                  className={cn('w-36', trackErrors?.positionRange?.min && 'border-destructive')}
+                  id={`min-${index}`}
+                  max={targetTotalTracks}
+                  min={1}
+                  onChange={field.onChange}
+                  value={field.value || 0}
+                />
+              )}
               rules={{
                 validate: (value) => {
                   if (value > (specificTrackRange?.max || 999)) return 'Min > Max';
@@ -164,30 +174,30 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
                   return true;
                 }
               }}
-              render={({ field }) => (
-                <NumberInput
-                  id={`min-${index}`}
-                  min={1}
-                  max={targetTotalTracks}
-                  value={field.value || 0}
-                  onChange={field.onChange}
-                  className={cn('w-36', trackErrors?.positionRange?.min && 'border-destructive')}
-                />
-              )}
             />
           </div>
           <span className="text-muted-foreground mt-6 text-xs">-</span>
           <div className="space-y-1">
             <LabelWithTooltip
+              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
               htmlFor={`max-${index}`}
               tooltip="The latest position this track can appear in the playlist."
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
             >
               Max Pos
             </LabelWithTooltip>
             <Controller
               control={control}
               name={`mandatoryTracks.${index}.positionRange.max`}
+              render={({ field }) => (
+                <NumberInput
+                  className={cn('w-36', trackErrors?.positionRange?.max && 'border-destructive')}
+                  id={`max-${index}`}
+                  max={targetTotalTracks}
+                  min={1}
+                  onChange={field.onChange}
+                  value={field.value || 0}
+                />
+              )}
               rules={{
                 validate: (value) => {
                   if (value < (specificTrackRange?.min || 1)) return 'Max < Min';
@@ -195,16 +205,6 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
                   return true;
                 }
               }}
-              render={({ field }) => (
-                <NumberInput
-                  id={`max-${index}`}
-                  min={1}
-                  max={targetTotalTracks}
-                  value={field.value || 0}
-                  onChange={field.onChange}
-                  className={cn('w-36', trackErrors?.positionRange?.max && 'border-destructive')}
-                />
-              )}
             />
           </div>
         </div>
@@ -213,10 +213,10 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
       {/* Actions */}
       <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto">
         <Button
-          variant="ghost"
-          size="icon"
           className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8"
           onClick={() => remove(index)}
+          size="icon"
+          variant="ghost"
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -233,8 +233,8 @@ const TrackRow = ({ index, control, setValue, remove, errors }: TrackRowProps) =
   );
 };
 
-export const TrackListSettings = ({ control, setValue, errors }: TrackListSettingsProps) => {
-  const { fields, append, remove } = useFieldArray({
+export const TrackListSettings = ({ control, errors, setValue }: TrackListSettingsProps) => {
+  const { append, fields, remove } = useFieldArray({
     control,
     name: 'mandatoryTracks'
   });
@@ -253,10 +253,10 @@ export const TrackListSettings = ({ control, setValue, errors }: TrackListSettin
             </p>
           </div>
           <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => append({ uri: '', positionRange: { min: 1, max: 1 } })}
             className="w-full sm:w-auto"
+            onClick={() => append({ positionRange: { max: 1, min: 1 }, uri: '' })}
+            size="sm"
+            variant="secondary"
           >
             <Plus className="mr-2 h-4 w-4" /> Add Track
           </Button>
@@ -274,8 +274,8 @@ export const TrackListSettings = ({ control, setValue, errors }: TrackListSettin
               Add specific songs you want to guarantee appear in your playlist.
             </p>
             <Button
+              onClick={() => append({ positionRange: { max: 1, min: 1 }, uri: '' })}
               variant="outline"
-              onClick={() => append({ uri: '', positionRange: { min: 1, max: 1 } })}
             >
               Add Your First Track
             </Button>
@@ -284,12 +284,12 @@ export const TrackListSettings = ({ control, setValue, errors }: TrackListSettin
           <div className="space-y-3">
             {fields.map((field, index) => (
               <TrackRow
-                key={field.id}
-                index={index}
                 control={control}
-                setValue={setValue}
-                remove={remove}
                 errors={errors}
+                index={index}
+                key={field.id}
+                remove={remove}
+                setValue={setValue}
               />
             ))}
           </div>

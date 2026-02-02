@@ -19,7 +19,7 @@ async function main() {
 
     if (data.models) {
       console.log('Available Models:');
-      data.models.forEach((m: { name: string; displayName: string }) =>
+      data.models.forEach((m: { displayName: string; name: string }) =>
         console.log(`- ${m.name} (${m.displayName})`)
       );
     } else {

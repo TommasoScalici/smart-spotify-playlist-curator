@@ -13,19 +13,19 @@ vi.mock('../../src/config/env', () => ({
 
 // Create a shared mock instance
 const mockSpotifyInstance = {
+  currentUser: {
+    playlists: { playlists: vi.fn() },
+    profile: vi.fn()
+  },
   playlists: {
+    addItemsToPlaylist: vi.fn(),
     getPlaylistItems: vi.fn(),
     movePlaylistItems: vi.fn(),
-    addItemsToPlaylist: vi.fn(),
     removeItemsFromPlaylist: vi.fn()
   },
-  currentUser: {
-    profile: vi.fn(),
-    playlists: { playlists: vi.fn() }
-  },
-  tracks: { get: vi.fn() },
   search: vi.fn(),
-  switchAuthenticationStrategy: vi.fn()
+  switchAuthenticationStrategy: vi.fn(),
+  tracks: { get: vi.fn() }
 };
 
 vi.mock('@spotify/web-api-ts-sdk', () => {
@@ -44,12 +44,12 @@ describe('SpotifyService Retry Logic', () => {
 
     // Mock successful refresh logic by default to avoid EnsureAccessToken failing tests
     global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
       json: async () => ({
         access_token: 'refreshed-token',
         expires_in: 3600,
         refresh_token: 'new-refresh'
-      })
+      }),
+      ok: true
     } as unknown as Response);
 
     service = new SpotifyService('mock-refresh-token');
@@ -80,7 +80,7 @@ describe('SpotifyService Retry Logic', () => {
     // 1. First call (ensureAccessToken) -> Refresh (succeeds via global.fetch mock)
 
     // 2. getPlaylistTracks -> 429
-    const error429 = { status: 429, headers: { get: () => '1' } };
+    const error429 = { headers: { get: () => '1' }, status: 429 };
     mockSpotifyInstance.playlists.getPlaylistItems.mockRejectedValueOnce(error429);
 
     // 3. Retry -> Success
@@ -113,7 +113,7 @@ describe('SpotifyService Retry Logic', () => {
     // 1. Initial refresh success
 
     // 2. Fail consistently
-    const error500 = { status: 500, message: 'Server Error' };
+    const error500 = { message: 'Server Error', status: 500 };
     mockSpotifyInstance.playlists.getPlaylistItems.mockRejectedValue(error500);
 
     await expect(service.getPlaylistTracks('test-playlist')).rejects.toMatchObject({ status: 500 });

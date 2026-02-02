@@ -1,27 +1,27 @@
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 
 export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
-  enabled: true,
-  name: '',
-  ownerId: '',
-  settings: {
-    targetTotalTracks: 20,
-    description: '',
-    allowExplicit: false,
-    referenceArtists: []
-  },
   aiGeneration: {
     enabled: true,
-    tracksToAdd: 10,
     model: 'gemini-2.5-flash',
-    temperature: 0.7
+    temperature: 0.7,
+    tracksToAdd: 10
   },
   curationRules: {
     maxTrackAgeDays: 365,
-    removeDuplicates: true,
     maxTracksPerArtist: 2,
+    removeDuplicates: true,
     shuffleAtEnd: true,
     sizeLimitStrategy: 'drop_random'
   },
-  mandatoryTracks: []
+  enabled: true,
+  mandatoryTracks: [],
+  name: '',
+  ownerId: '',
+  settings: {
+    allowExplicit: false,
+    description: '',
+    referenceArtists: [],
+    targetTotalTracks: 20
+  }
 };

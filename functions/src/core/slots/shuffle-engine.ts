@@ -1,12 +1,19 @@
 export class ShuffleEngine {
+  public static shuffleArray<T>(array: T[]) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
+    }
+  }
+
   /**
    * Shuffles tracks while enforcing a minimum distance between tracks by the same artist.
    */
   public static shuffleWithRules(
-    tracks: { uri: string; artist: string; name?: string }[],
+    tracks: { artist: string; name?: string; uri: string }[],
     minArtistDistance = 3
   ): string[] {
-    const artistBuckets: Record<string, { uri: string; artist: string; name?: string }[]> = {};
+    const artistBuckets: Record<string, { artist: string; name?: string; uri: string }[]> = {};
     for (const t of tracks) {
       if (!artistBuckets[t.artist]) artistBuckets[t.artist] = [];
       artistBuckets[t.artist].push(t);
@@ -49,12 +56,5 @@ export class ShuffleEngine {
     }
 
     return playlist;
-  }
-
-  public static shuffleArray<T>(array: T[]) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
   }
 }

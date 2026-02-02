@@ -1,6 +1,10 @@
 import * as logger from 'firebase-functions/logger';
 
 export class SpotifyBaseClient {
+  protected async delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   protected async executeWithRetry<T>(
     operation: () => Promise<T>,
     retries = 3,
@@ -13,7 +17,7 @@ export class SpotifyBaseClient {
       } catch (error: unknown) {
         lastError = error;
         const status =
-          (error as { status?: number; statusCode?: number; response?: { status: number } })
+          (error as { response?: { status: number }; status?: number; statusCode?: number })
             .status ||
           (error as { statusCode?: number }).statusCode ||
           (error as { response?: { status: number } }).response?.status;
@@ -27,7 +31,7 @@ export class SpotifyBaseClient {
         if (status === 429) {
           let retryAfter = 2;
           const err = error as {
-            headers?: { get?: (s: string) => string | null } | Record<string, string>;
+            headers?: { get?: (s: string) => null | string } | Record<string, string>;
           };
           if (err.headers) {
             const headerValue =
@@ -53,9 +57,5 @@ export class SpotifyBaseClient {
       }
     }
     throw lastError;
-  }
-
-  protected async delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }

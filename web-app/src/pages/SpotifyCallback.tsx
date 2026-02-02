@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, ChevronLeft, Loader2, XCircle } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ export default function SpotifyCallback() {
   const linkingRef = useRef(false);
 
   const code = searchParams.get('code');
-  const [status, setStatus] = useState<'processing' | 'success' | 'error'>(() => {
+  const [status, setStatus] = useState<'error' | 'processing' | 'success'>(() => {
     return code ? 'processing' : 'error';
   });
   const [errorMsg, setErrorMsg] = useState(() => {
@@ -146,8 +146,8 @@ export default function SpotifyCallback() {
               <div className="pt-4">
                 <Button
                   asChild
-                  variant="outline"
                   className="group w-full border-white/10 bg-white/5 transition-all hover:bg-white/10"
+                  variant="outline"
                 >
                   <Link to="/">
                     <ChevronLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />

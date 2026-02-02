@@ -10,65 +10,9 @@ interface PlaylistItemResponse {
 export class SpotifyPlaylistManager {
   constructor(private spotify: SpotifyApi) {}
 
-  public async removeTracks(
-    playlistId: string,
-    uris: string[],
-    dryRun: boolean = false
-  ): Promise<void> {
+  public async addTracks(playlistId: string, uris: string[], position?: number): Promise<void> {
     if (uris.length === 0) return;
     const playlistIdClean = playlistId.replace('spotify:playlist:', '');
-
-    if (dryRun) {
-      logger.info(`[Dry Run] Would remove ${uris.length} tracks from ${playlistIdClean}`);
-      return;
-    }
-
-    for (let i = 0; i < uris.length; i += 100) {
-      const batch = uris.slice(i, i + 100);
-      await this.spotify.playlists.removeItemsFromPlaylist(playlistIdClean, {
-        tracks: batch.map((uri) => ({ uri }))
-      });
-    }
-  }
-
-  public async removeTracksWithPositions(
-    playlistId: string,
-    tracks: { uri: string; positions: number[] }[],
-    dryRun: boolean = false
-  ): Promise<void> {
-    if (tracks.length === 0) return;
-    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
-
-    if (dryRun) {
-      logger.info(
-        `[Dry Run] Would remove ${tracks.length} track instances with positions from ${playlistIdClean}`
-      );
-      return;
-    }
-
-    for (let i = 0; i < tracks.length; i += 100) {
-      const batch = tracks.slice(i, i + 100);
-      await this.spotify.playlists.removeItemsFromPlaylist(playlistIdClean, {
-        tracks: batch
-      });
-    }
-  }
-
-  public async addTracks(
-    playlistId: string,
-    uris: string[],
-    dryRun: boolean = false,
-    position?: number
-  ): Promise<void> {
-    if (uris.length === 0) return;
-    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
-
-    if (dryRun) {
-      logger.info(
-        `[Dry Run] Would add ${uris.length} tracks to ${playlistIdClean} at position ${position ?? 'end'}`
-      );
-      return;
-    }
 
     for (let i = 0; i < uris.length; i += 100) {
       const batch = uris.slice(i, i + 100);
@@ -80,26 +24,22 @@ export class SpotifyPlaylistManager {
     }
   }
 
-  public async performSmartUpdate(
-    playlistId: string,
-    targetOrderedUris: string[],
-    dryRun: boolean = false
-  ): Promise<void> {
+  public async performSmartUpdate(playlistId: string, targetOrderedUris: string[]): Promise<void> {
     const playlistIdClean = playlistId.replace('spotify:playlist:', '');
 
     const currentItems = await this.getAllPlaylistTracks(playlistIdClean);
     const currentUris = currentItems.map((item) => item.track.uri);
 
     const targetSet = new Set(targetOrderedUris);
-    const toRemove: { uri: string; positions: number[] }[] = [];
+    const toRemove: { positions: number[]; uri: string }[] = [];
     currentUris.forEach((uri, index) => {
       if (!targetSet.has(uri)) {
-        toRemove.push({ uri, positions: [index] });
+        toRemove.push({ positions: [index], uri });
       }
     });
 
     if (toRemove.length > 0) {
-      await this.removeTracksWithPositions(playlistIdClean, toRemove, dryRun);
+      await this.removeTracksWithPositions(playlistIdClean, toRemove);
     }
 
     const stateAfterRemovals = currentUris.filter((uri) => targetSet.has(uri));
@@ -107,28 +47,69 @@ export class SpotifyPlaylistManager {
     const toAdd = targetOrderedUris.filter((uri) => !stateAfterRemovalsSet.has(uri));
 
     if (toAdd.length > 0) {
-      await this.addTracks(playlistIdClean, toAdd, dryRun);
+      await this.addTracks(playlistIdClean, toAdd);
     }
 
-    if (!dryRun) {
-      const finalStateItems = await this.getAllPlaylistTracks(playlistIdClean);
-      const finalUris = finalStateItems.map((t) => t.track.uri);
+    const finalStateItems = await this.getAllPlaylistTracks(playlistIdClean);
+    const finalUris = finalStateItems.map((t) => t.track.uri);
 
-      for (let i = 0; i < targetOrderedUris.length; i++) {
-        const targetUri = targetOrderedUris[i];
-        const actualIndex = finalUris.indexOf(targetUri, i);
+    logger.info(
+      `Synchronizing playlist ${playlistIdClean}: ${finalUris.length} tracks actual vs ${targetOrderedUris.length} target.`
+    );
 
-        if (actualIndex !== i && actualIndex !== -1) {
+    for (let i = 0; i < targetOrderedUris.length; i++) {
+      const targetUri = targetOrderedUris[i];
+      const actualIndex = finalUris.indexOf(targetUri, i);
+
+      // Defensively check indices
+      if (actualIndex !== i && actualIndex !== -1 && actualIndex < finalUris.length) {
+        try {
           await this.spotify.playlists.movePlaylistItems(playlistIdClean, actualIndex, i, 1);
           const [moved] = finalUris.splice(actualIndex, 1);
           finalUris.splice(i, 0, moved);
+        } catch (error) {
+          logger.error(`Failed to move track at index ${actualIndex} to ${i}`, {
+            actualIndex,
+            error: (error as Error).message,
+            playlistId: playlistIdClean,
+            playlistLength: finalUris.length,
+            targetIndex: i
+          });
+          // Continue to next track instead of crashing the whole process
         }
       }
     }
   }
 
+  public async removeTracks(playlistId: string, uris: string[]): Promise<void> {
+    if (uris.length === 0) return;
+    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
+
+    for (let i = 0; i < uris.length; i += 100) {
+      const batch = uris.slice(i, i + 100);
+      await this.spotify.playlists.removeItemsFromPlaylist(playlistIdClean, {
+        tracks: batch.map((uri) => ({ uri }))
+      });
+    }
+  }
+
+  public async removeTracksWithPositions(
+    playlistId: string,
+    tracks: { positions: number[]; uri: string }[]
+  ): Promise<void> {
+    if (tracks.length === 0) return;
+    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
+
+    for (let i = 0; i < tracks.length; i += 100) {
+      const batch = tracks.slice(i, i + 100);
+      await this.spotify.playlists.removeItemsFromPlaylist(playlistIdClean, {
+        tracks: batch
+      });
+    }
+  }
+
   private async getAllPlaylistTracks(playlistId: string): Promise<PlaylistItemResponse[]> {
-    let items: PlaylistItemResponse[] = [];
+    const items: PlaylistItemResponse[] = [];
     let offset = 0;
     let total = 1;
 
@@ -136,12 +117,17 @@ export class SpotifyPlaylistManager {
       const page = await this.spotify.playlists.getPlaylistItems(
         playlistId,
         undefined,
-        undefined,
+        'items(added_at,track(uri,name,popularity,album(name),artists(name))),total',
         50 as MaxInt<50>,
         offset
       );
-      if (!page) break;
-      items = items.concat((page.items as unknown as PlaylistItemResponse[]) || []);
+      if (!page || !page.items) break;
+
+      const validItems = (page.items as unknown as PlaylistItemResponse[]).filter(
+        (i) => !!i && !!i.track
+      );
+      items.push(...(validItems as PlaylistItemResponse[]));
+
       offset += (page.items || []).length;
       total = page.total || 0;
     }

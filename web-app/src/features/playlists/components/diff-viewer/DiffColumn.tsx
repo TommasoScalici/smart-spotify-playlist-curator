@@ -4,25 +4,25 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
 interface DiffColumnProps {
-  title: string;
-  count: number;
-  icon: LucideIcon;
-  colorClass: string; // e.g., "text-green-500"
   bgClass: string; // e.g., "bg-green-500/10"
   children: React.ReactNode;
-  emptyMessage?: string;
+  colorClass: string; // e.g., "text-green-500"
+  count: number;
   emptyIcon?: LucideIcon;
+  emptyMessage?: string;
+  icon: LucideIcon;
+  title: string;
 }
 
 export const DiffColumn = ({
-  title,
-  count,
-  icon: Icon,
-  colorClass,
   bgClass,
   children,
+  colorClass,
+  count,
+  emptyIcon: EmptyIcon,
   emptyMessage = 'No items to show.',
-  emptyIcon: EmptyIcon
+  icon: Icon,
+  title
 }: DiffColumnProps) => {
   return (
     <div className="bg-card/30 flex h-72 shrink-0 flex-col overflow-hidden rounded-lg border border-white/5 backdrop-blur-md md:h-full md:shrink">

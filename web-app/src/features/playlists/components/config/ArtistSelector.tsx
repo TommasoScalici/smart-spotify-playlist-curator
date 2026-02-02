@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Check, ChevronsUpDown, Loader2, Mic2, Wand2, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -21,21 +21,21 @@ import { cn } from '@/lib/utils';
 import { FunctionsService } from '../../../../services/functions-service';
 
 interface ArtistSelectorProps {
-  value: SearchResult[];
-  onChange: (artists: SearchResult[]) => void;
-  maxArtists?: number;
-  playlistName: string;
-  description?: string;
   aiConfig?: AiGenerationConfig;
+  description?: string;
+  maxArtists?: number;
+  onChange: (artists: SearchResult[]) => void;
+  playlistName: string;
+  value: SearchResult[];
 }
 
 export const ArtistSelector = ({
-  value = [],
-  onChange,
-  maxArtists = 5,
-  playlistName,
+  aiConfig,
   description,
-  aiConfig
+  maxArtists = 20,
+  onChange,
+  playlistName,
+  value = []
 }: ArtistSelectorProps) => {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
@@ -104,10 +104,10 @@ export const ArtistSelector = ({
       // Allow user to override temperature locally for this suggestion
       const baseConfig: AiGenerationConfig = aiConfig || {
         enabled: true,
-        tracksToAdd: 0,
+        isInstrumentalOnly: false,
         model: 'gpt-4o',
         temperature: 0.7,
-        isInstrumentalOnly: false
+        tracksToAdd: 0
       };
 
       const effectiveConfig = { ...baseConfig, temperature };
@@ -143,15 +143,15 @@ export const ArtistSelector = ({
       <div className="flex flex-wrap gap-2">
         {value.map((artist) => (
           <Badge
+            className="hover:bg-secondary/80 flex h-8 items-center gap-1.5 pr-2 pl-1 text-sm font-medium transition-all"
             key={artist.uri}
             variant="secondary"
-            className="hover:bg-secondary/80 flex h-8 items-center gap-1.5 pr-2 pl-1 text-sm font-medium transition-all"
           >
             {artist.imageUrl ? (
               <img
-                src={artist.imageUrl}
                 alt={artist.name}
                 className="h-6 w-6 rounded-full object-cover"
+                src={artist.imageUrl}
               />
             ) : (
               <div className="bg-muted flex h-6 w-6 items-center justify-center rounded-full">
@@ -160,8 +160,8 @@ export const ArtistSelector = ({
             )}
             {artist.name}
             <button
-              onClick={() => handleRemove(artist.uri)}
               className="hover:text-destructive ml-1 focus:outline-none"
+              onClick={() => handleRemove(artist.uri)}
             >
               <X className="h-3 w-3" />
             </button>
@@ -177,15 +177,15 @@ export const ArtistSelector = ({
       {/* AI Discovery Actions */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <Button
-          type="button"
-          variant="secondary"
-          size="sm"
+          className="text-primary hover:bg-primary/10 w-full font-bold transition-all sm:w-auto"
+          disabled={generating || value.length >= maxArtists}
           onClick={(e) => {
             e.preventDefault();
             handleGenerate();
           }}
-          disabled={generating || value.length >= maxArtists}
-          className="text-primary hover:bg-primary/10 w-full font-bold transition-all sm:w-auto"
+          size="sm"
+          type="button"
+          variant="secondary"
         >
           {generating ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -198,52 +198,52 @@ export const ArtistSelector = ({
         <div className="flex flex-wrap items-center justify-end gap-4">
           <div className="flex items-center gap-2">
             <LabelWithTooltip
+              className="text-muted-foreground text-xs font-medium"
               htmlFor="ai-count"
               tooltip="Controls how many new artists the AI will suggest."
-              className="text-muted-foreground text-xs font-medium"
             >
               Count:
             </LabelWithTooltip>
             <NumberInput
-              id="ai-count"
-              min={1}
-              max={20}
-              value={nToGenerate}
-              onChange={(val) => setNToGenerate(val)}
               className="w-32"
+              id="ai-count"
+              max={20}
+              min={1}
+              onChange={(val) => setNToGenerate(val)}
+              value={nToGenerate}
             />
           </div>
 
           <div className="flex items-center gap-2">
             <LabelWithTooltip
+              className="text-muted-foreground text-xs font-medium"
               htmlFor="ai-temp"
               tooltip="Creativity (Temperature). Higher values = more random/diverse suggestions."
-              className="text-muted-foreground text-xs font-medium"
             >
-              Temp:
+              Temperature:
             </LabelWithTooltip>
             <NumberInput
+              className="w-40"
               id="ai-temp"
-              min={0}
               max={1}
+              min={0}
+              onChange={(val) => setTemperature(val)}
               step={0.1}
               value={temperature}
-              onChange={(val) => setTemperature(val)}
-              className="w-32"
             />
           </div>
         </div>
       </div>
 
       {/* Search Input */}
-      <Popover open={open} onOpenChange={setOpen}>
+      <Popover onOpenChange={setOpen} open={open}>
         <PopoverTrigger asChild>
           <Button
-            variant="outline"
-            role="combobox"
             aria-expanded={open}
-            disabled={value.length >= maxArtists}
             className="w-full justify-between border-dashed bg-transparent"
+            disabled={value.length >= maxArtists}
+            role="combobox"
+            variant="outline"
           >
             {value.length >= maxArtists
               ? `Max ${maxArtists} artists selected`
@@ -252,15 +252,15 @@ export const ArtistSelector = ({
           </Button>
         </PopoverTrigger>
         <PopoverContent
-          className="border-primary/20 w-[85vw] overflow-hidden p-0 shadow-2xl sm:w-[400px]"
           align="start"
+          className="border-primary/20 w-[85vw] overflow-hidden p-0 shadow-2xl sm:w-[400px]"
         >
-          <Command shouldFilter={false} className="rounded-none">
+          <Command className="rounded-none" shouldFilter={false}>
             <CommandInput
+              className="h-12"
+              onValueChange={setQuery}
               placeholder="Search Spotify artists..."
               value={query}
-              onValueChange={setQuery}
-              className="h-12"
             />
             <CommandList className="max-h-[400px]">
               {loading && (
@@ -278,10 +278,10 @@ export const ArtistSelector = ({
                   const isSelected = value.some((v) => v.uri === artist.uri);
                   return (
                     <CommandItem
-                      key={artist.uri}
-                      value={artist.uri}
-                      onSelect={() => handleSelect(artist)}
                       className="aria-selected:bg-primary/5 flex cursor-pointer items-center gap-3 px-4 py-3 transition-colors data-disabled:pointer-events-auto data-disabled:opacity-100"
+                      key={artist.uri}
+                      onSelect={() => handleSelect(artist)}
+                      value={artist.uri}
                     >
                       <div
                         className={cn(
@@ -297,9 +297,9 @@ export const ArtistSelector = ({
                       <div className="flex w-full items-center gap-3">
                         {artist.imageUrl ? (
                           <img
-                            src={artist.imageUrl}
                             alt={artist.name}
                             className="bg-muted h-10 w-10 rounded-full object-cover"
+                            src={artist.imageUrl}
                           />
                         ) : (
                           <div className="bg-muted flex h-10 w-10 items-center justify-center rounded-full">

@@ -3,13 +3,13 @@ import { createContext, useContext } from 'react';
 export type Theme = 'dark' | 'light' | 'system';
 
 export type ThemeProviderState = {
-  theme: Theme;
   setTheme: (theme: Theme) => void;
+  theme: Theme;
 };
 
 export const initialState: ThemeProviderState = {
-  theme: 'system',
-  setTheme: () => null
+  setTheme: () => null,
+  theme: 'system'
 };
 
 export const ThemeProviderContext = createContext<ThemeProviderState>(initialState);

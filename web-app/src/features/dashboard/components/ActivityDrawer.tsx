@@ -1,18 +1,22 @@
+import { Activity, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Activity, X } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { ActivityLog } from '@/hooks/useActivityFeed';
 import { cn } from '@/lib/utils';
 
 import { ActivityFeed } from './ActivityFeed';
 
+// ... other imports ...
+
 interface ActivityDrawerProps {
-  open: boolean;
+  onActivitySelect?: (activity: ActivityLog) => void;
   onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-export const ActivityDrawer = ({ open, onOpenChange }: ActivityDrawerProps) => {
+export const ActivityDrawer = ({ onActivitySelect, onOpenChange, open }: ActivityDrawerProps) => {
   // Prevent body scroll when drawer is open
   useEffect(() => {
     if (open) {
@@ -48,10 +52,10 @@ export const ActivityDrawer = ({ open, onOpenChange }: ActivityDrawerProps) => {
             <h2 className="text-xl font-bold tracking-tight">Recent Activity</h2>
           </div>
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onOpenChange(false)}
             className="hover:bg-accent rounded-full"
+            onClick={() => onOpenChange(false)}
+            size="icon"
+            variant="ghost"
           >
             <X className="h-5 w-5" />
           </Button>
@@ -59,7 +63,11 @@ export const ActivityDrawer = ({ open, onOpenChange }: ActivityDrawerProps) => {
 
         <div className="flex-1 overflow-hidden">
           <div className="h-full p-0">
-            <ActivityFeed isDrawer onClose={() => onOpenChange(false)} />
+            <ActivityFeed
+              isDrawer
+              onActivitySelect={onActivitySelect}
+              onClose={() => onOpenChange(false)}
+            />
           </div>
         </div>
       </div>

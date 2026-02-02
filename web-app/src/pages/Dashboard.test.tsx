@@ -26,14 +26,14 @@ vi.mock('@/features/playlists/components/RunButton', () => ({
 }));
 vi.mock('@/features/dashboard/components/TutorialDialog', () => ({ TutorialDialog: () => null }));
 vi.mock('@/features/dashboard/components/ActivityDrawer', () => ({ ActivityDrawer: () => null }));
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 const createWrapper =
   () =>
   ({ children }: { children: React.ReactNode }) => <BrowserRouter>{children}</BrowserRouter>;
 
 describe('Dashboard', () => {
-  const mockUser = { uid: 'user123', email: 'test@example.com' };
+  const mockUser = { email: 'test@example.com', uid: 'user123' };
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,7 +42,7 @@ describe('Dashboard', () => {
   const renderDashboard = (user: Partial<User> = mockUser) => {
     return render(
       <AuthContext.Provider
-        value={{ user: user as User, loading: false, signIn: vi.fn(), signOut: vi.fn() }}
+        value={{ loading: false, signIn: vi.fn(), signOut: vi.fn(), user: user as User }}
       >
         <Dashboard />
       </AuthContext.Provider>,
@@ -71,8 +71,8 @@ describe('Dashboard', () => {
     (useSpotifyStatus as Mock).mockReturnValue({ data: { isLinked: true }, isLoading: false });
     (FirestoreService.subscribeUserPlaylists as Mock).mockImplementation((_uid, callback) => {
       callback([
-        { _docId: '1', name: 'Playlist A', id: 'p1', settings: {} },
-        { _docId: '2', name: 'Playlist B', id: 'p2', settings: {} }
+        { _docId: '1', id: 'p1', name: 'Playlist A', settings: {} },
+        { _docId: '2', id: 'p2', name: 'Playlist B', settings: {} }
       ]);
       return () => {};
     });

@@ -5,8 +5,8 @@ import { TrackWithMeta } from './types-internal';
 
 export interface DiffResult {
   added: BaseTrack[];
-  removed: TrackDiff[];
   keptMandatory: BaseTrack[];
+  removed: TrackDiff[];
 }
 
 export class DiffCalculator {
@@ -19,8 +19,8 @@ export class DiffCalculator {
     keptTracks: TrackWithMeta[], // Survivors (Internal Model)
     finalTrackListUris: string[], // The final ordered list of URIs
     mandatoryTracks: MandatoryTrack[], // Setup config (source of truth for VIPs)
-    newAiTracks: { uri: string; artist: string; track: string }[], // AI selections
-    removalReasons?: Map<string, 'duplicate' | 'expired' | 'artist_limit' | 'size_limit' | 'other'>
+    newAiTracks: { artist: string; track: string; uri: string }[], // AI selections
+    removalReasons?: Map<string, 'artist_limit' | 'duplicate' | 'expired' | 'other' | 'size_limit'>
   ): DiffResult {
     // 1. Identify Added URIs
     const survivorUris = new Set(keptTracks.map((t) => t.uri));
@@ -30,20 +30,20 @@ export class DiffCalculator {
     const added = tracksToAddUris.map((uri) => {
       // Priority 1: AI Tracks (Most likely source of newness)
       const aiMatch = newAiTracks.find((t) => t.uri === uri);
-      if (aiMatch) return { uri, name: aiMatch.track, artist: aiMatch.artist };
+      if (aiMatch) return { artist: aiMatch.artist, name: aiMatch.track, uri };
 
       // Priority 2: Mandatory Tracks (If they were missing and got re-added)
       const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
       if (vipMatch) {
         return {
-          uri,
+          artist: vipMatch.artist || 'Unknown Artist',
           name: vipMatch.name || 'Unknown Track',
-          artist: vipMatch.artist || 'Unknown Artist'
+          uri
         };
       }
 
       // Priority 3: Fallback (Should be rare)
-      return { uri, name: 'Unknown Track', artist: 'Unknown Artist' };
+      return { artist: 'Unknown Artist', name: 'Unknown Track', uri };
     });
 
     // 3. Identify Removed URIs (Accounting for Duplicates)
@@ -72,10 +72,10 @@ export class DiffCalculator {
 
         for (let i = 0; i < removedCount; i++) {
           removed.push({
-            uri: t.uri,
-            name: t.name,
             artist: t.artist,
-            reason
+            name: t.name,
+            reason,
+            uri: t.uri
           });
         }
       }
@@ -88,12 +88,12 @@ export class DiffCalculator {
     const keptMandatory = keptMandatoryUris.map((uri) => {
       const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
       return {
-        uri,
+        artist: vipMatch?.artist || 'Unknown Artist',
         name: vipMatch?.name || 'Unknown Track',
-        artist: vipMatch?.artist || 'Unknown Artist'
+        uri
       };
     });
 
-    return { added, removed, keptMandatory };
+    return { added, keptMandatory, removed };
   }
 }

@@ -13,17 +13,17 @@ vi.mock('../../src/config/env', () => ({
 
 // Create a shared mock instance
 const mockSpotifyInstance = {
+  currentUser: {
+    playlists: { playlists: vi.fn() },
+    profile: vi.fn()
+  },
   playlists: {
     getPlaylistItems: vi.fn()
   },
-  currentUser: {
-    profile: vi.fn(),
-    playlists: { playlists: vi.fn() }
-  },
   search: vi.fn(),
-  tracks: { get: vi.fn() },
   setAccessToken: vi.fn(),
-  switchAuthenticationStrategy: vi.fn()
+  switchAuthenticationStrategy: vi.fn(),
+  tracks: { get: vi.fn() }
   // Add other methods if needed by constructor or ensureAccessToken init
 };
 
@@ -43,12 +43,12 @@ describe('SpotifyService Search Optimization', () => {
 
     // Mock successful refresh logic
     global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
       json: async () => ({
         access_token: 'refreshed-token',
         expires_in: 3600,
         refresh_token: 'new-refresh'
-      })
+      }),
+      ok: true
     } as unknown as Response);
 
     service = new SpotifyService('mock-refresh-token');
@@ -69,34 +69,34 @@ describe('SpotifyService Search Optimization', () => {
 
     // Mock sequential first page
     mockSpotifyInstance.currentUser.playlists.playlists.mockResolvedValueOnce({
-      total: totalPlaylists,
       items: Array(50)
         .fill(null)
         .map((_, i) => ({
-          uri: `spotify:playlist:${i}`,
-          name: `Playlist ${i}`,
-          owner: { id: 'test-user-id', display_name: 'Test User' },
           description: '',
-          images: []
-        }))
+          images: [],
+          name: `Playlist ${i}`,
+          owner: { display_name: 'Test User', id: 'test-user-id' },
+          uri: `spotify:playlist:${i}`
+        })),
+      total: totalPlaylists
     });
 
     // Mock the parallel calls (order not guaranteed, so we mock implementation or return generic filtered)
     // We expect calls with offset 50 and 100.
     mockSpotifyInstance.currentUser.playlists.playlists.mockImplementation(
       async (limit, offset) => {
-        if (offset === 0) return { total: 0, items: [] }; // Handle unexpected reentry if any
+        if (offset === 0) return { items: [], total: 0 }; // Handle unexpected reentry if any
 
         const count = Math.min(limit, totalPlaylists - offset);
         return {
           items: Array(count)
             .fill(null)
             .map((_, i) => ({
-              uri: `spotify:playlist:${offset + i}`,
-              name: `Playlist ${offset + i}`,
-              owner: { id: 'test-user-id', display_name: 'Test User' },
               description: '',
-              images: []
+              images: [],
+              name: `Playlist ${offset + i}`,
+              owner: { display_name: 'Test User', id: 'test-user-id' },
+              uri: `spotify:playlist:${offset + i}`
             }))
         };
       }
@@ -122,23 +122,23 @@ describe('SpotifyService Search Optimization', () => {
   it('should search and filter locally correctly', async () => {
     // Setup 2 playlists: 1 matching, 1 not
     mockSpotifyInstance.currentUser.playlists.playlists.mockResolvedValueOnce({
-      total: 2,
       items: [
         {
-          uri: 'uri:1',
-          name: 'Rock Classics',
-          owner: { id: 'test-user-id', display_name: 'Me' },
           description: 'Best of Rock',
-          images: []
+          images: [],
+          name: 'Rock Classics',
+          owner: { display_name: 'Me', id: 'test-user-id' },
+          uri: 'uri:1'
         },
         {
-          uri: 'uri:2',
-          name: 'Jazz Vibes',
-          owner: { id: 'test-user-id', display_name: 'Me' },
           description: 'Smooth Jazz',
-          images: []
+          images: [],
+          name: 'Jazz Vibes',
+          owner: { display_name: 'Me', id: 'test-user-id' },
+          uri: 'uri:2'
         }
-      ]
+      ],
+      total: 2
     });
 
     const searchResults = await service.searchUserPlaylists('Rock');
@@ -150,16 +150,16 @@ describe('SpotifyService Search Optimization', () => {
   it('should respect the maxPlaylists hard limit to prevent abuse', async () => {
     // Mock a HUGE number of playlists reported by API
     mockSpotifyInstance.currentUser.playlists.playlists.mockResolvedValueOnce({
-      total: 10000,
       items: Array(50)
         .fill(null)
         .map((_, i) => ({
-          uri: `spotify:playlist:${i}`,
-          name: `Playlist ${i}`,
-          owner: { id: 'test-user-id', display_name: 'Test User' },
           description: '',
-          images: []
-        }))
+          images: [],
+          name: `Playlist ${i}`,
+          owner: { display_name: 'Test User', id: 'test-user-id' },
+          uri: `spotify:playlist:${i}`
+        })),
+      total: 10000
     });
 
     // Mock subsequent calls

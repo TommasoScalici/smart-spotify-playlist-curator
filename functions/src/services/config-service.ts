@@ -1,6 +1,5 @@
-import * as logger from 'firebase-functions/logger';
-
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
+import * as logger from 'firebase-functions/logger';
 
 import { db } from '../config/firebase';
 
@@ -12,7 +11,7 @@ export class ConfigService {
    * @param playlistId - The Spotify ID of the playlist
    * @returns The validated configuration or null if not found
    */
-  async getPlaylistConfig(playlistId: string): Promise<PlaylistConfig | null> {
+  async getPlaylistConfig(playlistId: string): Promise<null | PlaylistConfig> {
     try {
       // Use Collection Group to find the playlist anywhere
       const snapshot = await db

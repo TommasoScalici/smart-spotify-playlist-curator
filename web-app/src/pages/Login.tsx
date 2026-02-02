@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { Chrome, Music } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -54,9 +54,9 @@ export default function Login() {
           )}
 
           <Button
+            className="bg-foreground text-background hover:bg-foreground/90 h-14 w-full rounded-2xl font-bold shadow-xl transition-all hover:scale-[1.02] active:scale-95"
             onClick={handleLogin}
             size="lg"
-            className="bg-foreground text-background hover:bg-foreground/90 h-14 w-full rounded-2xl font-bold shadow-xl transition-all hover:scale-[1.02] active:scale-95"
           >
             <Chrome className="mr-2 h-5 w-5" />
             Sign in with Google

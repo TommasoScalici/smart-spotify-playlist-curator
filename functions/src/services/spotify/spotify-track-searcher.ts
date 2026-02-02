@@ -5,20 +5,52 @@ import { SearchResult, TrackInfo } from '../../types/spotify';
 interface SpotifySearchItem {
   added_at: string;
   track: {
-    uri: string;
-    name: string;
-    popularity: number;
     album: {
       name: string;
     };
     artists: {
       name: string;
     }[];
+    name: string;
+    popularity: number;
+    uri: string;
   };
 }
 
 export class SpotifyTrackSearcher {
   constructor(private spotify: SpotifyApi) {}
+
+  public async getLatestTrackAddedAt(
+    playlistId: string,
+    totalTracks: number
+  ): Promise<null | string> {
+    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
+    if (totalTracks === 0) return null;
+
+    const lastTrackBatch = await this.spotify.playlists.getPlaylistItems(
+      playlistIdClean,
+      undefined,
+      'items(added_at)',
+      1 as MaxInt<50>,
+      Math.max(0, totalTracks - 1)
+    );
+
+    return lastTrackBatch.items[0]?.added_at || null;
+  }
+
+  public async getPlaylistDetails(playlistId: string) {
+    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
+    const playlist = await this.spotify.playlists.getPlaylist(playlistIdClean);
+    return {
+      description: playlist.description,
+      followers: playlist.followers.total,
+      id: playlist.id,
+      imageUrl: playlist.images?.[0]?.url,
+      name: playlist.name,
+      owner: playlist.owner.display_name,
+      totalTracks: playlist.tracks.total
+    };
+  }
 
   public async getPlaylistTracks(playlistId: string): Promise<TrackInfo[]> {
     const playlistIdClean = playlistId.replace('spotify:playlist:', '');
@@ -38,12 +70,12 @@ export class SpotifyTrackSearcher {
       const items = response.items.filter((item) => item.track) as unknown as SpotifySearchItem[];
       tracks = tracks.concat(
         items.map((item: SpotifySearchItem) => ({
-          uri: item.track.uri,
-          name: item.track.name,
-          artist: item.track.artists[0]?.name || 'Unknown',
-          album: item.track.album?.name || '',
           addedAt: item.added_at,
-          popularity: item.track.popularity
+          album: item.track.album?.name || '',
+          artist: item.track.artists[0]?.name || 'Unknown',
+          name: item.track.name,
+          popularity: item.track.popularity,
+          uri: item.track.uri
         }))
       );
 
@@ -54,54 +86,17 @@ export class SpotifyTrackSearcher {
     return tracks;
   }
 
-  public async search(
-    query: string,
-    types: ('track' | 'playlist' | 'artist')[],
-    limit: number = 20
-  ): Promise<SearchResult[]> {
-    const response = await this.spotify.search(query, types, undefined, limit as MaxInt<50>);
-    const results: SearchResult[] = [];
-
-    if (response.tracks) {
-      results.push(
-        ...response.tracks.items.map((t) => ({
-          uri: t.uri,
-          name: t.name,
-          artist: t.artists[0]?.name,
-          imageUrl: t.album.images?.[0]?.url,
-          popularity: t.popularity,
-          type: 'track' as const
-        }))
-      );
-    }
-
-    if (response.playlists) {
-      results.push(
-        ...response.playlists.items.map((p) => ({
-          uri: p.uri,
-          name: p.name,
-          owner: p.owner.display_name,
-          ownerId: p.owner.id,
-          description: p.description,
-          imageUrl: p.images[0]?.url,
-          type: 'playlist' as const
-        }))
-      );
-    }
-
-    if (response.artists) {
-      results.push(
-        ...response.artists.items.map((a) => ({
-          uri: a.uri,
-          name: a.name,
-          imageUrl: a.images[0]?.url,
-          popularity: a.popularity,
-          type: 'artist' as const
-        }))
-      );
-    }
-
-    return results;
+  public async getTrackMetadata(trackUri: string) {
+    const trackId = trackUri.replace('spotify:track:', '');
+    const track = await this.spotify.tracks.get(trackId);
+    return {
+      album: track.album.name,
+      artist: track.artists[0]?.name || 'Unknown',
+      imageUrl: track.album.images?.[0]?.url,
+      name: track.name,
+      popularity: track.popularity,
+      uri: track.uri
+    };
   }
 
   public async getTracks(uris: string[]): Promise<TrackInfo[]> {
@@ -117,58 +112,13 @@ export class SpotifyTrackSearcher {
     const allTracks = results.flatMap((r) => r);
 
     return allTracks.map((t) => ({
-      uri: t.uri,
-      name: t.name,
-      artist: t.artists[0]?.name || 'Unknown',
-      album: t.album.name,
       addedAt: new Date().toISOString(),
-      popularity: t.popularity
+      album: t.album.name,
+      artist: t.artists[0]?.name || 'Unknown',
+      name: t.name,
+      popularity: t.popularity,
+      uri: t.uri
     }));
-  }
-
-  public async getPlaylistDetails(playlistId: string) {
-    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
-    const playlist = await this.spotify.playlists.getPlaylist(playlistIdClean);
-    return {
-      id: playlist.id,
-      name: playlist.name,
-      description: playlist.description,
-      imageUrl: playlist.images?.[0]?.url,
-      followers: playlist.followers.total,
-      totalTracks: playlist.tracks.total,
-      owner: playlist.owner.display_name
-    };
-  }
-
-  public async getLatestTrackAddedAt(
-    playlistId: string,
-    totalTracks: number
-  ): Promise<string | null> {
-    const playlistIdClean = playlistId.replace('spotify:playlist:', '');
-    if (totalTracks === 0) return null;
-
-    const lastTrackBatch = await this.spotify.playlists.getPlaylistItems(
-      playlistIdClean,
-      undefined,
-      'items(added_at)',
-      1 as MaxInt<50>,
-      Math.max(0, totalTracks - 1)
-    );
-
-    return lastTrackBatch.items[0]?.added_at || null;
-  }
-
-  public async getTrackMetadata(trackUri: string) {
-    const trackId = trackUri.replace('spotify:track:', '');
-    const track = await this.spotify.tracks.get(trackId);
-    return {
-      uri: track.uri,
-      name: track.name,
-      artist: track.artists[0]?.name || 'Unknown',
-      album: track.album.name,
-      imageUrl: track.album.images?.[0]?.url,
-      popularity: track.popularity
-    };
   }
 
   public async getUserPlaylists(): Promise<SearchResult[]> {
@@ -200,14 +150,64 @@ export class SpotifyTrackSearcher {
     }
 
     return allItems.map((p) => ({
-      uri: p.uri,
+      description: p.description,
+      imageUrl: p.images?.[0]?.url,
       name: p.name,
       owner: p.owner.display_name,
       ownerId: p.owner.id,
-      description: p.description,
-      imageUrl: p.images?.[0]?.url,
-      type: 'playlist' as const
+      type: 'playlist' as const,
+      uri: p.uri
     }));
+  }
+
+  public async search(
+    query: string,
+    types: ('artist' | 'playlist' | 'track')[],
+    limit: number = 20
+  ): Promise<SearchResult[]> {
+    const response = await this.spotify.search(query, types, undefined, limit as MaxInt<50>);
+    const results: SearchResult[] = [];
+
+    if (response.tracks) {
+      results.push(
+        ...response.tracks.items.map((t) => ({
+          artist: t.artists[0]?.name,
+          imageUrl: t.album.images?.[0]?.url,
+          name: t.name,
+          popularity: t.popularity,
+          type: 'track' as const,
+          uri: t.uri
+        }))
+      );
+    }
+
+    if (response.playlists) {
+      results.push(
+        ...response.playlists.items.map((p) => ({
+          description: p.description,
+          imageUrl: p.images[0]?.url,
+          name: p.name,
+          owner: p.owner.display_name,
+          ownerId: p.owner.id,
+          type: 'playlist' as const,
+          uri: p.uri
+        }))
+      );
+    }
+
+    if (response.artists) {
+      results.push(
+        ...response.artists.items.map((a) => ({
+          imageUrl: a.images[0]?.url,
+          name: a.name,
+          popularity: a.popularity,
+          type: 'artist' as const,
+          uri: a.uri
+        }))
+      );
+    }
+
+    return results;
   }
 
   public async searchUserPlaylists(query: string, limit: number = 20): Promise<SearchResult[]> {

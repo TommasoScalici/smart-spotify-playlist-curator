@@ -13,11 +13,11 @@ vi.mock('../../src/config/env', () => ({
 
 const mockSpotifyInstance = {
   playlists: {
-    getPlaylistItems: vi.fn(),
-    removeItemsFromPlaylist: vi.fn(),
-    movePlaylistItems: vi.fn(),
     addItemsToPlaylist: vi.fn(),
-    getPlaylist: vi.fn()
+    getPlaylist: vi.fn(),
+    getPlaylistItems: vi.fn(),
+    movePlaylistItems: vi.fn(),
+    removeItemsFromPlaylist: vi.fn()
   },
   setAccessToken: vi.fn(),
   switchAuthenticationStrategy: vi.fn()
@@ -36,8 +36,8 @@ describe('SpotifyService - Smart Update', () => {
     vi.clearAllMocks();
 
     global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ access_token: 'refreshed-token', expires_in: 3600 })
+      json: async () => ({ access_token: 'refreshed-token', expires_in: 3600 }),
+      ok: true
     } as unknown as Response);
 
     spotifyService = new SpotifyService('mock-refresh-token');
@@ -58,98 +58,98 @@ describe('SpotifyService - Smart Update', () => {
     // Current State: [A(vip), B, C, D(vip), E]
     const currentTracks = [
       {
+        added_at: '2023-01-01',
         track: {
-          uri: 'spotify:track:A',
-          name: 'A',
-          artists: [{ name: 'Art' }],
           album: { name: 'Album A' },
+          artists: [{ name: 'Art' }],
           id: '1',
-          type: 'track'
-        },
-        added_at: '2023-01-01'
+          name: 'A',
+          type: 'track',
+          uri: 'spotify:track:A'
+        }
       },
       {
+        added_at: '2023-01-02',
         track: {
-          uri: 'spotify:track:B',
-          name: 'B',
-          artists: [{ name: 'Art' }],
           album: { name: 'Album B' },
+          artists: [{ name: 'Art' }],
           id: '2',
-          type: 'track'
-        },
-        added_at: '2023-01-02'
+          name: 'B',
+          type: 'track',
+          uri: 'spotify:track:B'
+        }
       },
       {
+        added_at: '2023-01-03',
         track: {
-          uri: 'spotify:track:C',
-          name: 'C',
-          artists: [{ name: 'Art' }],
           album: { name: 'Album C' },
+          artists: [{ name: 'Art' }],
           id: '3',
-          type: 'track'
-        },
-        added_at: '2023-01-03'
+          name: 'C',
+          type: 'track',
+          uri: 'spotify:track:C'
+        }
       },
       {
+        added_at: '2023-01-01',
         track: {
-          uri: 'spotify:track:D',
-          name: 'D',
-          artists: [{ name: 'Art' }],
           album: { name: 'Album D' },
+          artists: [{ name: 'Art' }],
           id: '4',
-          type: 'track'
-        },
-        added_at: '2023-01-01'
+          name: 'D',
+          type: 'track',
+          uri: 'spotify:track:D'
+        }
       },
       {
+        added_at: '2023-01-04',
         track: {
-          uri: 'spotify:track:E',
-          name: 'E',
-          artists: [{ name: 'Art' }],
           album: { name: 'Album E' },
+          artists: [{ name: 'Art' }],
           id: '5',
-          type: 'track'
-        },
-        added_at: '2023-01-04'
+          name: 'E',
+          type: 'track',
+          uri: 'spotify:track:E'
+        }
       }
     ];
 
     // Mock response to change state between calls!
     mockSpotifyInstance.playlists.getPlaylistItems
-      .mockResolvedValueOnce({ total: 5, items: currentTracks }) // Stage 1 fetch
+      .mockResolvedValueOnce({ items: currentTracks, total: 5 }) // Stage 1 fetch
       .mockResolvedValueOnce({
-        total: 5,
         items: [
           currentTracks[0],
           currentTracks[3],
           {
             track: {
-              uri: 'spotify:track:X',
-              type: 'track',
+              album: { name: 'X' },
               artists: [{ name: 'Art' }],
               name: 'X',
-              album: { name: 'X' }
+              type: 'track',
+              uri: 'spotify:track:X'
             }
           },
           {
             track: {
-              uri: 'spotify:track:Y',
-              type: 'track',
+              album: { name: 'Y' },
               artists: [{ name: 'Art' }],
               name: 'Y',
-              album: { name: 'Y' }
+              type: 'track',
+              uri: 'spotify:track:Y'
             }
           },
           {
             track: {
-              uri: 'spotify:track:Z',
-              type: 'track',
+              album: { name: 'Z' },
               artists: [{ name: 'Art' }],
               name: 'Z',
-              album: { name: 'Z' }
+              type: 'track',
+              uri: 'spotify:track:Z'
             }
           }
-        ]
+        ],
+        total: 5
       }); // After additions [A, D, X, Y, Z]
 
     // Target Order: [A(vip), X, Y, D(vip), Z]
@@ -168,16 +168,16 @@ describe('SpotifyService - Smart Update', () => {
     mockSpotifyInstance.playlists.addItemsToPlaylist.mockResolvedValue({ snapshot_id: 'snap4' });
 
     // Execute
-    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris, false);
+    await spotifyService.performSmartUpdate(playlistId, targetOrderedUris);
 
     // 1. Remove Logic: B, C, E.
     expect(mockSpotifyInstance.playlists.removeItemsFromPlaylist).toHaveBeenCalledWith(
       playlistId,
       expect.objectContaining({
         tracks: expect.arrayContaining([
-          { uri: 'spotify:track:E', positions: [4] },
-          { uri: 'spotify:track:C', positions: [2] },
-          { uri: 'spotify:track:B', positions: [1] }
+          { positions: [4], uri: 'spotify:track:E' },
+          { positions: [2], uri: 'spotify:track:C' },
+          { positions: [1], uri: 'spotify:track:B' }
         ])
       })
     );
@@ -218,26 +218,26 @@ describe('SpotifyService - Smart Update', () => {
 
     const currentTracks = [
       {
+        added_at: '2023-01-01',
         track: {
-          uri: 'spotify:track:D',
-          name: 'D',
-          artists: [],
           album: { name: 'Album D' },
+          artists: [],
           id: '4',
-          type: 'track'
-        },
-        added_at: '2023-01-01'
+          name: 'D',
+          type: 'track',
+          uri: 'spotify:track:D'
+        }
       },
       {
+        added_at: '2023-01-01',
         track: {
-          uri: 'spotify:track:A',
-          name: 'A',
-          artists: [],
           album: { name: 'Album A' },
+          artists: [],
           id: '1',
-          type: 'track'
-        },
-        added_at: '2023-01-01'
+          name: 'A',
+          type: 'track',
+          uri: 'spotify:track:A'
+        }
       }
     ];
 
@@ -245,11 +245,7 @@ describe('SpotifyService - Smart Update', () => {
     mockSpotifyInstance.playlists.movePlaylistItems.mockResolvedValue({ snapshot_id: 'snap2' });
 
     // Target: [A, D]
-    await spotifyService.performSmartUpdate(
-      playlistId,
-      ['spotify:track:A', 'spotify:track:D'],
-      false
-    );
+    await spotifyService.performSmartUpdate(playlistId, ['spotify:track:A', 'spotify:track:D']);
 
     // Initial: [D, A].
     // i=0: [D] != [A]. Find [A] at 1. Move 1 to 0. -> [A, D]

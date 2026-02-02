@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from 'react';
+import { ActivityLog, PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
-import { ActivityLog, PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { FirestoreService } from '@/services/firestore-service';
 import { FunctionsService } from '@/services/functions-service';
 
 export interface UsePlaylistRealtimeProps {
-  config: PlaylistConfig & { _docId: string };
+  config: { _docId: string } & PlaylistConfig;
 }
 
 export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
@@ -21,11 +21,11 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
 
   // 1. Fetch Playlist Metrics (Followers, Tracks, etc.)
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
-    queryKey: ['playlistMetrics', config.id],
+    enabled: !!config.id,
     queryFn: () => FunctionsService.getPlaylistMetrics(config.id),
-    staleTime: 1000 * 60 * 5, // 5 minutes
+    queryKey: ['playlistMetrics', config.id],
     retry: 1,
-    enabled: !!config.id
+    staleTime: 1000 * 60 * 5 // 5 minutes
   });
 
   // 2. Real-time Log & Progress Subscription
@@ -41,11 +41,10 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
   }, [user?.uid, config.id]);
 
   // 3. Sync optimistic state with real log state
-  useEffect(() => {
-    if (latestLog?.metadata?.state === 'running') {
-      setIsOptimisticallyRunning(false);
-    }
-  }, [latestLog?.metadata?.state]);
+  // Reset optimistic flag if we see the real run has started
+  if (latestLog?.metadata?.state === 'running' && isOptimisticallyRunning) {
+    setIsOptimisticallyRunning(false);
+  }
 
   // 4. Mutation: Toggle Enabled/Disabled
   const toggleEnabledMutation = useMutation({
@@ -53,16 +52,16 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
       if (!user?.uid) throw new Error('User not authenticated');
       await FirestoreService.saveUserPlaylist(user.uid, { ...config, enabled }, config._docId);
     },
-    onSuccess: (_, enabled) => {
-      queryClient.invalidateQueries({ queryKey: ['playlists'] });
-      toast.success(enabled ? 'Playlist enabled' : 'Playlist disabled', {
-        description: `"${config.name}" automation is now ${enabled ? 'active' : 'paused'}.`
-      });
-    },
     onError: (error: Error) => {
       console.error('Toggle failed:', error);
       toast.error('Failed to update playlist', {
         description: 'Please try again later.'
+      });
+    },
+    onSuccess: (_, enabled) => {
+      queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      toast.success(enabled ? 'Playlist enabled' : 'Playlist disabled', {
+        description: `"${config.name}" automation is now ${enabled ? 'active' : 'paused'}.`
       });
     }
   });
@@ -73,71 +72,37 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
       if (!user?.uid) throw new Error('User not authenticated');
       await FirestoreService.deleteUserPlaylist(user.uid, config._docId);
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['playlists'] });
-      toast.success('Playlist removed from app', {
-        description: `"${config.name}" has been deleted from your Smart Curator dashboard.`
-      });
-    },
     onError: (error) => {
       console.error('Delete failed:', error);
       toast.error('Failed to delete playlist', {
         description: 'Please try again later.'
       });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists'] });
+      toast.success('Playlist removed from app', {
+        description: `"${config.name}" has been deleted from your Smart Curator dashboard.`
+      });
     }
   });
 
-  // 6. Action: Run Test Curation (Dry Run)
-  const runTestCuration = async () => {
-    setIsOptimisticallyRunning(true);
-    const toastId = toast.loading('Running test curation...');
-    try {
-      const result = await FunctionsService.triggerCuration(config.id, {
-        dryRun: true
-      });
-
-      const errorResult = result.results.find((r) => r.status === 'error');
-
-      if (errorResult) {
-        toast.error('Test run failed', {
-          id: toastId,
-          description: errorResult.error || 'Unknown error occurred during curation.'
-        });
-      } else {
-        toast.success('Test run complete!', {
-          id: toastId,
-          description: 'Check the "History" button to see the proposed changes.'
-        });
-      }
-    } catch (err) {
-      toast.error('Failed to start test run', {
-        id: toastId,
-        description: (err as Error).message
-      });
-    } finally {
-      setIsOptimisticallyRunning(false);
-    }
-  };
-
   // Derived Values
+  const lastUpdated = metrics?.lastUpdated;
   const lastUpdatedText = useMemo(() => {
-    return metrics?.lastUpdated
-      ? formatDistanceToNow(new Date(metrics.lastUpdated), { addSuffix: true })
-      : '—';
-  }, [metrics?.lastUpdated]);
+    return lastUpdated ? formatDistanceToNow(new Date(lastUpdated), { addSuffix: true }) : '—';
+  }, [lastUpdated]);
 
   return {
-    metrics,
-    isLoadingMetrics,
-    latestLog,
-    isLoadingLog,
-    isOptimisticallyRunning,
-    lastUpdatedText,
-    toggleEnabled: (enabled: boolean) => toggleEnabledMutation.mutate(enabled),
-    isToggling: toggleEnabledMutation.isPending,
     deletePlaylist: () => deleteMutation.mutate(),
     isDeleting: deleteMutation.isPending,
-    runTestCuration,
-    setIsOptimisticallyRunning
+    isLoadingLog,
+    isLoadingMetrics,
+    isOptimisticallyRunning,
+    isToggling: toggleEnabledMutation.isPending,
+    lastUpdatedText,
+    latestLog,
+    metrics,
+    setIsOptimisticallyRunning,
+    toggleEnabled: (enabled: boolean) => toggleEnabledMutation.mutate(enabled)
   };
 }

@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SlotManager } from '../../src/core/slot-manager';
@@ -15,22 +14,22 @@ vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/slot-manager');
 vi.mock('../../src/services/firestore-logger');
 
-interface MockSpotifyService {
-  getPlaylistTracks: ReturnType<typeof vi.fn>;
-  searchTrack: ReturnType<typeof vi.fn>;
-  performSmartUpdate: ReturnType<typeof vi.fn>;
-}
-
 interface MockAiService {
   generateSuggestions: ReturnType<typeof vi.fn>;
+}
+
+interface MockFirestoreLogger {
+  logActivity: ReturnType<typeof vi.fn>;
 }
 
 interface MockSlotManager {
   arrangePlaylist: ReturnType<typeof vi.fn>;
 }
 
-interface MockFirestoreLogger {
-  logActivity: ReturnType<typeof vi.fn>;
+interface MockSpotifyService {
+  getPlaylistTracks: ReturnType<typeof vi.fn>;
+  performSmartUpdate: ReturnType<typeof vi.fn>;
+  searchTrack: ReturnType<typeof vi.fn>;
 }
 
 describe('PlaylistOrchestrator Edge Cases', () => {
@@ -41,28 +40,28 @@ describe('PlaylistOrchestrator Edge Cases', () => {
   let mockFirestoreLogger: MockFirestoreLogger;
 
   const mockConfig: PlaylistConfig = {
-    id: 'spotify:playlist:test',
-    name: 'Test Playlist',
-    ownerId: 'user1',
-    enabled: true,
-    settings: { targetTotalTracks: 5, description: '', referenceArtists: [] },
-    aiGeneration: { enabled: true, tracksToAdd: 5, model: 'gemini', temperature: 0.7 },
+    aiGeneration: { enabled: true, model: 'gemini', temperature: 0.7, tracksToAdd: 5 },
     curationRules: {
       maxTrackAgeDays: 30,
-      removeDuplicates: true,
       maxTracksPerArtist: 1,
+      removeDuplicates: true,
       shuffleAtEnd: true,
       sizeLimitStrategy: 'drop_random'
     },
-    mandatoryTracks: []
+    enabled: true,
+    id: 'spotify:playlist:test',
+    mandatoryTracks: [],
+    name: 'Test Playlist',
+    ownerId: 'user1',
+    settings: { description: '', referenceArtists: [], targetTotalTracks: 5 }
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
     mockSpotifyService = {
       getPlaylistTracks: vi.fn().mockResolvedValue([]),
-      searchTrack: vi.fn(),
-      performSmartUpdate: vi.fn().mockResolvedValue(undefined)
+      performSmartUpdate: vi.fn().mockResolvedValue(undefined),
+      searchTrack: vi.fn()
     };
     mockAiService = {
       generateSuggestions: vi.fn()
@@ -94,10 +93,10 @@ describe('PlaylistOrchestrator Edge Cases', () => {
 
     // First search fails (null), second succeeds
     mockSpotifyService.searchTrack.mockResolvedValueOnce(null).mockResolvedValueOnce({
-      uri: 'uri:B',
       artist: 'Artist B',
       name: 'Track B',
-      popularity: 50
+      popularity: 50,
+      uri: 'uri:B'
     });
 
     await orchestrator.curatePlaylist(
@@ -145,16 +144,16 @@ describe('PlaylistOrchestrator Edge Cases', () => {
 
     mockSpotifyService.searchTrack
       .mockResolvedValueOnce({
-        uri: 'uri:A1',
         artist: 'Artist A',
         name: 'Track A1',
-        popularity: 50
+        popularity: 50,
+        uri: 'uri:A1'
       })
       .mockResolvedValueOnce({
-        uri: 'uri:A2',
         artist: 'Artist A',
         name: 'Track A2',
-        popularity: 60
+        popularity: 60,
+        uri: 'uri:A2'
       });
 
     await orchestrator.curatePlaylist(

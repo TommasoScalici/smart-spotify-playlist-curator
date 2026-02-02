@@ -1,11 +1,11 @@
-import { useEffect } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, Save } from 'lucide-react';
+import { useEffect } from 'react';
 import { FieldErrors, Resolver, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DEFAULT_PLAYLIST_CONFIG } from '@/constants/defaults';
@@ -21,14 +21,14 @@ import { TrackListSettings } from './config/TrackListSettings';
 
 interface ConfigEditorProps {
   initialConfig?: PlaylistConfig;
-  onSubmit: (data: PlaylistConfig) => Promise<void>;
   isAddMode?: boolean;
+  onSubmit: (data: PlaylistConfig) => Promise<void>;
 }
 
 /**
  * Recursively counts all error messages in the form errors object.
  */
-const countAllErrors = (obj: Record<string, unknown> | null | undefined): number => {
+const countAllErrors = (obj: null | Record<string, unknown> | undefined): number => {
   let count = 0;
   if (!obj || typeof obj !== 'object') return 0;
   if ('message' in obj) return 1;
@@ -41,7 +41,7 @@ const countAllErrors = (obj: Record<string, unknown> | null | undefined): number
 /**
  * Recursively extracts all error messages into a flat array.
  */
-const getFlatErrorMessages = (obj: Record<string, unknown> | null | undefined): string[] => {
+const getFlatErrorMessages = (obj: null | Record<string, unknown> | undefined): string[] => {
   const messages: string[] = [];
   const walk = (item: unknown) => {
     if (!item || typeof item !== 'object') return;
@@ -55,14 +55,14 @@ const getFlatErrorMessages = (obj: Record<string, unknown> | null | undefined): 
   return messages;
 };
 
-export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEditorProps) => {
+export const ConfigEditor = ({ initialConfig, isAddMode, onSubmit }: ConfigEditorProps) => {
   const { user } = useAuth();
 
   // Fetch existing playlists to check for duplicates in Add mode
   const { data: existingPlaylists = [] } = useQuery({
-    queryKey: ['playlists', user?.uid],
+    enabled: !!user && !!isAddMode,
     queryFn: () => (user ? FirestoreService.getUserPlaylists(user.uid) : []),
-    enabled: !!user && !!isAddMode
+    queryKey: ['playlists', user?.uid]
   });
 
   // Composite schema with duplicate check
@@ -77,16 +77,16 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
   });
 
   const {
-    register,
     control,
-    handleSubmit,
-    setValue,
-    watch,
+    formState: { errors, isSubmitting },
     getValues,
-    formState: { errors, isSubmitting }
+    handleSubmit,
+    register,
+    setValue,
+    watch
   } = useForm<PlaylistConfig>({
-    resolver: zodResolver(validationSchema) as Resolver<PlaylistConfig>,
-    defaultValues: initialConfig || (DEFAULT_PLAYLIST_CONFIG as PlaylistConfig)
+    defaultValues: initialConfig || (DEFAULT_PLAYLIST_CONFIG as PlaylistConfig),
+    resolver: zodResolver(validationSchema) as Resolver<PlaylistConfig>
   });
 
   const totalErrors = countAllErrors(errors as unknown as Record<string, unknown>);
@@ -113,13 +113,13 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
     !!playlistId && playlistId.startsWith('spotify:playlist:') && (!playlistName || !imageUrl);
 
   const { data: fetchedPlaylist } = useQuery({
-    queryKey: ['spotify', 'playlist', playlistId],
+    enabled: shouldFetchPlaylist,
     queryFn: async () => {
       if (!playlistId) return null;
       const results = await FunctionsService.searchSpotify(playlistId, 'playlist');
       return results && results.length > 0 ? results[0] : null;
     },
-    enabled: shouldFetchPlaylist,
+    queryKey: ['spotify', 'playlist', playlistId],
     staleTime: 1000 * 60 * 30 // 30 mins
   });
 
@@ -137,34 +137,34 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
 
   return (
     <form
-      onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)}
       className="mx-auto w-full max-w-5xl"
+      onSubmit={handleSubmit(onFormSubmit, onInvalidSubmit)}
     >
       <div className="space-y-6 pb-32 sm:space-y-8">
         {/* Section 1: Basic Info */}
         <section className="space-y-4">
           <BasicSettings
             control={control}
+            errors={errors}
             register={register}
             setValue={setValue}
             watch={watch}
-            errors={errors}
           />
         </section>
 
         {/* Section 2: Curation Rules */}
         <section className="space-y-4">
-          <RulesSettings control={control} register={register} errors={errors} />
+          <RulesSettings control={control} errors={errors} register={register} />
         </section>
 
         {/* Section 3: AI Configuration */}
         <section className="space-y-4">
-          <AiSettings control={control} register={register} errors={errors} watch={watch} />
+          <AiSettings control={control} errors={errors} register={register} watch={watch} />
         </section>
 
         {/* Section 4: Mandatory Tracks */}
         <section className="space-y-4">
-          <TrackListSettings control={control} setValue={setValue} errors={errors} />
+          <TrackListSettings control={control} errors={errors} setValue={setValue} />
         </section>
       </div>
 
@@ -185,16 +185,16 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
                   </div>
                 </TooltipTrigger>
                 <TooltipContent
-                  side="top"
                   align="start"
                   className="bg-destructive text-destructive-foreground mb-4 max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
+                  side="top"
                 >
                   <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
                     Validation Details
                   </p>
                   {getFlatErrorMessages(errors as unknown as Record<string, unknown>).map(
                     (msg, i) => (
-                      <div key={i} className="flex gap-2 text-sm">
+                      <div className="flex gap-2 text-sm" key={i}>
                         <span className="opacity-70">•</span>
                         <span>{msg}</span>
                       </div>
@@ -206,13 +206,13 @@ export const ConfigEditor = ({ initialConfig, onSubmit, isAddMode }: ConfigEdito
           )}
           <div className="flex-1" />
           <Button
-            type="submit"
-            disabled={isSubmitting}
-            size="lg"
             className={cn(
               'w-full shadow-lg transition-all sm:w-auto',
               totalErrors > 0 && 'opacity-90'
             )}
+            disabled={isSubmitting}
+            size="lg"
+            type="submit"
           >
             {isSubmitting ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

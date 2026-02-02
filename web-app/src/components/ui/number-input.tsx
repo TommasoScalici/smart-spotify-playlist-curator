@@ -1,5 +1,5 @@
-import * as React from 'react';
 import { Minus, Plus } from 'lucide-react';
+import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,26 +9,41 @@ export interface NumberInputProps extends Omit<
   React.InputHTMLAttributes<HTMLInputElement>,
   'onChange'
 > {
-  value: number;
-  onChange: (value: number) => void;
-  min?: number;
   max?: number;
+  min?: number;
+  onChange: (value: number) => void;
   step?: number;
+  value: number;
 }
 
 export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
-  ({ className, value, onChange, min = 0, max = 100, step = 1, disabled, ...props }, ref) => {
+  ({ className, disabled, max = 100, min = 0, onChange, step = 1, value, ...props }, ref) => {
+    const getPrecision = (num: number) => {
+      if (!isFinite(num)) return 0;
+      let e = 1;
+      let p = 0;
+      while (Math.round(num * e) / e !== num) {
+        e *= 10;
+        p++;
+      }
+      return p;
+    };
+
     const handleIncrement = (e: React.MouseEvent) => {
       e.preventDefault();
       if (!disabled && (max === undefined || value < max)) {
-        onChange(Math.min(max, value + step));
+        const precision = getPrecision(step);
+        const next = parseFloat((value + step).toFixed(precision));
+        onChange(Math.min(max, next));
       }
     };
 
     const handleDecrement = (e: React.MouseEvent) => {
       e.preventDefault();
       if (!disabled && (min === undefined || value > min)) {
-        onChange(Math.max(min, value - step));
+        const precision = getPrecision(step);
+        const next = parseFloat((value - step).toFixed(precision));
+        onChange(Math.max(min, next));
       }
     };
 
@@ -46,37 +61,37 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     return (
       <div className={cn('flex items-center gap-1', className)}>
         <Button
-          variant="outline"
-          size="icon"
           className="h-10 w-10 shrink-0 rounded-r-none border-r-0"
-          onClick={handleDecrement}
           disabled={disabled || (min !== undefined && value <= min)}
+          onClick={handleDecrement}
+          size="icon"
           type="button"
+          variant="outline"
         >
           <Minus className="h-4 w-4" />
           <span className="sr-only">Decrease</span>
         </Button>
         <div className="relative flex-1">
           <Input
-            ref={ref}
-            type="number"
             className="h-10 [appearance:textfield] rounded-none text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-            value={value}
-            onChange={handleChange}
-            min={min}
-            max={max}
-            step={step}
             disabled={disabled}
+            max={max}
+            min={min}
+            onChange={handleChange}
+            ref={ref}
+            step={step}
+            type="number"
+            value={value}
             {...props}
           />
         </div>
         <Button
-          variant="outline"
-          size="icon"
           className="h-10 w-10 shrink-0 rounded-l-none border-l-0"
-          onClick={handleIncrement}
           disabled={disabled || (max !== undefined && value >= max)}
+          onClick={handleIncrement}
+          size="icon"
           type="button"
+          variant="outline"
         >
           <Plus className="h-4 w-4" />
           <span className="sr-only">Increase</span>

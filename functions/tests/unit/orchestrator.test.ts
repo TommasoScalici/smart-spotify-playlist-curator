@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
-
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
 
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SlotManager } from '../../src/core/slot-manager';
@@ -20,25 +19,25 @@ vi.mock('../../src/core/diff-calculator', () => ({
   DiffCalculator: {
     calculate: vi.fn(() => ({
       added: [],
-      removed: [],
-      keptMandatory: []
+      keptMandatory: [],
+      removed: []
     }))
   }
 }));
 
 vi.mock('../../src/config/firebase', () => ({
   db: {
-    doc: vi.fn(() => ({
-      get: vi.fn().mockResolvedValue({
-        exists: true,
-        data: () => ({ refreshToken: 'mock-refresh-token' })
-      }),
-      update: vi.fn().mockResolvedValue(undefined)
-    })),
     collection: vi.fn(() => ({
       doc: vi.fn(() => ({
         update: vi.fn().mockResolvedValue(undefined)
       }))
+    })),
+    doc: vi.fn(() => ({
+      get: vi.fn().mockResolvedValue({
+        data: () => ({ refreshToken: 'mock-refresh-token' }),
+        exists: true
+      }),
+      update: vi.fn().mockResolvedValue(undefined)
     }))
   }
 }));
@@ -51,30 +50,30 @@ describe('PlaylistOrchestrator', () => {
   let mockFirestoreLogger: Mocked<FirestoreLogger>;
 
   const mockConfig: PlaylistConfig = {
-    id: 'spotify:playlist:test-playlist',
-    name: 'Test Playlist',
-    enabled: true,
-    ownerId: 'test-user-123',
-    settings: {
-      targetTotalTracks: 10,
-      description: 'Test',
-      allowExplicit: true,
-      referenceArtists: []
-    },
     aiGeneration: {
       enabled: true,
-      tracksToAdd: 10,
       model: 'gemini',
-      temperature: 0.7
+      temperature: 0.7,
+      tracksToAdd: 10
     },
     curationRules: {
       maxTrackAgeDays: 30,
-      removeDuplicates: true,
       maxTracksPerArtist: 2,
+      removeDuplicates: true,
       shuffleAtEnd: true,
       sizeLimitStrategy: 'drop_random'
     },
-    mandatoryTracks: []
+    enabled: true,
+    id: 'spotify:playlist:test-playlist',
+    mandatoryTracks: [],
+    name: 'Test Playlist',
+    ownerId: 'test-user-123',
+    settings: {
+      allowExplicit: true,
+      description: 'Test',
+      referenceArtists: [],
+      targetTotalTracks: 10
+    }
   };
 
   beforeEach(() => {
@@ -92,23 +91,25 @@ describe('PlaylistOrchestrator', () => {
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
     mockSpotifyService.getPlaylistDetails.mockResolvedValue({
-      id: 'test-playlist',
-      name: 'Test Playlist',
       description: 'Test',
       followers: 100,
-      totalTracks: 0,
+      id: 'test-playlist',
       imageUrl: 'http://test-image.com/img.jpg',
-      owner: 'Test Owner'
+      name: 'Test Playlist',
+      owner: 'Test Owner',
+      totalTracks: 0
     });
-    mockAiService.generateSuggestions.mockResolvedValue([{ artist: 'Artist A', track: 'Track B' }]);
+    mockAiService.generateSuggestions.mockResolvedValue([
+      { artist: 'Artist A', reasoning: 'Mock reasoning A', track: 'Track B' }
+    ]);
 
     mockSpotifyService.searchTrack.mockResolvedValue({
-      uri: 'spotify:track:new-ai-uri',
+      addedAt: new Date().toISOString(),
+      album: 'Album B',
       artist: 'Artist A',
       name: 'Track B',
-      album: 'Album B',
-      addedAt: new Date().toISOString(),
-      popularity: 50
+      popularity: 50,
+      uri: 'spotify:track:new-ai-uri'
     });
 
     mockSlotManager.arrangePlaylist.mockReturnValue(['spotify:track:uri1', 'spotify:track:uri2']);
@@ -117,26 +118,26 @@ describe('PlaylistOrchestrator', () => {
   it('Path 1: Full Flow (Empty Playlist -> AI Generation)', async () => {
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([]);
     mockAiService.generateSuggestions.mockResolvedValue([
-      { artist: 'Artist A', track: 'Track A' },
-      { artist: 'Artist B', track: 'Track B' }
+      { artist: 'Artist A', reasoning: 'Mock reasoning A', track: 'Track A' },
+      { artist: 'Artist B', reasoning: 'Mock reasoning B', track: 'Track B' }
     ]);
 
     mockSpotifyService.searchTrack
       .mockResolvedValueOnce({
-        uri: 'spotify:track:A',
+        addedAt: '',
+        album: 'Album A',
         artist: 'Artist A',
         name: 'Track A',
-        album: 'Album A',
-        addedAt: '',
-        popularity: 50
+        popularity: 50,
+        uri: 'spotify:track:A'
       })
       .mockResolvedValueOnce({
-        uri: 'spotify:track:B',
+        addedAt: '',
+        album: 'Album B',
         artist: 'Artist B',
         name: 'Track B',
-        album: 'Album B',
-        addedAt: '',
-        popularity: 60
+        popularity: 60,
+        uri: 'spotify:track:B'
       });
 
     await orchestrator.curatePlaylist(
@@ -166,32 +167,32 @@ describe('PlaylistOrchestrator', () => {
     const now = new Date();
     const tracks = [
       {
-        uri: 'uri:1',
-        name: 'Bad Company',
-        artist: 'Bad Company',
+        addedAt: now.toISOString(),
         album: 'Bad Company',
-        addedAt: now.toISOString()
+        artist: 'Bad Company',
+        name: 'Bad Company',
+        uri: 'uri:1'
       },
       {
-        uri: 'uri:2',
-        name: 'Bad Company',
-        artist: 'Bad Company',
+        addedAt: now.toISOString(),
         album: 'Bad Company',
-        addedAt: now.toISOString()
+        artist: 'Bad Company',
+        name: 'Bad Company',
+        uri: 'uri:2'
       },
       {
-        uri: 'uri:3',
+        addedAt: now.toISOString(),
+        album: 'Bad Company',
+        artist: 'Bad Company',
         name: 'Different',
-        artist: 'Bad Company',
-        album: 'Bad Company',
-        addedAt: now.toISOString()
+        uri: 'uri:3'
       },
       {
-        uri: 'uri:4',
-        name: 'Bad Company',
-        artist: 'Other Artist',
+        addedAt: now.toISOString(),
         album: 'Other Album',
-        addedAt: now.toISOString()
+        artist: 'Other Artist',
+        name: 'Bad Company',
+        uri: 'uri:4'
       }
     ];
 
@@ -227,18 +228,18 @@ describe('PlaylistOrchestrator', () => {
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue([
       {
-        uri: 'spotify:track:old',
-        name: 'Old',
-        artist: 'A',
+        addedAt: oldDate.toISOString(),
         album: 'Album A',
-        addedAt: oldDate.toISOString()
+        artist: 'A',
+        name: 'Old',
+        uri: 'spotify:track:old'
       },
       {
-        uri: 'spotify:track:new',
-        name: 'New',
-        artist: 'B',
+        addedAt: newDate.toISOString(),
         album: 'Album B',
-        addedAt: newDate.toISOString()
+        artist: 'B',
+        name: 'New',
+        uri: 'spotify:track:new'
       }
     ]);
 
@@ -268,12 +269,12 @@ describe('PlaylistOrchestrator', () => {
 
     // We have 10 tracks in the playlist
     const manyTracks = Array.from({ length: 10 }, (_, i) => ({
-      uri: `uri:${i}`,
-      name: `Track ${i}`,
-      artist: `Artist ${i}`,
-      album: `Album ${i}`,
       addedAt: new Date().toISOString(),
-      popularity: 50
+      album: `Album ${i}`,
+      artist: `Artist ${i}`,
+      name: `Track ${i}`,
+      popularity: 50,
+      uri: `uri:${i}`
     }));
 
     mockSpotifyService.getPlaylistTracks.mockResolvedValue(manyTracks);
@@ -305,8 +306,7 @@ describe('PlaylistOrchestrator', () => {
 
     expect(mockSpotifyService.performSmartUpdate).toHaveBeenCalledWith(
       expect.any(String),
-      expect.any(Array),
-      false
+      expect.any(Array)
     );
 
     const updateCall = mockSpotifyService.performSmartUpdate.mock.calls[0];

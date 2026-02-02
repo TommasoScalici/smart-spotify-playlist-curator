@@ -12,10 +12,10 @@ import { RunButton } from '../components/RunButton';
 vi.mock('@/services/functions-service');
 vi.mock('sonner', () => ({
   toast: {
-    success: vi.fn(),
     error: vi.fn(),
     info: vi.fn(),
-    promise: vi.fn((promise: Promise<unknown>) => promise)
+    promise: vi.fn((promise: Promise<unknown>) => promise),
+    success: vi.fn()
   }
 }));
 
@@ -37,14 +37,14 @@ describe('RunButton', () => {
 
   it('triggers estimation when clicked', async () => {
     (FunctionsService.estimateCuration as Mock).mockResolvedValue({
-      currentTracks: 10,
-      predictedFinal: 10,
-      duplicatesToRemove: 1,
       agedOutTracks: 1,
+      aiTracksToAdd: 5,
       artistLimitRemoved: 0,
-      sizeLimitRemoved: 0,
+      currentTracks: 10,
+      duplicatesToRemove: 1,
       mandatoryToAdd: 1,
-      aiTracksToAdd: 5
+      predictedFinal: 10,
+      sizeLimitRemoved: 0
     });
 
     renderButton();
@@ -76,7 +76,10 @@ describe('RunButton', () => {
   });
 
   it('triggers curation after confirmation', async () => {
-    (FunctionsService.estimateCuration as Mock).mockResolvedValue({ predictedFinal: 10 });
+    (FunctionsService.estimateCuration as Mock).mockResolvedValue({
+      planId: 'plan-xyz',
+      predictedFinal: 10
+    });
     (FunctionsService.triggerCuration as Mock).mockResolvedValue({ message: 'Success' });
 
     renderButton();
@@ -87,7 +90,9 @@ describe('RunButton', () => {
     const confirmBtn = await screen.findByText(/Run Automation/i);
     fireEvent.click(confirmBtn);
 
-    expect(FunctionsService.triggerCuration).toHaveBeenCalledWith(mockPlaylistId);
+    expect(FunctionsService.triggerCuration).toHaveBeenCalledWith(mockPlaylistId, {
+      planId: 'plan-xyz'
+    });
     expect(toast.promise).toHaveBeenCalled();
   });
 

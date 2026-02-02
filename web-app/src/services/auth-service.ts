@@ -1,3 +1,4 @@
+import { UserProfile, UserSchema } from '@smart-spotify-curator/shared';
 import {
   User as FirebaseUser,
   GoogleAuthProvider,
@@ -8,33 +9,45 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-import { UserProfile, UserSchema } from '@smart-spotify-curator/shared';
-
 import { auth, db } from './firebase';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 
 const MOCK_USER: FirebaseUser = {
-  uid: 'debug-user-123',
-  email: 'debug@example.com',
-  displayName: 'Debug User',
-  photoURL: 'https://ui-avatars.com/api/?name=Debug+User',
-  emailVerified: true,
-  isAnonymous: false,
-  metadata: {},
-  providerData: [],
-  refreshToken: 'mock-refresh-token',
-  tenantId: null,
   delete: async () => {},
+  displayName: 'Debug User',
+  email: 'debug@example.com',
+  emailVerified: true,
   getIdToken: async () => 'mock-id-token',
   getIdTokenResult: async () => ({}) as IdTokenResult,
-  reload: async () => {},
-  toJSON: () => ({}),
+  isAnonymous: false,
+  metadata: {},
   phoneNumber: null,
-  providerId: 'google.com'
+  photoURL: 'https://ui-avatars.com/api/?name=Debug+User',
+  providerData: [],
+  providerId: 'google.com',
+  refreshToken: 'mock-refresh-token',
+  reload: async () => {},
+  tenantId: null,
+  toJSON: () => ({}),
+  uid: 'debug-user-123'
 } as unknown as FirebaseUser;
 
 export const AuthService = {
+  /**
+   * Observe Auth State changes.
+   * @param callback - Function to call when auth state changes
+   * @returns Unsubscribe function
+   */
+  onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
+    if (IS_DEBUG_MODE) {
+      console.warn('[AUTH] Debug Mode Active: Triggering Mock Auth State');
+      const timeout = setTimeout(() => callback(MOCK_USER), 100);
+      return () => clearTimeout(timeout);
+    }
+    return onAuthStateChanged(auth, callback);
+  },
+
   /**
    * Sign in with Google Popup.
    * Authenticates user and syncs profile to Firestore.
@@ -87,31 +100,17 @@ export const AuthService = {
       await setDoc(userRef, { lastLoginAt: now }, { merge: true });
     } else {
       const newProfile: UserProfile = {
-        uid: user.uid,
-        email: user.email || '',
-        displayName: user.displayName || undefined,
-        photoURL: user.photoURL || undefined,
         createdAt: now,
+        displayName: user.displayName || undefined,
+        email: user.email || '',
         lastLoginAt: now,
-        theme: 'system'
+        photoURL: user.photoURL || undefined,
+        theme: 'system',
+        uid: user.uid
       };
 
       const validProfile = UserSchema.parse(newProfile);
       await setDoc(userRef, validProfile);
     }
-  },
-
-  /**
-   * Observe Auth State changes.
-   * @param callback - Function to call when auth state changes
-   * @returns Unsubscribe function
-   */
-  onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
-    if (IS_DEBUG_MODE) {
-      console.warn('[AUTH] Debug Mode Active: Triggering Mock Auth State');
-      const timeout = setTimeout(() => callback(MOCK_USER), 100);
-      return () => clearTimeout(timeout);
-    }
-    return onAuthStateChanged(auth, callback);
   }
 };

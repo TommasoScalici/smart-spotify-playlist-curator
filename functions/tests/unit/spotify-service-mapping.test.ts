@@ -31,8 +31,8 @@ describe('SpotifyService - Metadata Mapping', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ access_token: 'refreshed-token', expires_in: 3600 })
+      json: async () => ({ access_token: 'refreshed-token', expires_in: 3600 }),
+      ok: true
     } as unknown as Response);
 
     spotifyService = new SpotifyService('mock-refresh-token');
@@ -40,20 +40,20 @@ describe('SpotifyService - Metadata Mapping', () => {
 
   it('getPlaylistTracks: should correctly map track popularity and addedAt', async () => {
     const mockResponse = {
-      total: 1,
       items: [
         {
+          added_at: '2024-01-27T12:00:00Z',
           track: {
-            uri: 'spotify:track:1',
-            name: 'Track 1',
-            artists: [{ name: 'Artist 1' }],
             album: { name: 'Album 1' },
+            artists: [{ name: 'Artist 1' }],
+            name: 'Track 1',
             popularity: 85,
-            type: 'track'
-          },
-          added_at: '2024-01-27T12:00:00Z'
+            type: 'track',
+            uri: 'spotify:track:1'
+          }
         }
-      ]
+      ],
+      total: 1
     };
 
     mockSpotifyInstance.playlists.getPlaylistItems.mockResolvedValue(mockResponse);
@@ -62,12 +62,12 @@ describe('SpotifyService - Metadata Mapping', () => {
 
     expect(tracks).toHaveLength(1);
     expect(tracks[0]).toEqual({
-      uri: 'spotify:track:1',
-      name: 'Track 1',
-      artist: 'Artist 1',
-      album: 'Album 1',
       addedAt: '2024-01-27T12:00:00Z',
-      popularity: 85
+      album: 'Album 1',
+      artist: 'Artist 1',
+      name: 'Track 1',
+      popularity: 85,
+      uri: 'spotify:track:1'
     });
   });
 
@@ -76,12 +76,12 @@ describe('SpotifyService - Metadata Mapping', () => {
       tracks: {
         items: [
           {
-            uri: 'spotify:track:search-result',
-            name: 'Searched Track',
-            artists: [{ name: 'Search Artist' }],
             album: { name: 'Search Album' },
+            artists: [{ name: 'Search Artist' }],
+            name: 'Searched Track',
             popularity: 92,
-            type: 'track'
+            type: 'track',
+            uri: 'spotify:track:search-result'
           }
         ]
       }

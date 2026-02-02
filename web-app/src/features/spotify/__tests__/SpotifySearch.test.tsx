@@ -15,7 +15,7 @@ describe('SpotifySearch', () => {
   });
 
   it('renders input field with placeholder', () => {
-    render(<SpotifySearch type="track" onSelect={vi.fn()} placeholder="Find a song" />);
+    render(<SpotifySearch onSelect={vi.fn()} placeholder="Find a song" type="track" />);
     expect(screen.getByRole('combobox')).toHaveTextContent('Find a song');
   });
 
@@ -24,7 +24,7 @@ describe('SpotifySearch', () => {
     (FunctionsService.searchSpotify as Mock).mockImplementation(mockSearch);
     const user = userEvent.setup();
 
-    render(<SpotifySearch type="track" onSelect={vi.fn()} />);
+    render(<SpotifySearch onSelect={vi.fn()} type="track" />);
 
     await user.click(screen.getByRole('combobox'));
     const input = screen.getByPlaceholderText('Type to search tracks...');
@@ -48,15 +48,15 @@ describe('SpotifySearch', () => {
 
   it('displays results and handles selection', async () => {
     const mockResults = [
-      { uri: 'spotify:track:1', name: 'Song 1', artist: 'Artist A', type: 'track' },
-      { uri: 'spotify:track:2', name: 'Song 2', artist: 'Artist B', type: 'track' }
+      { artist: 'Artist A', name: 'Song 1', type: 'track', uri: 'spotify:track:1' },
+      { artist: 'Artist B', name: 'Song 2', type: 'track', uri: 'spotify:track:2' }
     ];
     (FunctionsService.searchSpotify as Mock).mockResolvedValue(mockResults);
 
     const onSelect = vi.fn();
     const user = userEvent.setup();
 
-    render(<SpotifySearch type="track" onSelect={onSelect} />);
+    render(<SpotifySearch onSelect={onSelect} type="track" />);
 
     await user.click(screen.getByRole('combobox'));
     const input = screen.getByPlaceholderText('Type to search tracks...');
@@ -78,8 +78,8 @@ describe('SpotifySearch', () => {
 
     expect(onSelect).toHaveBeenCalledWith(
       expect.objectContaining({
-        uri: 'spotify:track:1',
-        name: 'Song 1'
+        name: 'Song 1',
+        uri: 'spotify:track:1'
       })
     );
   });
@@ -88,7 +88,7 @@ describe('SpotifySearch', () => {
     (FunctionsService.searchSpotify as Mock).mockResolvedValue([]);
     const user = userEvent.setup();
 
-    render(<SpotifySearch type="track" onSelect={vi.fn()} />);
+    render(<SpotifySearch onSelect={vi.fn()} type="track" />);
 
     await user.click(screen.getByRole('combobox'));
     const input = screen.getByPlaceholderText('Type to search tracks...');

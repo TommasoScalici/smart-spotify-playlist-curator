@@ -1,4 +1,5 @@
 import { BaseTrack, TrackDiff } from '@smart-spotify-curator/shared';
+
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
@@ -24,7 +25,6 @@ export const TrackItem = ({ track, variant = 'default' }: TrackItemProps) => {
         </span>
         {reason && (
           <Badge
-            variant="outline"
             className={cn(
               'shrink-0 px-1.5 py-0 text-[10px] uppercase',
               reason === 'duplicate' && 'border-blue-500/20 bg-blue-500/10 text-blue-500',
@@ -34,6 +34,7 @@ export const TrackItem = ({ track, variant = 'default' }: TrackItemProps) => {
               (reason === 'other' || !reason) &&
                 'bg-muted text-muted-foreground border-muted-foreground/20'
             )}
+            variant="outline"
           >
             {reason === 'artist_limit'
               ? 'Artist limit'

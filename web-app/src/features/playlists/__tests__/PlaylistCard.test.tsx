@@ -1,10 +1,10 @@
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { AuthContext } from '@/contexts/AuthContext';
 import { FirestoreService } from '@/services/firestore-service';
 import { FunctionsService } from '@/services/functions-service';
@@ -15,38 +15,38 @@ import { PlaylistCard } from '../components/PlaylistCard';
 vi.mock('@/services/firestore-service');
 vi.mock('@/services/functions-service');
 vi.mock('sonner', () => ({
-  toast: { success: vi.fn(), error: vi.fn(), promise: vi.fn(), loading: vi.fn() }
+  toast: { error: vi.fn(), loading: vi.fn(), promise: vi.fn(), success: vi.fn() }
 }));
 
 // Mock Data
-const mockConfig: PlaylistConfig & { _docId: string } = {
-  id: 'playlist123',
+const mockConfig: { _docId: string } & PlaylistConfig = {
   _docId: 'doc123', // Firestore Doc ID
-  name: 'Chill Vibes',
-  ownerId: 'user123',
-  enabled: true,
-  settings: {
-    description: 'My cool playlist',
-    targetTotalTracks: 20,
-    referenceArtists: []
-  },
-  mandatoryTracks: [],
   aiGeneration: {
     enabled: true,
-    tracksToAdd: 10,
     model: 'gemini-1.5-flash',
-    temperature: 0.7
+    temperature: 0.7,
+    tracksToAdd: 10
   },
   curationRules: {
     maxTrackAgeDays: 365,
-    removeDuplicates: true,
     maxTracksPerArtist: 2,
+    removeDuplicates: true,
     shuffleAtEnd: true,
     sizeLimitStrategy: 'drop_random'
+  },
+  enabled: true,
+  id: 'playlist123',
+  mandatoryTracks: [],
+  name: 'Chill Vibes',
+  ownerId: 'user123',
+  settings: {
+    description: 'My cool playlist',
+    referenceArtists: [],
+    targetTotalTracks: 20
   }
 };
 
-const mockUser = { uid: 'user123', email: 'test@example.com' };
+const mockUser = { email: 'test@example.com', uid: 'user123' };
 
 // Helpers
 const createWrapper = () => {
@@ -57,10 +57,10 @@ const createWrapper = () => {
   return ({ children }: { children: React.ReactNode }) => (
     <AuthContext.Provider
       value={{
-        user: mockUser as unknown as import('firebase/auth').User,
         loading: false,
         signIn: vi.fn(),
-        signOut: vi.fn()
+        signOut: vi.fn(),
+        user: mockUser as unknown as import('firebase/auth').User
       }}
     >
       <QueryClientProvider client={queryClient}>
@@ -76,9 +76,9 @@ describe('PlaylistCard', () => {
     // Mock default metrics return to avoid undefined query data
     (FunctionsService.getPlaylistMetrics as Mock).mockResolvedValue({
       followers: 10,
-      tracks: 20,
       lastUpdated: new Date().toISOString(),
-      owner: 'Tommaso'
+      owner: 'Tommaso',
+      tracks: 20
     });
 
     // Mock subscribeLatestLog to return a no-op unsubscribe function
@@ -119,19 +119,5 @@ describe('PlaylistCard', () => {
 
     // Dialog should open
     expect(screen.getByText('Delete Playlist from App?')).toBeInTheDocument();
-  });
-
-  it('triggers dry run when test tube is clicked', async () => {
-    render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
-
-    const testBtn = screen.getByLabelText('Start test run');
-    fireEvent.click(testBtn);
-
-    await waitFor(() => {
-      expect(FunctionsService.triggerCuration).toHaveBeenCalledWith(
-        mockConfig.id,
-        expect.objectContaining({ dryRun: true })
-      );
-    });
   });
 });

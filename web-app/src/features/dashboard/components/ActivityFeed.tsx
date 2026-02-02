@@ -1,20 +1,11 @@
+import { Activity, Clock, Sparkles, Trash2, User } from 'lucide-react';
 import { useState } from 'react';
-import { Activity, Clock, History, Sparkles, Trash2, User } from 'lucide-react';
 import { toast } from 'sonner';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
 import { useAuth } from '@/contexts/AuthContext';
-import { DiffViewer } from '@/features/playlists/components/DiffViewer';
+import { ActivityDiffModal } from '@/features/dashboard/components/ActivityDiffModal';
 import { ActivityLog, useActivityFeed } from '@/hooks/useActivityFeed';
 import { cn } from '@/lib/utils';
 import { FirestoreService } from '@/services/firestore-service';
@@ -33,22 +24,26 @@ const formatTimeAgo = (isoString: string) => {
   return `${Math.floor(hours / 24)}d ago`;
 };
 
+// ...
+
 interface ActivityFeedProps {
   isDrawer?: boolean;
+  onActivitySelect?: (activity: ActivityLog) => void;
   onClose?: () => void;
 }
 
-export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
+export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFeedProps) => {
   const { user } = useAuth();
   const { activities, loading } = useActivityFeed();
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
 
   const handleActivityClick = (activity: ActivityLog) => {
     if (activity.type === 'success' && activity.metadata?.diff) {
-      setSelectedActivity(activity);
-      // Close side panel if it's open, so the modal is visible and doesn't get lost in blur
-      if (isDrawer) {
+      if (onActivitySelect) {
+        onActivitySelect(activity);
         onClose?.();
+      } else {
+        setSelectedActivity(activity);
       }
     }
   };
@@ -71,9 +66,9 @@ export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
 
     const promise = FirestoreService.clearAllActivities(user.uid);
     toast.promise(promise, {
+      error: 'Failed to clear activities',
       loading: 'Clearing all activities...',
-      success: 'Activity history cleared',
-      error: 'Failed to clear activities'
+      success: 'Activity history cleared'
     });
   };
 
@@ -97,10 +92,10 @@ export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
       {!loading && activities.length > 0 && (
         <div className="mb-2 flex justify-end">
           <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleClearAll}
             className="hover:bg-destructive/10 hover:text-destructive group/clear h-7 gap-1.5 text-[10px] font-bold tracking-wider uppercase transition-all"
+            onClick={handleClearAll}
+            size="sm"
+            variant="ghost"
           >
             <Sparkles className="h-3 w-3 group-hover/clear:hidden" />
             <Trash2 className="hidden h-3 w-3 group-hover/clear:block" />
@@ -111,21 +106,21 @@ export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
 
       {activities.map((activity) => (
         <div
-          key={activity.id}
           className={cn(
             'group/item animate-fade-in relative flex items-start gap-3 rounded-lg p-2 transition-all',
             activity.type === 'success' && activity.metadata?.diff
               ? 'cursor-pointer hover:bg-white/5'
               : ''
           )}
+          key={activity.id}
           onClick={() => handleActivityClick(activity)}
         >
           {/* Delete Button (Hover) */}
           <Button
-            variant="ghost"
-            size="icon"
-            onClick={(e) => handleDelete(e, activity.id)}
             className="hover:bg-destructive/20 hover:text-destructive absolute top-1 right-1 z-10 h-6 w-6 rounded-full opacity-0 transition-opacity group-hover/item:opacity-100"
+            onClick={(e) => handleDelete(e, activity.id)}
+            size="icon"
+            variant="ghost"
           >
             <Trash2 className="h-3 w-3" />
           </Button>
@@ -219,72 +214,12 @@ export const ActivityFeed = ({ isDrawer, onClose }: ActivityFeedProps) => {
         </div>
       ))}
 
-      {/* Report Modal */}
-      <Dialog open={!!selectedActivity} onOpenChange={(open) => !open && setSelectedActivity(null)}>
-        <DialogContent className="flex h-[85vh] max-h-[90vh] max-w-7xl flex-col">
-          <DialogHeader>
-            <DialogTitle>
-              Curation Report: {selectedActivity?.metadata?.playlistName || 'Playlist'}
-            </DialogTitle>
-            <DialogDescription>
-              Changes from {selectedActivity?.metadata?.dryRun ? 'test' : 'automation'} run at{' '}
-              {selectedActivity && new Date(selectedActivity.timestamp).toLocaleString()}
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="h-full min-h-0 flex-1 overflow-y-auto py-4 pr-1 md:overflow-hidden">
-            {selectedActivity?.metadata?.diff ? (
-              <div className="flex h-full flex-col">
-                <DiffViewer
-                  diff={selectedActivity.metadata.diff}
-                  isDryRun={selectedActivity.metadata.dryRun}
-                />
-              </div>
-            ) : (
-              <div className="text-muted-foreground flex h-full flex-col items-center justify-center">
-                <History className="mb-2 h-10 w-10 opacity-50" />
-                <p>No details available for this run.</p>
-              </div>
-            )}
-          </div>
-
-          <DialogFooter className="flex flex-col items-center justify-between gap-4 border-t border-white/5 pt-4 sm:flex-row">
-            {selectedActivity?.metadata?.diff?.stats && (
-              <div className="text-muted-foreground flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-medium">
-                <span>
-                  Target:{' '}
-                  <span className="text-foreground">
-                    {selectedActivity.metadata.diff.stats.target}
-                  </span>
-                </span>
-                <span className="text-lg leading-none opacity-20">|</span>
-                <span>
-                  Final:{' '}
-                  <span className="text-foreground">
-                    {selectedActivity.metadata.diff.stats.final}
-                  </span>
-                </span>
-                <span className="text-lg leading-none opacity-20">|</span>
-                <span className="flex items-center gap-1.5">
-                  Success:
-                  {selectedActivity.metadata.diff.stats.success ? (
-                    <Badge className="h-5 border-0 bg-green-500/20 px-1.5 text-green-500 hover:bg-green-500/30">
-                      Yes
-                    </Badge>
-                  ) : (
-                    <Badge variant="destructive" className="h-5 px-1.5">
-                      No
-                    </Badge>
-                  )}
-                </span>
-              </div>
-            )}
-            <Button onClick={() => setSelectedActivity(null)} className="w-full sm:w-auto">
-              Close
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Report Modal (Local state for non-drawer usage) */}
+      <ActivityDiffModal
+        activity={selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+        open={!!selectedActivity}
+      />
     </div>
   );
 

@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
-import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
-
 import { ActivityMetadata } from '@smart-spotify-curator/shared';
+import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
 
 import { useAuth } from '../contexts/AuthContext';
 import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
@@ -10,13 +9,13 @@ import { db } from '../services/firebase';
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true' && import.meta.env.MODE !== 'test';
 
 export interface ActivityLog {
-  id: string;
-  type: 'success' | 'info' | 'warning' | 'error';
-  message: string;
-  timestamp: string; // ISO string
-  read: boolean;
   deleted?: boolean;
+  id: string;
+  message: string;
   metadata?: ActivityMetadata;
+  read: boolean;
+  timestamp: string; // ISO string
+  type: 'error' | 'info' | 'success' | 'warning';
 }
 
 /**

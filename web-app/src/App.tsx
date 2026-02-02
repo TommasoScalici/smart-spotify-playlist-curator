@@ -2,22 +2,20 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
+import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import Dashboard from './pages/Dashboard';
+import EditPlaylist from './pages/EditPlaylist';
+import './App.css';
 import Login from './pages/Login';
 import SpotifyCallback from './pages/SpotifyCallback';
-
-import './App.css';
-
-import { Toaster } from './components/ui/sonner';
-import EditPlaylist from './pages/EditPlaylist';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          <Route path="/login" element={<Login />} />
+          <Route element={<Login />} path="/login" />
 
           <Route
             element={
@@ -26,12 +24,12 @@ function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/callback" element={<SpotifyCallback />} />
-            <Route path="/playlist/:id" element={<EditPlaylist />} />
+            <Route element={<Dashboard />} path="/" />
+            <Route element={<SpotifyCallback />} path="/callback" />
+            <Route element={<EditPlaylist />} path="/playlist/:id" />
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route element={<Navigate replace to="/" />} path="*" />
         </Routes>
       </BrowserRouter>
       <Toaster />

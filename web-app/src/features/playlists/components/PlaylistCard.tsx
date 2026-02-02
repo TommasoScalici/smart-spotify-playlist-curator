@@ -1,7 +1,7 @@
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
@@ -12,7 +12,7 @@ import { PlaylistCardHeader } from './card-parts/PlaylistCardHeader';
 import { PlaylistCardMetrics } from './card-parts/PlaylistCardMetrics';
 
 interface PlaylistCardProps {
-  config: PlaylistConfig & { _docId: string };
+  config: { _docId: string } & PlaylistConfig;
 }
 
 /**
@@ -39,18 +39,17 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   const [showHistory, setShowHistory] = useState(false);
 
   const {
-    metrics,
-    isLoadingMetrics,
-    latestLog,
-    isLoadingLog,
-    isOptimisticallyRunning,
-    lastUpdatedText,
-    toggleEnabled,
-    isToggling,
     deletePlaylist,
     isDeleting,
-    runTestCuration,
-    setIsOptimisticallyRunning
+    isLoadingLog,
+    isLoadingMetrics,
+    isOptimisticallyRunning,
+    isToggling,
+    lastUpdatedText,
+    latestLog,
+    metrics,
+    setIsOptimisticallyRunning,
+    toggleEnabled
   } = usePlaylistRealtime({ config });
 
   const gradientClass = useMemo(
@@ -81,41 +80,40 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
       <PlaylistCardHeader
         config={config}
         imageUrl={metrics?.imageUrl}
-        owner={metrics?.owner}
         isToggling={isToggling}
         onToggle={toggleEnabled}
+        owner={metrics?.owner}
       />
 
       <PlaylistCardMetrics
-        isLoading={isLoadingMetrics}
         followers={metrics?.followers}
-        lastUpdatedText={lastUpdatedText}
+        isLoading={isLoadingMetrics}
         lastUpdatedDate={metrics?.lastUpdated}
+        lastUpdatedText={lastUpdatedText}
         tracks={metrics?.tracks}
       />
 
       <PlaylistCardFooter
         config={config}
-        latestLog={latestLog}
         isOptimisticallyRunning={isOptimisticallyRunning}
-        onEdit={() => navigate(`/playlist/${config._docId}`)}
+        latestLog={latestLog}
         onDelete={() => setShowDeleteDialog(true)}
-        onRunStart={() => setIsOptimisticallyRunning(true)}
+        onEdit={() => navigate(`/playlist/${config._docId}`)}
         onRunComplete={() => setIsOptimisticallyRunning(false)}
-        onRunTest={runTestCuration}
+        onRunStart={() => setIsOptimisticallyRunning(true)}
         onShowHistory={() => setShowHistory(true)}
       />
 
       <PlaylistCardDialogs
         config={config}
-        latestLog={latestLog}
-        isLoadingLog={isLoadingLog}
-        showDeleteDialog={showDeleteDialog}
-        setShowDeleteDialog={setShowDeleteDialog}
-        showHistory={showHistory}
-        setShowHistory={setShowHistory}
         isDeleting={isDeleting}
+        isLoadingLog={isLoadingLog}
+        latestLog={latestLog}
         onDelete={deletePlaylist}
+        setShowDeleteDialog={setShowDeleteDialog}
+        setShowHistory={setShowHistory}
+        showDeleteDialog={showDeleteDialog}
+        showHistory={showHistory}
       />
     </Card>
   );

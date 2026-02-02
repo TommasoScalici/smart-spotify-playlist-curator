@@ -10,14 +10,14 @@ vi.mock('../../../hooks/useSpotifyAuth');
 vi.mock('@/components/ui/button', () => ({
   Button: ({
     children,
-    onClick,
-    className
+    className,
+    onClick
   }: {
     children: React.ReactNode;
-    onClick?: () => void;
     className?: string;
+    onClick?: () => void;
   }) => (
-    <button onClick={onClick} className={className} data-testid="connect-btn">
+    <button className={className} data-testid="connect-btn" onClick={onClick}>
       {children}
     </button>
   )

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
@@ -9,6 +8,7 @@ import {
   Unlink,
   XCircle
 } from 'lucide-react';
+import { useState } from 'react';
 import { Link, Outlet } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -48,7 +48,7 @@ import { FirestoreService } from '../../services/firestore-service';
 import { ModeToggle } from '../common/ModeToggle';
 
 export const MainLayout = () => {
-  const { user, signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
   const isSpotifyLinked = data?.isLinked;
   const queryClient = useQueryClient();
@@ -72,8 +72,8 @@ export const MainLayout = () => {
     <div className="layout bg-background text-foreground flex min-h-screen flex-col font-sans antialiased">
       {/* Skip to Content Link for Keyboard Accessibility */}
       <a
-        href="#main-content"
         className="bg-primary text-primary-foreground sr-only z-100 rounded-md px-4 py-2 font-bold shadow-lg ring-2 ring-white/20 focus:not-sr-only focus:absolute focus:top-4 focus:left-4"
+        href="#main-content"
       >
         Skip to content
       </a>
@@ -81,8 +81,8 @@ export const MainLayout = () => {
       <header className="layout-header bg-card/50 sticky top-0 z-50 border-b backdrop-blur-md">
         <div className="layout-header__content container mx-auto flex h-16 items-center justify-between px-4">
           <Link
-            to="/"
             className="brand-logo flex items-center gap-2 transition-opacity hover:opacity-80"
+            to="/"
           >
             <span className="brand-logo__icon text-2xl">🎧</span>
             <span className="text-lg font-bold">
@@ -96,15 +96,15 @@ export const MainLayout = () => {
             </div>
 
             {/* Mobile Menu Trigger (Sheet) */}
-            <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+            <Sheet onOpenChange={setIsSheetOpen} open={isSheetOpen}>
               <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="md:hidden" aria-label="Open menu">
+                <Button aria-label="Open menu" className="md:hidden" size="icon" variant="ghost">
                   <Menu className="h-6 w-6" />
                 </Button>
               </SheetTrigger>
               <SheetContent
-                side="right"
                 className="border-border bg-card/95 w-80 border-l p-0 backdrop-blur-xl"
+                side="right"
               >
                 <SheetHeader className="border-b p-4">
                   <SheetTitle>Navigation</SheetTitle>
@@ -117,9 +117,9 @@ export const MainLayout = () => {
                       Navigation
                     </p>
                     <Link
-                      to="/"
-                      onClick={() => setIsSheetOpen(false)}
                       className="bg-accent hover:bg-accent/80 border-border/50 flex items-center gap-3 rounded-xl border p-3 transition-all active:scale-95"
+                      onClick={() => setIsSheetOpen(false)}
+                      to="/"
                     >
                       <HistoryIcon className="text-primary h-4 w-4" />
                       <span className="text-sm font-semibold">Dashboard</span>
@@ -169,14 +169,14 @@ export const MainLayout = () => {
                           </div>
                           {isSpotifyLinked && (
                             <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:bg-destructive/10 h-8 w-8"
                               aria-label="Unlink Spotify account"
+                              className="text-destructive hover:bg-destructive/10 h-8 w-8"
                               onClick={() => {
                                 setIsSheetOpen(false);
                                 setShowUnlinkDialog(true);
                               }}
+                              size="icon"
+                              variant="ghost"
                             >
                               <Unlink className="h-3.5 w-3.5" />
                             </Button>
@@ -185,10 +185,10 @@ export const MainLayout = () => {
                         {!isSpotifyLinked && (
                           <Button
                             asChild
-                            size="sm"
                             className="bg-primary hover:bg-primary/90 mt-2 w-full text-xs font-bold"
+                            size="sm"
                           >
-                            <Link to="/" onClick={() => setIsSheetOpen(false)}>
+                            <Link onClick={() => setIsSheetOpen(false)} to="/">
                               Connect Account
                             </Link>
                           </Button>
@@ -206,9 +206,9 @@ export const MainLayout = () => {
                       <div className="bg-accent border-border/50 flex items-center justify-between rounded-xl border p-3">
                         <div className="flex items-center gap-2">
                           <img
-                            src={user.photoURL || undefined}
                             alt="Profile"
                             className="ring-border h-8 w-8 rounded-full object-cover ring-1"
+                            src={user.photoURL || undefined}
                           />
                           <div>
                             <p className="max-w-[120px] truncate text-xs font-bold">
@@ -220,14 +220,14 @@ export const MainLayout = () => {
                           </div>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
+                          aria-label="Log out"
+                          className="text-muted-foreground hover:text-destructive h-8 w-8"
                           onClick={() => {
                             setIsSheetOpen(false);
                             signOut();
                           }}
-                          aria-label="Log out"
-                          className="text-muted-foreground hover:text-destructive h-8 w-8"
+                          size="icon"
+                          variant="ghost"
                         >
                           <LogOut className="h-4 w-4" />
                         </Button>
@@ -246,8 +246,8 @@ export const MainLayout = () => {
 
             <nav className="hidden items-center gap-6 md:flex">
               <Link
-                to="/"
                 className="nav-link hover:text-primary text-sm font-medium transition-colors"
+                to="/"
               >
                 Dashboard
               </Link>
@@ -257,7 +257,6 @@ export const MainLayout = () => {
                   {/* Spotify Status Badge (Desktop) */}
                   {!checkingLink && (
                     <Badge
-                      variant="outline"
                       className={cn(
                         'cursor-default gap-2 border-0 py-1 pr-3 pl-1 transition-all',
                         data?.authError
@@ -266,9 +265,10 @@ export const MainLayout = () => {
                             ? 'bg-primary/10 text-primary hover:bg-primary/20 ring-primary/20 ring-1'
                             : 'bg-destructive text-destructive-foreground hover:bg-destructive/90 ring-destructive/50 shadow-sm ring-1'
                       )}
+                      variant="outline"
                     >
                       {data?.authError ? (
-                        <Link to="/callback" className="flex items-center gap-2 hover:underline">
+                        <Link className="flex items-center gap-2 hover:underline" to="/callback">
                           <XCircle className="h-4 w-4" />
                           <span className="text-xs font-semibold">Reconnect Required</span>
                         </Link>
@@ -276,9 +276,9 @@ export const MainLayout = () => {
                         <div className="flex items-center gap-2">
                           {data?.profile?.avatarUrl ? (
                             <img
-                              src={data.profile.avatarUrl}
                               alt="Spotify"
                               className="ring-primary/30 h-5 w-5 rounded-full ring-1"
+                              src={data.profile.avatarUrl}
                             />
                           ) : (
                             <CheckCircle2 className="h-4 w-4" />
@@ -304,18 +304,18 @@ export const MainLayout = () => {
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <Button
-                        variant="ghost"
                         aria-label="User profile menu"
                         className="border-input hover:ring-primary/20 relative h-9 w-9 overflow-hidden rounded-full border p-0 shadow-sm transition-all hover:ring-2"
+                        variant="ghost"
                       >
                         <img
-                          src={user.photoURL || undefined}
                           alt="Profile"
                           className="h-full w-full object-cover"
+                          src={user.photoURL || undefined}
                         />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent className="w-56" align="end" forceMount>
+                    <DropdownMenuContent align="end" className="w-56" forceMount>
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm leading-none font-medium">{user.displayName}</p>
@@ -326,11 +326,11 @@ export const MainLayout = () => {
                       {isSpotifyLinked && (
                         <>
                           <DropdownMenuItem
+                            className="text-destructive focus:text-destructive cursor-pointer"
                             onSelect={(e: Event) => {
                               e.preventDefault();
                               setShowUnlinkDialog(true);
                             }}
-                            className="text-destructive focus:text-destructive cursor-pointer"
                           >
                             <Unlink className="mr-2 h-4 w-4" />
                             <span>Unlink Spotify</span>
@@ -339,8 +339,8 @@ export const MainLayout = () => {
                         </>
                       )}
                       <DropdownMenuItem
-                        onClick={signOut}
                         className="focus:text-destructive/80 cursor-pointer"
+                        onClick={signOut}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         <span>Log out</span>
@@ -357,17 +357,17 @@ export const MainLayout = () => {
       </header>
 
       <main
-        id="main-content"
         className={cn(
           'main-content animate-fade-in flex flex-1 flex-col',
           !isSpotifyLinked && !checkingLink && 'max-w-none py-0'
         )}
+        id="main-content"
       >
         <Outlet />
       </main>
 
       {/* Premium Unlink Confirmation Modal */}
-      <AlertDialog open={showUnlinkDialog} onOpenChange={setShowUnlinkDialog}>
+      <AlertDialog onOpenChange={setShowUnlinkDialog} open={showUnlinkDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="mb-2 flex items-center gap-3">
@@ -391,8 +391,8 @@ export const MainLayout = () => {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={handleUnlink}
               className="bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-destructive/20 font-semibold shadow-lg transition-all active:scale-95"
+              onClick={handleUnlink}
             >
               Unlink Now
             </AlertDialogAction>

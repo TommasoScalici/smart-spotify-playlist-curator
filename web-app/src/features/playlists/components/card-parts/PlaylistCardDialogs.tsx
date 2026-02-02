@@ -1,6 +1,6 @@
+import { ActivityLog, PlaylistConfig } from '@smart-spotify-curator/shared';
 import { History } from 'lucide-react';
 
-import { ActivityLog, PlaylistConfig } from '@smart-spotify-curator/shared';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,31 +26,31 @@ import { DiffViewer } from '../DiffViewer';
 
 interface PlaylistCardDialogsProps {
   config: PlaylistConfig;
-  latestLog: ActivityLog | null;
-  isLoadingLog: boolean;
-  showDeleteDialog: boolean;
-  setShowDeleteDialog: (show: boolean) => void;
-  showHistory: boolean;
-  setShowHistory: (show: boolean) => void;
   isDeleting: boolean;
+  isLoadingLog: boolean;
+  latestLog: ActivityLog | null;
   onDelete: () => void;
+  setShowDeleteDialog: (show: boolean) => void;
+  setShowHistory: (show: boolean) => void;
+  showDeleteDialog: boolean;
+  showHistory: boolean;
 }
 
 export const PlaylistCardDialogs = ({
   config,
-  latestLog,
-  isLoadingLog,
-  showDeleteDialog,
-  setShowDeleteDialog,
-  showHistory,
-  setShowHistory,
   isDeleting,
-  onDelete
+  isLoadingLog,
+  latestLog,
+  onDelete,
+  setShowDeleteDialog,
+  setShowHistory,
+  showDeleteDialog,
+  showHistory
 }: PlaylistCardDialogsProps) => {
   return (
     <>
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialog onOpenChange={setShowDeleteDialog} open={showDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Playlist from App?</AlertDialogTitle>
@@ -65,8 +65,8 @@ export const PlaylistCardDialogs = ({
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={onDelete}
               className="bg-destructive hover:bg-destructive/90"
+              onClick={onDelete}
             >
               {isDeleting ? 'Deleting...' : 'Delete from App'}
             </AlertDialogAction>
@@ -76,7 +76,7 @@ export const PlaylistCardDialogs = ({
 
       {/* History / Diff Dialog */}
       {latestLog?.metadata?.diff && (
-        <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <Dialog onOpenChange={setShowHistory} open={showHistory}>
           <DialogContent className="flex h-[85vh] max-h-[90vh] max-w-7xl flex-col">
             <DialogHeader>
               <DialogTitle>Curation History: {config.name}</DialogTitle>
@@ -125,14 +125,14 @@ export const PlaylistCardDialogs = ({
                         Yes
                       </Badge>
                     ) : (
-                      <Badge variant="destructive" className="h-5 px-1.5">
+                      <Badge className="h-5 px-1.5" variant="destructive">
                         No
                       </Badge>
                     )}
                   </span>
                 </div>
               )}
-              <Button onClick={() => setShowHistory(false)} className="w-full sm:w-auto">
+              <Button className="w-full sm:w-auto" onClick={() => setShowHistory(false)}>
                 Close
               </Button>
             </DialogFooter>

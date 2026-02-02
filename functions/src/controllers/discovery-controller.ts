@@ -6,14 +6,14 @@ import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/a
 
 export const suggestReferenceArtists = onCall(
   {
-    timeoutSeconds: 60,
     cors: true,
     secrets: [
       'SPOTIFY_CLIENT_ID',
       'SPOTIFY_CLIENT_SECRET',
       'SPOTIFY_REFRESH_TOKEN',
       'GOOGLE_AI_API_KEY'
-    ]
+    ],
+    timeoutSeconds: 60
   },
   async (request) => {
     if (!request.auth) {
@@ -21,7 +21,7 @@ export const suggestReferenceArtists = onCall(
     }
 
     const uid = request.auth.uid;
-    const { playlistName, description, count, aiConfig } = request.data;
+    const { aiConfig, count, description, playlistName } = request.data;
 
     if (!playlistName) {
       throw new HttpsError('invalid-argument', 'Playlist name is required.');
@@ -47,7 +47,7 @@ export const suggestReferenceArtists = onCall(
       logger.info('AI suggested artists', { artistNames });
 
       // 2. Authorize Spotify
-      const { service: spotifyService, originalRefreshToken } =
+      const { originalRefreshToken, service: spotifyService } =
         await getAuthorizedSpotifyService(uid);
 
       // 3. Search and validate each artist on Spotify

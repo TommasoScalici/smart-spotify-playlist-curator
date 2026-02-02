@@ -1,27 +1,30 @@
-import { useEffect, useState } from 'react';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { History, Plus, RefreshCcw } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
+import { ActivityDiffModal } from '@/features/dashboard/components/ActivityDiffModal';
 import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
 import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
 import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
 import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
 import { RunButton } from '@/features/playlists/components/RunButton';
+import { ActivityLog } from '@/hooks/useActivityFeed';
 
 import { useAuth } from '../contexts/AuthContext';
 import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
 import { FirestoreService } from '../services/firestore-service';
 
 export default function Dashboard() {
-  const [playlists, setPlaylists] = useState<(PlaylistConfig & { _docId: string })[]>([]);
+  const [playlists, setPlaylists] = useState<({ _docId: string } & PlaylistConfig)[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [tutorialDismissed, setTutorialDismissed] = useState(() => {
     return localStorage.getItem('tutorial_dismissed') === 'true';
   });
   const [isActivityDrawerOpen, setIsActivityDrawerOpen] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
   const navigate = useNavigate();
 
   const { user } = useAuth();
@@ -92,15 +95,15 @@ export default function Dashboard() {
         </div>
         <div className="flex w-full flex-col gap-3 sm:flex-row md:w-auto">
           <Button
-            variant="outline"
-            onClick={() => setIsActivityDrawerOpen(true)}
             className="group text-muted-foreground hover:text-primary hover:bg-primary/10 hover:border-primary/30 min-h-[44px] w-full gap-2 border-white/10 bg-white/5 transition-all sm:w-auto"
+            onClick={() => setIsActivityDrawerOpen(true)}
+            variant="outline"
           >
             <History className="h-4 w-4" /> Activity
           </Button>
           <Button
-            onClick={() => navigate('/playlist/new')}
             className="group shadow-secondary/10 hover:shadow-secondary/20 bg-secondary/10 text-secondary border-secondary/20 hover:bg-secondary/20 min-h-[44px] w-full gap-2 border shadow-lg backdrop-blur-sm transition-all hover:scale-105 sm:w-auto"
+            onClick={() => navigate('/playlist/new')}
           >
             <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" /> New
             Playlist
@@ -115,10 +118,10 @@ export default function Dashboard() {
         <div className="bg-destructive/15 text-destructive border-destructive/20 mb-6 flex items-center justify-between rounded-md border p-4 text-sm font-medium">
           <span>{error}</span>
           <Button
-            variant="outline"
-            size="sm"
-            onClick={() => window.location.reload()}
             className="border-destructive/20 hover:bg-destructive/20 text-destructive hover:text-destructive"
+            onClick={() => window.location.reload()}
+            size="sm"
+            variant="outline"
           >
             <RefreshCcw className="mr-2 h-4 w-4" />
             Retry
@@ -131,7 +134,7 @@ export default function Dashboard() {
         <div className="animate-in fade-in duration-500">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {playlists.map((playlist) => (
-              <PlaylistCard key={playlist._docId} config={playlist} />
+              <PlaylistCard config={playlist} key={playlist._docId} />
             ))}
           </div>
         </div>
@@ -143,9 +146,9 @@ export default function Dashboard() {
               Create your first automated playlist to get started.
             </p>
             <Button
-              size="lg"
-              onClick={() => navigate('/playlist/new')}
               className="hover:shadow-primary/20 shadow-lg"
+              onClick={() => navigate('/playlist/new')}
+              size="lg"
             >
               <Plus className="mr-2 h-5 w-5" /> Create New Playlist
             </Button>
@@ -154,13 +157,23 @@ export default function Dashboard() {
       )}
 
       {/* Activity Toggleable Side Panel */}
-      <ActivityDrawer open={isActivityDrawerOpen} onOpenChange={setIsActivityDrawerOpen} />
+      <ActivityDrawer
+        onActivitySelect={(activity: ActivityLog) => setSelectedActivity(activity)}
+        onOpenChange={setIsActivityDrawerOpen}
+        open={isActivityDrawerOpen}
+      />
+
+      <ActivityDiffModal
+        activity={selectedActivity}
+        onClose={() => setSelectedActivity(null)}
+        open={!!selectedActivity}
+      />
 
       <TutorialDialog
-        open={playlists.length === 0 && !error && !tutorialDismissed}
         onOpenChange={(open) => {
           if (!open) handleDismissTutorial();
         }}
+        open={playlists.length === 0 && !error && !tutorialDismissed}
       />
     </div>
   );

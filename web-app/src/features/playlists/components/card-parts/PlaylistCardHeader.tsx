@@ -1,23 +1,23 @@
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Music, Radio } from 'lucide-react';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PlaylistCardHeaderProps {
   config: PlaylistConfig;
-  imageUrl?: string | null;
-  owner?: string;
+  imageUrl?: null | string;
   isToggling: boolean;
   onToggle: (enabled: boolean) => void;
+  owner?: string;
 }
 
 export const PlaylistCardHeader = ({
   config,
   imageUrl,
-  owner,
   isToggling,
-  onToggle
+  onToggle,
+  owner
 }: PlaylistCardHeaderProps) => {
   return (
     <div className="relative z-10 flex items-start gap-4 p-5">
@@ -26,9 +26,9 @@ export const PlaylistCardHeader = ({
         <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/10 shadow-lg transition-transform duration-500 group-hover:scale-105">
           {config.imageUrl || imageUrl ? (
             <img
-              src={config.imageUrl || imageUrl || ''}
               alt={config.name}
               className="h-full w-full object-cover"
+              src={config.imageUrl || imageUrl || ''}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-black/40">
@@ -72,7 +72,7 @@ export const PlaylistCardHeader = ({
                 {config.settings.description || 'Automation rules active'}
               </p>
             </TooltipTrigger>
-            <TooltipContent side="bottom" align="start">
+            <TooltipContent align="start" side="bottom">
               <p className="max-w-xs">
                 {config.settings.description || 'No description provided.'}
               </p>
@@ -91,9 +91,9 @@ export const PlaylistCardHeader = ({
               )}
               <Switch
                 checked={config.enabled}
-                onCheckedChange={onToggle}
-                disabled={isToggling}
                 className="data-[state=checked]:bg-green-500"
+                disabled={isToggling}
+                onCheckedChange={onToggle}
               />
             </div>
           </TooltipTrigger>

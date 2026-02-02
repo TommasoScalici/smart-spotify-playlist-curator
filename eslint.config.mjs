@@ -3,11 +3,13 @@ import reactHooks from 'eslint-plugin-react-hooks';
 import reactRefresh from 'eslint-plugin-react-refresh';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
+import perfectionist from 'eslint-plugin-perfectionist';
 
 export default tseslint.config(
   { ignores: ['dist', 'lib', 'node_modules', '*.config.*'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
+  perfectionist.configs['recommended-alphabetical'],
   {
     files: ['**/*.{ts,tsx,js,jsx}'],
     languageOptions: {

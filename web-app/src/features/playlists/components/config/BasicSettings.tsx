@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2, Music, X } from 'lucide-react';
+import { useEffect } from 'react';
 import {
   Control,
   Controller,
@@ -10,7 +11,6 @@ import {
   UseFormWatch
 } from 'react-hook-form';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
@@ -22,18 +22,18 @@ import { FunctionsService } from '@/services/functions-service';
 
 interface BasicSettingsProps {
   control: Control<PlaylistConfig>;
+  errors: FieldErrors<PlaylistConfig>;
   register: UseFormRegister<PlaylistConfig>;
   setValue: UseFormSetValue<PlaylistConfig>;
   watch: UseFormWatch<PlaylistConfig>;
-  errors: FieldErrors<PlaylistConfig>;
 }
 
 export const BasicSettings = ({
   control,
+  errors,
   register,
   setValue,
-  watch,
-  errors
+  watch
 }: BasicSettingsProps) => {
   const playlistId = watch('id');
   const playlistName = watch('name');
@@ -41,9 +41,9 @@ export const BasicSettings = ({
 
   // Fetch playlist details to show rich card and populate description
   const { data: bgMetrics, isLoading: bgLoading } = useQuery({
-    queryKey: ['playlist-metrics', playlistId],
-    queryFn: () => (playlistId ? FunctionsService.getPlaylistMetrics(playlistId) : null),
     enabled: !!playlistId && playlistId.startsWith('spotify:playlist:'),
+    queryFn: () => (playlistId ? FunctionsService.getPlaylistMetrics(playlistId) : null),
+    queryKey: ['playlist-metrics', playlistId],
     staleTime: 1000 * 60 * 5 // 5 minutes
   });
 
@@ -87,8 +87,8 @@ export const BasicSettings = ({
         {/* Playlist Selection */}
         <div className="space-y-2">
           <LabelWithTooltip
-            tooltip="The actual Spotify playlist that will be updated. You must be the owner to allow updates."
             className={cn(errors.id && 'text-destructive')}
+            tooltip="The actual Spotify playlist that will be updated. You must be the owner to allow updates."
           >
             Target Playlist <span className="text-destructive">*</span>
           </LabelWithTooltip>
@@ -104,8 +104,6 @@ export const BasicSettings = ({
                   )}
                 >
                   <SpotifySearch
-                    type="playlist"
-                    placeholder="Select a playlist to curate..."
                     onSelect={(result) => {
                       field.onChange(result.uri);
                       setValue('name', result.name);
@@ -121,6 +119,8 @@ export const BasicSettings = ({
                         setValue('settings.description', newDesc);
                       }
                     }}
+                    placeholder="Select a playlist to curate..."
+                    type="playlist"
                   />
                 </div>
               )}
@@ -140,9 +140,9 @@ export const BasicSettings = ({
                   <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
                 ) : displayImage ? (
                   <img
-                    src={displayImage}
                     alt={displayName}
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    src={displayImage}
                   />
                 ) : (
                   <Music className="text-muted-foreground h-8 w-8" />
@@ -177,8 +177,6 @@ export const BasicSettings = ({
 
               <div className="absolute top-2 right-2 sm:relative sm:top-auto sm:right-auto">
                 <Button
-                  variant="ghost"
-                  size="icon"
                   className="hover:bg-destructive/10 hover:text-destructive z-10 h-8 w-8 shrink-0 rounded-full transition-colors"
                   onClick={() => {
                     setValue('id', '');
@@ -187,6 +185,8 @@ export const BasicSettings = ({
                     setValue('ownerId', '');
                     setValue('settings.description', '');
                   }}
+                  size="icon"
+                  variant="ghost"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -199,16 +199,16 @@ export const BasicSettings = ({
         {/* Description */}
         <div className="space-y-2">
           <LabelWithTooltip
-            tooltip="This description is synced from Spotify. It cannot be edited here."
             htmlFor="description"
+            tooltip="This description is synced from Spotify. It cannot be edited here."
           >
             Description (Read-Only)
           </LabelWithTooltip>
           <Textarea
             id="description"
             {...register('settings.description')}
-            placeholder="A brief description for the playlist cover."
             className="bg-muted min-h-[80px] cursor-not-allowed resize-none"
+            placeholder="A brief description for the playlist cover."
             readOnly
           />
           <p className="text-muted-foreground text-xs">
@@ -223,9 +223,9 @@ export const BasicSettings = ({
         <div className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-xl border p-4 transition-colors sm:p-5">
           <div className="space-y-0.5">
             <LabelWithTooltip
-              tooltip="Turn this on to let the system automatically manage this playlist in the background."
-              htmlFor="enabled-mode"
               className="cursor-pointer text-base font-medium"
+              htmlFor="enabled-mode"
+              tooltip="Turn this on to let the system automatically manage this playlist in the background."
             >
               Enable Automation
             </LabelWithTooltip>
@@ -237,7 +237,7 @@ export const BasicSettings = ({
             control={control}
             name="enabled"
             render={({ field }) => (
-              <Switch id="enabled-mode" checked={field.value} onCheckedChange={field.onChange} />
+              <Switch checked={field.value} id="enabled-mode" onCheckedChange={field.onChange} />
             )}
           />
         </div>

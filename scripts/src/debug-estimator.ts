@@ -1,11 +1,10 @@
-import { createRequire } from 'module';
-import { dirname, resolve } from 'path';
-import { fileURLToPath } from 'url';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import * as dotenv from 'dotenv';
 import { getApps, initializeApp } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
-
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { createRequire } from 'module';
+import { dirname, resolve } from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -21,10 +20,10 @@ if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
   console.log(`Using Credentials: ${credPath}`);
 }
 
+const { CurationEstimator } = require('../../functions/src/core/estimator.ts');
 // Services
 // We use require for .ts files because tsx handles them
 const { SpotifyService } = require('../../functions/src/services/spotify-service.ts');
-const { CurationEstimator } = require('../../functions/src/core/estimator.ts');
 
 if (!getApps().length) {
   initializeApp();

@@ -42,7 +42,7 @@ export async function getAuthorizedSpotifyService(uid: string) {
     }
   }
 
-  return { service: spotifyService, originalRefreshToken: refreshToken };
+  return { originalRefreshToken: refreshToken, service: spotifyService };
 }
 
 /**
@@ -61,9 +61,9 @@ export async function persistSpotifyTokens(
   const newExpiresAt = service.getTokenExpirationEpoch();
 
   const updates: {
-    refreshToken?: string;
     accessToken?: string;
     expiresAt?: string;
+    refreshToken?: string;
     updatedAt?: string;
   } = {};
   // Only update if refresh token actually rotated

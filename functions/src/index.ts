@@ -1,7 +1,7 @@
-import { existsSync } from 'fs';
-import { resolve } from 'path';
 import * as dotenv from 'dotenv';
 import { setGlobalOptions } from 'firebase-functions/v2';
+import { existsSync } from 'fs';
+import { resolve } from 'path';
 
 // Load environment variables from root .env ONLY for local development
 // In Cloud Functions, credentials are automatically provided
@@ -18,11 +18,11 @@ setGlobalOptions({ maxInstances: 1 });
 
 // Export Controllers
 export { exchangeSpotifyToken } from './controllers/auth-controller.js';
-export { getPlaylistMetrics } from './controllers/playlist-controller.js';
 export {
+  estimateCuration,
   runOrchestrator,
-  triggerCuration,
-  estimateCuration
+  triggerCuration
 } from './controllers/curation-controller.js';
-export { searchSpotify, getTrackDetails } from './controllers/spotify-controller.js';
 export { suggestReferenceArtists } from './controllers/discovery-controller.js';
+export { getPlaylistMetrics } from './controllers/playlist-controller.js';
+export { getTrackDetails, searchSpotify } from './controllers/spotify-controller.js';

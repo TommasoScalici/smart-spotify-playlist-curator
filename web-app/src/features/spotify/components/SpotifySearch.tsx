@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
-import { Check, ChevronsUpDown, Disc, Loader2, Music } from 'lucide-react';
-
 import { SearchResult } from '@smart-spotify-curator/shared';
+import { Check, ChevronsUpDown, Disc, Loader2, Music } from 'lucide-react';
+import { useEffect, useState } from 'react';
+
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -17,17 +17,17 @@ import { cn } from '@/lib/utils';
 import { FunctionsService } from '../../../services/functions-service';
 
 interface SpotifySearchProps {
-  type: 'track' | 'playlist';
-  placeholder?: string;
-  onSelect: (result: SearchResult) => void;
   defaultValue?: string;
+  onSelect: (result: SearchResult) => void;
+  placeholder?: string;
+  type: 'playlist' | 'track';
 }
 
 export const SpotifySearch = ({
-  type,
-  placeholder,
+  defaultValue,
   onSelect,
-  defaultValue
+  placeholder,
+  type
 }: SpotifySearchProps) => {
   const [query, setQuery] = useState(defaultValue || '');
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -62,13 +62,13 @@ export const SpotifySearch = ({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover onOpenChange={setOpen} open={open}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
-          role="combobox"
           aria-expanded={open}
           className="bg-background/50 hover:bg-background/80 border-border/50 h-12 w-full justify-between text-left font-normal"
+          role="combobox"
+          variant="outline"
         >
           {query ? (
             <span className="truncate">{query}</span>
@@ -82,13 +82,13 @@ export const SpotifySearch = ({
           )}
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+      <PopoverContent align="start" className="w-[--radix-popover-trigger-width] p-0">
         <Command shouldFilter={false}>
           {/* We use shouldFilter={false} because the API already filters for us */}
           <CommandInput
+            onValueChange={setQuery}
             placeholder={`Type to search ${type}s...`}
             value={query}
-            onValueChange={setQuery}
           />
           <CommandList>
             {loading && (
@@ -102,19 +102,19 @@ export const SpotifySearch = ({
             <CommandGroup>
               {results.map((item) => (
                 <CommandItem
+                  className="aria-selected:bg-accent aria-selected:text-accent-foreground cursor-pointer data-disabled:pointer-events-auto data-disabled:opacity-100"
                   key={item.uri}
-                  value={`${item.name} - ${item.uri}`}
                   onSelect={() => {
                     handleSelect(item);
                   }}
-                  className="aria-selected:bg-accent aria-selected:text-accent-foreground cursor-pointer data-disabled:pointer-events-auto data-disabled:opacity-100"
+                  value={`${item.name} - ${item.uri}`}
                 >
                   <div className="flex w-full items-center gap-3 overflow-hidden">
                     {item.imageUrl ? (
                       <img
-                        src={item.imageUrl}
                         alt={item.name}
                         className="bg-muted h-8 w-8 rounded object-cover"
+                        src={item.imageUrl}
                       />
                     ) : (
                       <div className="bg-muted flex h-8 w-8 shrink-0 items-center justify-center rounded">

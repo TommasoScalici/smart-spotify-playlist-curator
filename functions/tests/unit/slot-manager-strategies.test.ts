@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest';
-
 import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { describe, expect, it } from 'vitest';
 
 import { SlotManager } from '../../src/core/slot-manager';
 
@@ -11,10 +10,10 @@ describe('SlotManager - Size Limit Strategies', () => {
     const addedAt = new Date();
     addedAt.setDate(addedAt.getDate() - ageDays);
     return {
-      uri: `spotify:track:${id}`,
-      artist: 'Artist A',
       addedAt,
-      popularity
+      artist: 'Artist A',
+      popularity,
+      uri: `spotify:track:${id}`
     };
   };
 
@@ -66,8 +65,8 @@ describe('SlotManager - Size Limit Strategies', () => {
 
   it('should handle missing metadata gracefully (defaulting to 0/epoch)', () => {
     const poorPool = [
-      { uri: 'no_meta_1', artist: 'A' },
-      { uri: 'no_meta_2', artist: 'B' }
+      { artist: 'A', uri: 'no_meta_1' },
+      { artist: 'B', uri: 'no_meta_2' }
     ];
     // Should not crash and return results
     const result = slotManager.arrangePlaylist(

@@ -70,11 +70,11 @@ export class AISuggestionEngine {
           if ((artistCounts[res.s.artist] || 0) >= maxTracksPerArtist) continue;
 
           foundTracks.push({
-            uri: res.track.uri,
+            addedAt: new Date(),
             artist: res.track.artist,
-            track: res.track.name,
             popularity: res.track.popularity,
-            addedAt: new Date()
+            track: res.track.name,
+            uri: res.track.uri
           });
           artistCounts[res.s.artist] = (artistCounts[res.s.artist] || 0) + 1;
         }

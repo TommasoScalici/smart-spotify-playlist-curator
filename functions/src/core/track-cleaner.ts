@@ -2,13 +2,13 @@ import { PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
 
 import { TrackWithMeta } from './types-internal';
 
-export type RemovalReason = 'duplicate' | 'expired' | 'artist_limit' | 'size_limit';
+export type RemovalReason = 'artist_limit' | 'duplicate' | 'expired' | 'size_limit';
 
 export interface RemovedTrack {
-  uri: string;
-  name: string;
   artist: string;
+  name: string;
   reason: RemovalReason;
+  uri: string;
 }
 
 export class TrackCleaner {
@@ -24,8 +24,8 @@ export class TrackCleaner {
     config: PlaylistConfig,
     vipUris: string[]
   ): {
-    survivingTracks: TrackWithMeta[];
     removedTracks: RemovedTrack[];
+    survivingTracks: TrackWithMeta[];
   } {
     const { curationRules } = config;
     const now = Date.now();
@@ -40,9 +40,9 @@ export class TrackCleaner {
     const artistCounts: Record<string, number> = {};
 
     for (const item of currentTracks) {
-      const normalizedName = item.name.trim().toLowerCase();
-      const normalizedArtist = item.artist.trim().toLowerCase();
-      const normalizedAlbum = item.album.trim().toLowerCase();
+      const normalizedName = item.name.toLowerCase().replace(/\s+/g, ' ').trim();
+      const normalizedArtist = item.artist.toLowerCase().replace(/\s+/g, ' ').trim();
+      const normalizedAlbum = item.album.toLowerCase().replace(/\s+/g, ' ').trim();
       const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
 
       // 1. Deduplication (Same URI or Same Metadata Signature)
@@ -51,10 +51,10 @@ export class TrackCleaner {
         (seenUris.has(item.uri) || seenSignatures.has(signature))
       ) {
         removedTracks.push({
-          uri: item.uri,
-          name: item.name,
           artist: item.artist,
-          reason: 'duplicate'
+          name: item.name,
+          reason: 'duplicate',
+          uri: item.uri
         });
         continue;
       }
@@ -67,45 +67,45 @@ export class TrackCleaner {
       // 2. Age Check (Protect VIPs)
       if (!isVip && now - addedAtTime > maxAgeMs) {
         removedTracks.push({
-          uri: item.uri,
-          name: item.name,
           artist: item.artist,
-          reason: 'expired'
+          name: item.name,
+          reason: 'expired',
+          uri: item.uri
         });
         continue;
       }
 
       // 3. Artist Limit Check (Protect VIPs)
-      if (!isVip) {
-        const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
-        const isVarious = primaryArtist === 'various artists';
+      const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
+      const isVarious = primaryArtist === 'various artists';
 
-        if (!isVarious) {
-          const count = artistCounts[primaryArtist] || 0;
-          if (count >= curationRules.maxTracksPerArtist) {
-            removedTracks.push({
-              uri: item.uri,
-              name: item.name,
-              artist: item.artist,
-              reason: 'artist_limit'
-            });
-            continue;
-          }
-          artistCounts[primaryArtist] = count + 1;
+      if (!isVarious) {
+        const count = artistCounts[primaryArtist] || 0;
+
+        if (!isVip && count >= curationRules.maxTracksPerArtist) {
+          removedTracks.push({
+            artist: item.artist,
+            name: item.name,
+            reason: 'artist_limit',
+            uri: item.uri
+          });
+          continue;
         }
+
+        artistCounts[primaryArtist] = count + 1;
       }
 
       survivingTracks.push({
-        uri: item.uri,
-        artist: item.artist,
-        name: item.name,
-        album: item.album,
         addedAt: new Date(item.addedAt),
+        album: item.album,
+        artist: item.artist,
         isVip,
-        popularity: item.popularity
+        name: item.name,
+        popularity: item.popularity,
+        uri: item.uri
       });
     }
 
-    return { survivingTracks, removedTracks };
+    return { removedTracks, survivingTracks };
   }
 }

@@ -5,23 +5,23 @@ import { TrackWithMeta } from '../types-internal';
 
 export interface CurationSession {
   config: PlaylistConfig;
-  playlistId: string;
-  dryRun: boolean;
-  ownerName?: string;
-  logId?: string;
-
   // State
   currentTracks: TrackInfo[];
-  survivingTracks: TrackWithMeta[];
-  newAiTracks: {
-    uri: string;
-    artist: string;
-    track: string;
-    popularity?: number;
-    addedAt?: Date;
-  }[];
-  finalTrackList: string[];
-
   // Diff results
   diff?: CurationDiff;
+  dryRun: boolean;
+  finalTrackList: string[];
+
+  logId?: string;
+  newAiTracks: {
+    addedAt?: Date;
+    artist: string;
+    popularity?: number;
+    track: string;
+    uri: string;
+  }[];
+  ownerName?: string;
+  playlistId: string;
+
+  survivingTracks: TrackWithMeta[];
 }

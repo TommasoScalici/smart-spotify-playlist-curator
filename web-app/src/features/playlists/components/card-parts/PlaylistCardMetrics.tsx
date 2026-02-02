@@ -4,18 +4,18 @@ import { CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface PlaylistCardMetricsProps {
-  isLoading: boolean;
   followers?: number;
+  isLoading: boolean;
+  lastUpdatedDate?: null | string;
   lastUpdatedText: string;
-  lastUpdatedDate?: string | null;
   tracks?: number;
 }
 
 export const PlaylistCardMetrics = ({
-  isLoading,
   followers,
-  lastUpdatedText,
+  isLoading,
   lastUpdatedDate,
+  lastUpdatedText,
   tracks
 }: PlaylistCardMetricsProps) => {
   return (

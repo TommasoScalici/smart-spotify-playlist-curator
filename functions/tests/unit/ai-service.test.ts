@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
-
 import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AiService } from '../../src/services/ai-service';
 
@@ -15,7 +14,12 @@ vi.mock('@google/generative-ai', () => ({
     return {
       getGenerativeModel: mockGetGenerativeModel
     };
-  })
+  }),
+  SchemaType: {
+    ARRAY: 'ARRAY',
+    OBJECT: 'OBJECT',
+    STRING: 'STRING'
+  }
 }));
 
 vi.mock('firebase-functions/logger');
@@ -43,10 +47,10 @@ describe('AiService', () => {
 
   const mockPromptConfig: AiGenerationConfig = {
     enabled: true,
-    tracksToAdd: 5,
+    isInstrumentalOnly: false,
     model: 'gemini-2.5-flash',
     temperature: 0.7,
-    isInstrumentalOnly: false
+    tracksToAdd: 5
   };
 
   const mockPrompt = 'Upbeat Pop';
@@ -57,8 +61,8 @@ describe('AiService', () => {
       response: {
         text: () =>
           JSON.stringify([
-            { artist: 'Artist A', track: 'Track A' },
-            { artist: 'Artist B', track: 'Track B' }
+            { artist: 'Artist A', reasoning: 'Reasoning A', track: 'Track A' },
+            { artist: 'Artist B', reasoning: 'Reasoning B', track: 'Track B' }
           ])
       }
     });
@@ -92,7 +96,7 @@ describe('AiService', () => {
 
     // Verify prompt construction logic indirectly via mock call arg
     const callArg = mockGenerateContent.mock.calls[0][0];
-    expect(callArg).toContain('Specific Exclusions (Do NOT suggest these):');
+    expect(callArg).toContain('Specific Exclusions (Do NOT suggest these - already in playlist):');
     expect(callArg).toContain('Global Constraints (STRICT):');
   });
 });

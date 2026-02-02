@@ -1,4 +1,3 @@
-import { useEffect, useState } from 'react';
 import {
   ArrowRight,
   CheckCircle2,
@@ -9,6 +8,7 @@ import {
   Users,
   Zap
 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -21,40 +21,40 @@ export const OnboardingHero = () => {
 
   const features = [
     {
-      title: 'AI Smart Curation',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20',
+      color: 'text-purple-400',
       description:
         'Powered by Gemini, we analyze your vibe to orchestrate the perfect sonic journey.',
       icon: Sparkles,
-      color: 'text-purple-400',
-      bg: 'bg-purple-500/10',
-      border: 'border-purple-500/20'
+      title: 'AI Smart Curation'
     },
     {
-      title: 'VIP Track Pinning',
+      bg: 'bg-yellow-500/10',
+      border: 'border-yellow-500/20',
+      color: 'text-yellow-400',
       description:
         'Secure "must-have" tracks in specific slots. Your favorites, exactly where they belong.',
       icon: Trophy,
-      color: 'text-yellow-400',
-      bg: 'bg-yellow-500/10',
-      border: 'border-yellow-500/20'
+      title: 'VIP Track Pinning'
     },
     {
-      title: 'Artist Fatigue Prevention',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20',
+      color: 'text-blue-400',
       description:
         'Intelligent spacing prevents repetitive artists, keeping your listening experience fresh.',
       icon: Users,
-      color: 'text-blue-400',
-      bg: 'bg-blue-500/10',
-      border: 'border-blue-500/20'
+      title: 'Artist Fatigue Prevention'
     },
     {
-      title: 'Automated Health Check',
+      bg: 'bg-green-500/10',
+      border: 'border-green-500/20',
+      color: 'text-green-400',
       description:
         'Daily maintenance removes duplicates and fills gaps using advanced logical rules.',
       icon: ShieldCheck,
-      color: 'text-green-400',
-      bg: 'bg-green-500/10',
-      border: 'border-green-500/20'
+      title: 'Automated Health Check'
     }
   ];
 
@@ -91,13 +91,13 @@ export const OnboardingHero = () => {
         <div className="relative mx-auto flex min-h-[120px] w-full max-w-xl items-center justify-center md:min-h-[140px]">
           {features.map((feature, idx) => (
             <div
-              key={idx}
               className={cn(
                 'absolute inset-0 flex flex-col items-center justify-center gap-1 transition-all duration-700 md:gap-3',
                 idx === currentSlide
                   ? 'pointer-events-auto translate-y-0 scale-100 opacity-100'
                   : 'pointer-events-none translate-y-4 scale-95 opacity-0'
               )}
+              key={idx}
             >
               <div
                 className={cn(
@@ -125,10 +125,6 @@ export const OnboardingHero = () => {
         <div className="flex justify-center gap-2.5 md:gap-3">
           {features.map((_, idx) => (
             <Button
-              key={idx}
-              variant="ghost"
-              size="sm"
-              onClick={() => setCurrentSlide(idx)}
               aria-label={`Go to slide ${idx + 1}`}
               className={cn(
                 'h-2 rounded-full p-0 transition-all duration-500 hover:scale-110 active:scale-95 md:h-2.5',
@@ -136,6 +132,10 @@ export const OnboardingHero = () => {
                   ? 'bg-primary ring-primary/30 w-8 shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 md:w-10'
                   : 'bg-foreground/30 hover:bg-foreground/50 w-2 shadow-md md:w-2.5 dark:bg-white/40 dark:hover:bg-white/60'
               )}
+              key={idx}
+              onClick={() => setCurrentSlide(idx)}
+              size="sm"
+              variant="ghost"
             />
           ))}
         </div>
@@ -143,8 +143,8 @@ export const OnboardingHero = () => {
         {/* CTA */}
         <div className="space-y-4 pt-4 md:space-y-6 md:pt-6">
           <Button
-            onClick={login}
             className="group bg-primary hover:bg-primary/90 text-primary-foreground relative h-12 w-full overflow-hidden rounded-full px-8 text-base font-bold shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] active:scale-95 sm:w-auto md:h-13 md:px-10 md:text-lg"
+            onClick={login}
           >
             <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-full" />
             <span className="relative flex items-center justify-center gap-2">

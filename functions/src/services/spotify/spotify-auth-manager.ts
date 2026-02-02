@@ -5,7 +5,7 @@ import { config as env } from '../../config/env';
 import { SpotifyTokens } from '../../types/spotify';
 
 export class SpotifyAuthManager implements IAuthStrategy {
-  private accessToken: string | null = null;
+  private accessToken: null | string = null;
   private tokenExpirationEpoch: number = 0;
 
   constructor(
@@ -16,67 +16,6 @@ export class SpotifyAuthManager implements IAuthStrategy {
   }
 
   // --- IAuthStrategy Implementation ---
-
-  public setConfiguration(_configuration: SdkConfiguration): void {
-    // No-op for now
-  }
-
-  public async getOrCreateAccessToken(): Promise<AccessToken> {
-    await this.ensureAccessToken();
-    return this.getCurrentAccessTokenObj();
-  }
-
-  public async getAccessToken(): Promise<AccessToken | null> {
-    if (!this.accessToken) return null;
-    return this.getCurrentAccessTokenObj();
-  }
-
-  public removeAccessToken(): void {
-    this.accessToken = null;
-  }
-
-  // --- Core Logic ---
-
-  private getCurrentAccessTokenObj(): AccessToken {
-    if (!this.accessToken) {
-      throw new Error('No access token available');
-    }
-    const expiresIn = Math.max(0, this.tokenExpirationEpoch - Math.floor(Date.now() / 1000));
-    return {
-      access_token: this.accessToken,
-      token_type: 'Bearer',
-      expires_in: expiresIn,
-      refresh_token: this.refreshToken,
-      expires: this.tokenExpirationEpoch * 1000
-    };
-  }
-
-  public setAccessToken(token: string, expiresInSeconds: number): void {
-    this.accessToken = token;
-    this.tokenExpirationEpoch = Math.floor(Date.now() / 1000) + expiresInSeconds;
-    // No need to update SDK manually; strategy will read new values on next request
-  }
-
-  public setTokens(accessToken: string, refreshToken: string, expiresInSeconds: number): void {
-    this.setAccessToken(accessToken, expiresInSeconds);
-    this.refreshToken = refreshToken;
-  }
-
-  /**
-   * @deprecated logic moved to strategy, but kept for explicit calls if needed
-   */
-  public updateSdkToken(): void {
-    // No-op now as strategy is dynamic
-  }
-
-  public async forceRefresh(): Promise<void> {
-    logger.info('Forcing Spotify access token refresh...');
-    const tokens = await this.refreshAccessTokenManual();
-    this.setAccessToken(tokens.access_token, tokens.expires_in);
-    if (tokens.refresh_token) {
-      this.refreshToken = tokens.refresh_token;
-    }
-  }
 
   public async ensureAccessToken(): Promise<void> {
     const isExpired = Date.now() / 1000 >= this.tokenExpirationEpoch - 60; // 1 min buffer
@@ -90,39 +29,100 @@ export class SpotifyAuthManager implements IAuthStrategy {
     }
   }
 
+  public async forceRefresh(): Promise<void> {
+    logger.info('Forcing Spotify access token refresh...');
+    const tokens = await this.refreshAccessTokenManual();
+    this.setAccessToken(tokens.access_token, tokens.expires_in);
+    if (tokens.refresh_token) {
+      this.refreshToken = tokens.refresh_token;
+    }
+  }
+
+  public getAccessString() {
+    return this.accessToken;
+  }
+
+  public async getAccessToken(): Promise<AccessToken | null> {
+    if (!this.accessToken) return null;
+    return this.getCurrentAccessTokenObj();
+  }
+
+  // --- Core Logic ---
+
+  public async getOrCreateAccessToken(): Promise<AccessToken> {
+    await this.ensureAccessToken();
+    return this.getCurrentAccessTokenObj();
+  }
+
+  public getRefreshToken() {
+    return this.refreshToken;
+  }
+
+  public getTokenExpirationEpoch() {
+    return this.tokenExpirationEpoch;
+  }
+
   public async refreshAccessTokenManual(): Promise<SpotifyTokens> {
     const basicAuth = Buffer.from(`${env.SPOTIFY_CLIENT_ID}:${env.SPOTIFY_CLIENT_SECRET}`).toString(
       'base64'
     );
 
     const response = await fetch('https://accounts.spotify.com/api/token', {
-      method: 'POST',
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: this.refreshToken
+      }),
       headers: {
         Authorization: `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: this.refreshToken
-      })
+      method: 'POST'
     });
 
     if (!response.ok) {
       const errorBody = await response.text();
-      logger.error('Failed to refresh Spotify token', { status: response.status, errorBody });
+      logger.error('Failed to refresh Spotify token', { errorBody, status: response.status });
       throw new Error(`Failed to refresh Spotify token: ${response.statusText}`);
     }
 
     return (await response.json()) as SpotifyTokens;
   }
 
-  public getAccessString() {
-    return this.accessToken;
+  public removeAccessToken(): void {
+    this.accessToken = null;
   }
-  public getRefreshToken() {
-    return this.refreshToken;
+
+  public setAccessToken(token: string, expiresInSeconds: number): void {
+    this.accessToken = token;
+    this.tokenExpirationEpoch = Math.floor(Date.now() / 1000) + expiresInSeconds;
+    // No need to update SDK manually; strategy will read new values on next request
   }
-  public getTokenExpirationEpoch() {
-    return this.tokenExpirationEpoch;
+
+  public setConfiguration(_configuration: SdkConfiguration): void {
+    // No-op for now
+  }
+
+  public setTokens(accessToken: string, refreshToken: string, expiresInSeconds: number): void {
+    this.setAccessToken(accessToken, expiresInSeconds);
+    this.refreshToken = refreshToken;
+  }
+  /**
+   * @deprecated logic moved to strategy, but kept for explicit calls if needed
+   */
+  public updateSdkToken(): void {
+    // No-op now as strategy is dynamic
+  }
+  private getCurrentAccessTokenObj(): AccessToken {
+    if (!this.accessToken) {
+      throw new Error('No access token available');
+    }
+    const expiresIn = Math.max(0, this.tokenExpirationEpoch - Math.floor(Date.now() / 1000));
+    return {
+      access_token: this.accessToken,
+      expires: this.tokenExpirationEpoch * 1000,
+      expires_in: expiresIn,
+      refresh_token: this.refreshToken,
+      token_type: 'Bearer'
+    };
   }
 }

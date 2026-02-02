@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useState } from 'react';
+import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { ArrowLeft, Loader2 } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { ConfigEditor } from '@/features/playlists/components/ConfigEditor';
 
@@ -57,12 +57,12 @@ export default function EditPlaylist() {
     if (!user) return;
 
     toast.promise(FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id), {
+      error: 'Failed to save playlist. Please try again.',
       loading: 'Saving configuration...',
       success: () => {
         navigate('/');
         return 'Playlist saved successfully! 💾';
-      },
-      error: 'Failed to save playlist. Please try again.'
+      }
     });
   };
 
@@ -79,9 +79,9 @@ export default function EditPlaylist() {
       {/* Header Section */}
       <div className="flex flex-col gap-2 select-none">
         <Button
-          variant="ghost"
-          onClick={() => navigate('/')}
           className="hover:text-primary text-muted-foreground -ml-4 w-fit pl-0 transition-colors hover:bg-transparent"
+          onClick={() => navigate('/')}
+          variant="ghost"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
         </Button>
@@ -101,7 +101,7 @@ export default function EditPlaylist() {
         <div className="bg-primary/5 pointer-events-none absolute top-0 right-0 -z-10 rounded-full p-32 blur-3xl" />
         <div className="bg-secondary/5 pointer-events-none absolute bottom-0 left-0 -z-10 rounded-full p-24 blur-3xl" />
 
-        <ConfigEditor initialConfig={config} onSubmit={handleSave} isAddMode={isNew} />
+        <ConfigEditor initialConfig={config} isAddMode={isNew} onSubmit={handleSave} />
       </div>
     </div>
   );

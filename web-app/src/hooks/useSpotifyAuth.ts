@@ -22,8 +22,8 @@ export const useSpotifyAuth = () => {
 
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
-      response_type: 'code',
       redirect_uri: redirectUri,
+      response_type: 'code',
       scope: SCOPES.join(' '),
       show_dialog: 'true'
     });

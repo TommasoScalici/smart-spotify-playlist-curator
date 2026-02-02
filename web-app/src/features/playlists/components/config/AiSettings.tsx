@@ -1,8 +1,8 @@
+import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Bot, RefreshCw, Sparkles } from 'lucide-react';
 import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -17,32 +17,32 @@ import { ArtistSelector } from './ArtistSelector';
 
 interface AiSettingsProps {
   control: Control<PlaylistConfig>;
-  register: UseFormRegister<PlaylistConfig>;
   errors: FieldErrors<PlaylistConfig>;
+  register: UseFormRegister<PlaylistConfig>;
   watch: UseFormWatch<PlaylistConfig>;
 }
 
 // Simple stop words filter (mirrors backend logic)
 const STOP_WORDS = new Set([
-  'the',
   'a',
   'an',
   'and',
-  'or',
-  'but',
-  'in',
-  'on',
   'at',
-  'to',
-  'for',
-  'of',
-  'with',
+  'but',
   'by',
+  'for',
   'from',
-  'playlist',
+  'in',
   'music',
+  'of',
+  'on',
+  'or',
+  'playlist',
   'songs',
-  'tracks'
+  'the',
+  'to',
+  'tracks',
+  'with'
 ]);
 
 function generatePromptPreview(
@@ -85,7 +85,7 @@ function generatePromptPreview(
   return prompt;
 }
 
-export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps) => {
+export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps) => {
   const playlistName = watch('name');
   const playlistDescription = watch('settings.description');
   const isInstrumental = watch('aiGeneration.isInstrumentalOnly');
@@ -107,9 +107,9 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
         <div className="bg-card hover:bg-accent/5 flex items-center justify-between rounded-xl border p-4 transition-colors sm:p-5">
           <div className="space-y-0.5">
             <LabelWithTooltip
-              tooltip="Allow the AI to analyze your playlist and suggest new tracks based on your criteria."
-              htmlFor="ai-enabled"
               className="cursor-pointer text-base font-medium"
+              htmlFor="ai-enabled"
+              tooltip="Allow the AI to analyze your playlist and suggest new tracks based on your criteria."
             >
               Enable AI Suggestions
             </LabelWithTooltip>
@@ -122,7 +122,7 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
             control={control}
             name="aiGeneration.enabled"
             render={({ field }) => (
-              <Switch id="ai-enabled" checked={field.value} onCheckedChange={field.onChange} />
+              <Switch checked={field.value} id="ai-enabled" onCheckedChange={field.onChange} />
             )}
           />
         </div>
@@ -135,9 +135,9 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
               <div className="flex items-center gap-2">
                 <Sparkles className="text-primary h-4 w-4" />
                 <LabelWithTooltip
-                  tooltip="Select artists that define the vibe of your playlist. The AI will use these to find similar music."
-                  htmlFor="referenceArtists"
                   className="text-sm font-semibold"
+                  htmlFor="referenceArtists"
+                  tooltip="Select artists that define the vibe of your playlist. The AI will use these to find similar music."
                 >
                   Reference Artists
                 </LabelWithTooltip>
@@ -147,11 +147,11 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                 name="settings.referenceArtists"
                 render={({ field }) => (
                   <ArtistSelector
-                    value={field.value || []}
+                    aiConfig={aiConfig}
+                    description={playlistDescription}
                     onChange={(artists) => field.onChange(artists)}
                     playlistName={playlistName}
-                    description={playlistDescription}
-                    aiConfig={aiConfig}
+                    value={field.value || []}
                   />
                 )}
               />
@@ -160,9 +160,9 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
             {/* Tracks to Add */}
             <div className="space-y-2">
               <LabelWithTooltip
+                className={cn(errors.aiGeneration?.tracksToAdd && 'text-destructive')}
                 htmlFor="tracksToAdd"
                 tooltip="The number of new tracks the AI will attempt to add in each run."
-                className={cn(errors.aiGeneration?.tracksToAdd && 'text-destructive')}
               >
                 Number of AI Tracks to Add
               </LabelWithTooltip>
@@ -171,15 +171,15 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                 name="aiGeneration.tracksToAdd"
                 render={({ field }) => (
                   <NumberInput
-                    id="tracksToAdd"
-                    min={0}
-                    max={50}
-                    value={field.value || 0}
-                    onChange={field.onChange}
                     className={cn(
                       'max-w-[150px]',
                       errors.aiGeneration?.tracksToAdd && 'border-destructive'
                     )}
+                    id="tracksToAdd"
+                    max={50}
+                    min={0}
+                    onChange={field.onChange}
+                    value={field.value || 0}
                   />
                 )}
               />
@@ -194,36 +194,36 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <LabelWithTooltip
-                  tooltip="This prompt is generated from your settings and used to instruct the AI. Read-only."
                   htmlFor="prompt-preview"
+                  tooltip="This prompt is generated from your settings and used to instruct the AI. Read-only."
                 >
                   Auto-Generated Prompt (Read-Only)
                 </LabelWithTooltip>
                 <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
+                  className="h-7 text-xs"
                   onClick={() => {
                     toast.info('Prompt regenerated based on latest metadata.', {
                       description: 'This is a preview of the logic that runs automatically on save.'
                     });
                   }}
-                  className="h-7 text-xs"
+                  size="sm"
+                  type="button"
+                  variant="outline"
                 >
                   <RefreshCw className="mr-2 h-3 w-3" />
                   Regenerate
                 </Button>
               </div>
               <Textarea
+                className="bg-muted min-h-[120px] cursor-not-allowed resize-none font-mono text-sm"
                 id="prompt-preview"
+                readOnly
                 value={generatePromptPreview(
                   playlistName,
                   playlistDescription,
                   isInstrumental,
                   referenceArtists
                 )}
-                readOnly
-                className="bg-muted min-h-[120px] cursor-not-allowed resize-none font-mono text-sm"
               />
               <p className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Sparkles className="h-3 w-3" />
@@ -248,16 +248,16 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                   <Input
                     id="model"
                     {...register('aiGeneration.model')}
-                    disabled
                     className="bg-muted"
+                    disabled
                   />
                 </div>
                 {/* Temperature */}
                 <div className="space-y-2">
                   <LabelWithTooltip
+                    className={cn(errors.aiGeneration?.temperature && 'text-destructive')}
                     htmlFor="temperature"
                     tooltip="Controls the randomness of the AI. Lower values are more focused, higher values are more creative."
-                    className={cn(errors.aiGeneration?.temperature && 'text-destructive')}
                   >
                     Temperature
                   </LabelWithTooltip>
@@ -266,13 +266,13 @@ export const AiSettings = ({ control, register, watch, errors }: AiSettingsProps
                     name="aiGeneration.temperature"
                     render={({ field }) => (
                       <NumberInput
-                        id="temperature"
-                        step={0.1}
-                        min={0}
-                        max={1}
-                        value={field.value || 0}
-                        onChange={field.onChange}
                         className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
+                        id="temperature"
+                        max={1}
+                        min={0}
+                        onChange={field.onChange}
+                        step={0.1}
+                        value={field.value || 0}
                       />
                     )}
                   />

@@ -9,12 +9,12 @@ import { useActivityFeed } from '../useActivityFeed';
 // Mocks
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
-  query: vi.fn(),
-  orderBy: vi.fn(),
+  getFirestore: vi.fn(() => ({})),
   limit: vi.fn(),
-  where: vi.fn(),
   onSnapshot: vi.fn(),
-  getFirestore: vi.fn(() => ({}))
+  orderBy: vi.fn(),
+  query: vi.fn(),
+  where: vi.fn()
 }));
 
 vi.mock('../../contexts/AuthContext', () => ({
@@ -52,8 +52,8 @@ describe('useActivityFeed Hook', () => {
       callback({
         docs: [
           {
-            id: '1',
-            data: () => ({ message: 'Running', type: 'info', timestamp: '2026-01-25T20:00:00Z' })
+            data: () => ({ message: 'Running', timestamp: '2026-01-25T20:00:00Z', type: 'info' }),
+            id: '1'
           }
         ]
       });

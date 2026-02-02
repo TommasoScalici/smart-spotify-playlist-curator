@@ -1,5 +1,5 @@
-import { useState } from 'react';
 import { ArrowRight, CheckCircle2, Music, Play, Settings, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
@@ -13,11 +13,11 @@ import {
 } from '@/components/ui/dialog';
 
 interface TutorialDialogProps {
-  open: boolean;
   onOpenChange: (open: boolean) => void;
+  open: boolean;
 }
 
-export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
+export const TutorialDialog = ({ onOpenChange, open }: TutorialDialogProps) => {
   const [step, setStep] = useState(1);
   const navigate = useNavigate();
 
@@ -30,7 +30,7 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent className="border-border bg-card w-[90%] overflow-hidden rounded-lg p-0 sm:w-full sm:max-w-[500px] sm:rounded-lg">
         {/* Header Image / Gradient */}
         <div className="from-primary/20 via-background to-secondary/20 relative flex h-32 items-center justify-center overflow-hidden bg-linear-to-br">
@@ -121,17 +121,17 @@ export const TutorialDialog = ({ open, onOpenChange }: TutorialDialogProps) => {
             <div className="flex gap-2">
               {[1, 2, 3].map((i) => (
                 <div
-                  key={i}
                   className={`h-2 rounded-full transition-all duration-300 ${
                     i === step ? 'bg-primary w-6' : 'bg-muted w-2'
                   }`}
+                  key={i}
                 />
               ))}
             </div>
 
             <Button
-              onClick={handleNext}
               className="gap-2 shadow-lg transition-transform hover:scale-105"
+              onClick={handleNext}
             >
               {step === 3 ? 'Create First Playlist' : 'Next'}
               <ArrowRight className="h-4 w-4" />

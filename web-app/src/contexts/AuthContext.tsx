@@ -1,19 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User } from 'firebase/auth';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 
 import { AuthService } from '../services/auth-service';
 
 interface AuthContextType {
-  user: User | null;
   loading: boolean;
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
+  user: null | User;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<null | User>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ loading, signIn, signOut, user }}>
       {!loading && children}
     </AuthContext.Provider>
   );

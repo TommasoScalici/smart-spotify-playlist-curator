@@ -12,12 +12,12 @@ const GetPlaylistMetricsRequestSchema = z.object({
 
 // Response Schema
 const PlaylistMetricsSchema = z.object({
+  description: z.string().optional(),
   followers: z.number(),
-  tracks: z.number(),
-  lastUpdated: z.string(), // ISO 8601 timestamp
   imageUrl: z.string().url().optional().nullable(),
+  lastUpdated: z.string(), // ISO 8601 timestamp
   owner: z.string().optional(),
-  description: z.string().optional()
+  tracks: z.number()
 });
 
 /**
@@ -52,7 +52,7 @@ export const getPlaylistMetrics = onCall(
 
     try {
       // Get authorized Spotify service with user's token
-      const { service, originalRefreshToken } = await getAuthorizedSpotifyService(uid);
+      const { originalRefreshToken, service } = await getAuthorizedSpotifyService(uid);
 
       // Fetch playlist metadata from Spotify
       const playlistData = await service.getPlaylistDetails(spotifyId);
@@ -69,7 +69,7 @@ export const getPlaylistMetrics = onCall(
       // --- DATA REPAIR & METADATA FETCH ---
       const playlistRef = db.collection('users').doc(uid).collection('playlists').doc(playlistId);
       const playlistSnap = await playlistRef.get();
-      let lastCuratedAt: string | null = null;
+      let lastCuratedAt: null | string = null;
 
       if (playlistSnap.exists) {
         const currentData = playlistSnap.data();
@@ -94,30 +94,30 @@ export const getPlaylistMetrics = onCall(
 
       // Extract metrics
       const metrics = {
+        description: playlistData.description,
         followers: playlistData.followers || 0,
-        tracks: playlistData.totalTracks || 0,
-        lastUpdated: latestActivity,
         imageUrl: playlistData.imageUrl,
+        lastUpdated: latestActivity,
         owner: playlistData.owner,
-        description: playlistData.description
+        tracks: playlistData.totalTracks || 0
       };
 
       // Validate response
       const validatedMetrics = PlaylistMetricsSchema.parse(metrics);
 
       logger.info(`Fetched metrics for playlist ${spotifyId}`, {
-        uid,
-        metrics: validatedMetrics,
+        lastCuratedAt,
         latestTrackAddedAt,
-        lastCuratedAt
+        metrics: validatedMetrics,
+        uid
       });
 
       return validatedMetrics;
     } catch (error) {
       logger.error('Failed to fetch playlist metrics', {
-        uid,
+        error: error instanceof Error ? error.message : String(error),
         playlistId,
-        error: error instanceof Error ? error.message : String(error)
+        uid
       });
 
       if (error instanceof Error && error.message.includes('invalid_grant')) {

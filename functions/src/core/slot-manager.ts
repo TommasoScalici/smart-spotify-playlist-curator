@@ -17,14 +17,19 @@ export class SlotManager {
     shuffle = true,
     sizeLimitStrategy: SizeLimitStrategy = 'drop_random'
   ): string[] {
-    const playlist: (string | null)[] = new Array(totalSlots).fill(null);
-
-    // 1. Place Mandatory Tracks
-    MandatoryTrackPlacer.place(playlist, mandatoryTracks, shuffle);
-
-    // 2. Prepare Pool (Survivors + AI)
+    // 1. Prepare candidate pool first to determine available content
     const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
     let pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
+
+    // 2. Resize grid if we have fewer tracks than slots (Sparse Mode)
+    // accessible content = unique mandatory + unique pool
+    const availableContentCount = mandatoryUris.size + pool.length;
+    const effectiveTotalSlots = Math.min(totalSlots, availableContentCount);
+
+    const playlist: (null | string)[] = new Array(effectiveTotalSlots).fill(null);
+
+    // 3. Place Mandatory Tracks
+    MandatoryTrackPlacer.place(playlist, mandatoryTracks, shuffle);
 
     // 3. Selection Phase (Truncation)
     const totalEmptySlots = playlist.filter((s) => s === null).length;
@@ -45,11 +50,11 @@ export class SlotManager {
    * Shuffles tracks while enforcing a minimum distance between tracks by the same artist.
    */
   public shuffleWithRules(
-    tracks: { uri: string; artist: string; name?: string }[],
+    tracks: { artist: string; name?: string; uri: string }[],
     minArtistDistance = 3
   ): string[] {
     return ShuffleEngine.shuffleWithRules(tracks, minArtistDistance);
   }
 }
 
-export type { SizeLimitStrategy, PoolTrack };
+export type { PoolTrack, SizeLimitStrategy };

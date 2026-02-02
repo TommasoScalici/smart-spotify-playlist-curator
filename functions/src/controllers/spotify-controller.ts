@@ -1,19 +1,20 @@
 import * as logger from 'firebase-functions/logger';
 import { HttpsError, onCall } from 'firebase-functions/v2/https';
 
-import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 import type { SearchResult } from '../services/spotify-service.js';
+
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 
 export const searchSpotify = onCall(
   {
-    timeoutSeconds: 30,
     cors: true, // Explicitly enable CORS
     secrets: [
       'SPOTIFY_CLIENT_ID',
       'SPOTIFY_CLIENT_SECRET',
       'SPOTIFY_REFRESH_TOKEN',
       'GOOGLE_AI_API_KEY'
-    ]
+    ],
+    timeoutSeconds: 30
   },
   async (request) => {
     if (!request.auth) {
@@ -21,14 +22,14 @@ export const searchSpotify = onCall(
     }
 
     const uid = request.auth.uid;
-    const { query, type, limit } = request.data;
+    const { limit, query, type } = request.data;
     if (!query || !type) {
       throw new HttpsError('invalid-argument', 'Missing query or type.');
     }
 
     // Validate type
     const validTypes = ['track', 'playlist', 'artist'];
-    let searchTypes: ('track' | 'playlist' | 'artist')[] = [];
+    let searchTypes: ('artist' | 'playlist' | 'track')[] = [];
     if (Array.isArray(type)) {
       searchTypes = type;
     } else {
@@ -41,7 +42,7 @@ export const searchSpotify = onCall(
 
     try {
       // Create user-specific service using the robust helper
-      const { service: spotifyService, originalRefreshToken } =
+      const { originalRefreshToken, service: spotifyService } =
         await getAuthorizedSpotifyService(uid);
 
       let results: SearchResult[];
@@ -67,14 +68,14 @@ export const searchSpotify = onCall(
 
 export const getTrackDetails = onCall(
   {
-    timeoutSeconds: 30,
     cors: true,
     secrets: [
       'SPOTIFY_CLIENT_ID',
       'SPOTIFY_CLIENT_SECRET',
       'SPOTIFY_REFRESH_TOKEN',
       'GOOGLE_AI_API_KEY'
-    ]
+    ],
+    timeoutSeconds: 30
   },
   async (request) => {
     if (!request.auth) {
@@ -89,7 +90,7 @@ export const getTrackDetails = onCall(
     }
 
     try {
-      const { service: spotifyService, originalRefreshToken } =
+      const { originalRefreshToken, service: spotifyService } =
         await getAuthorizedSpotifyService(uid);
 
       // Use getTrackMetadata to fetch complete track details including album art

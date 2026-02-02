@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
 export const TrackInfoSchema = z.object({
-  uri: z.string(),
-  name: z.string(),
-  artist: z.string(),
-  album: z.string(),
-  imageUrl: z.string().optional(),
   addedAt: z.string(),
-  popularity: z.number().min(0).max(100).optional()
+  album: z.string(),
+  artist: z.string(),
+  imageUrl: z.string().optional(),
+  name: z.string(),
+  popularity: z.number().min(0).max(100).optional(),
+  uri: z.string()
 });
 
 export type TrackInfo = z.infer<typeof TrackInfoSchema>;
@@ -15,40 +15,40 @@ export type TrackInfo = z.infer<typeof TrackInfoSchema>;
 // --- Sub-schemas ---
 
 export const PositionRangeSchema = z.object({
-  min: z.number().min(1),
-  max: z.number().min(1)
+  max: z.number().min(1),
+  min: z.number().min(1)
 });
 
 export const MandatoryTrackSchema = z.object({
-  uri: z.string().startsWith('spotify:track:', { message: 'Must be a valid Spotify Track URI' }),
-  name: z.string().optional(),
   artist: z.string().optional(),
+  comment: z.string().optional(),
   imageUrl: z.string().optional(),
-  positionRange: PositionRangeSchema.default({ min: 1, max: 1 }),
+  name: z.string().optional(),
   note: z.string().optional(),
-  comment: z.string().optional()
+  positionRange: PositionRangeSchema.default({ max: 1, min: 1 }),
+  uri: z.string().startsWith('spotify:track:', { message: 'Must be a valid Spotify Track URI' })
 });
 
 export const AiGenerationConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  tracksToAdd: z.number().min(0).max(50).default(10),
+  isInstrumentalOnly: z.boolean().default(false).optional(),
   model: z.string().default('gemini-2.5-flash'),
   temperature: z.number().min(0).max(1).default(0.7),
-  isInstrumentalOnly: z.boolean().default(false).optional()
+  tracksToAdd: z.number().min(0).max(50).default(10)
 });
 
 // --- Search Result Schema ---
 
 export const SearchResultSchema = z.object({
-  uri: z.string(),
-  name: z.string(),
   artist: z.string().optional(),
-  owner: z.string().optional(),
-  ownerId: z.string().optional(),
   description: z.string().optional(),
   imageUrl: z.string().optional(),
+  name: z.string(),
+  owner: z.string().optional(),
+  ownerId: z.string().optional(),
   popularity: z.number().optional(),
-  type: z.enum(['track', 'playlist', 'artist'])
+  type: z.enum(['track', 'playlist', 'artist']),
+  uri: z.string()
 });
 
 export type SearchResult = z.infer<typeof SearchResultSchema>;
@@ -64,18 +64,18 @@ export const CurationRulesSchema = z.object({
 });
 
 export const PlaylistSettingsSchema = z.object({
-  targetTotalTracks: z.number().min(5).max(999),
-  description: z.string().optional(),
   allowExplicit: z.boolean().optional(),
-  referenceArtists: z.array(SearchResultSchema).default([])
+  description: z.string().optional(),
+  referenceArtists: z.array(SearchResultSchema).default([]),
+  targetTotalTracks: z.number().min(5).max(999)
 });
 
 // --- Curation Status Schema ---
 
 export const BaseTrackSchema = z.object({
-  uri: z.string(),
+  artist: z.string(),
   name: z.string(),
-  artist: z.string()
+  uri: z.string()
 });
 
 export const TrackDiffSchema = BaseTrackSchema.extend({
@@ -84,75 +84,62 @@ export const TrackDiffSchema = BaseTrackSchema.extend({
 
 export const CurationDiffSchema = z.object({
   added: z.array(BaseTrackSchema),
-  removed: z.array(TrackDiffSchema),
   keptMandatory: z.array(BaseTrackSchema).optional(),
+  removed: z.array(TrackDiffSchema),
   stats: z
     .object({
-      target: z.number(),
       final: z.number(),
-      success: z.boolean()
+      success: z.boolean(),
+      target: z.number()
     })
     .optional()
 });
 
 export const ActivityMetadataSchema = z.object({
+  addedCount: z.number().default(0),
+  aiTracksAdded: z.number().default(0),
+  artistLimitRemoved: z.number().default(0),
+  diff: CurationDiffSchema.optional(),
+  dryRun: z.boolean().default(false),
+  duplicatesRemoved: z.number().default(0),
+  error: z.string().optional(),
+  expiredRemoved: z.number().default(0),
+  finalCount: z.number().default(0),
   playlistId: z.string(),
   playlistName: z.string(),
-  addedCount: z.number().default(0),
-  removedCount: z.number().default(0),
-  aiTracksAdded: z.number().default(0),
-  duplicatesRemoved: z.number().default(0),
-  expiredRemoved: z.number().default(0),
-  artistLimitRemoved: z.number().default(0),
-  sizeLimitRemoved: z.number().default(0),
-  finalCount: z.number().default(0),
-  dryRun: z.boolean().default(false),
-  error: z.string().optional(),
   progress: z.number().default(0),
-  step: z.string().optional(),
-  triggeredBy: z.string().optional(),
+  removedCount: z.number().default(0),
+  sizeLimitRemoved: z.number().default(0),
   state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
-  diff: CurationDiffSchema.optional()
+  step: z.string().optional(),
+  triggeredBy: z.string().optional()
 });
 
 export const ActivityLogSchema = z.object({
-  id: z.string().optional(),
-  timestamp: z.any().optional(), // Firestore Timestamp
-  type: z.string().optional(),
   deleted: z.boolean().default(false).optional(),
-  metadata: ActivityMetadataSchema
+  id: z.string().optional(),
+  metadata: ActivityMetadataSchema,
+  timestamp: z.any().optional(), // Firestore Timestamp
+  type: z.string().optional()
 });
 
 export const CurationStatusSchema = z.object({
-  state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
-  progress: z.number().min(0).max(100).default(0),
-  step: z.string().optional(),
-  lastUpdated: z.string().optional(),
   diff: CurationDiffSchema.optional(),
-  isDryRun: z.boolean().optional()
+  isDryRun: z.boolean().optional(),
+  lastUpdated: z.string().optional(),
+  progress: z.number().min(0).max(100).default(0),
+  state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
+  step: z.string().optional()
 });
 
 // --- Main Schema ---
 
 export const PlaylistConfigSchema = z.object({
-  id: z
-    .string()
-    .min(1, 'you have to select the target playlist')
-    .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
-  name: z.string(), // Name should be required as well
-  enabled: z.boolean().default(true),
-  imageUrl: z.string().optional().nullable(),
-  ownerId: z.string().min(1, 'Owner ID is required'),
-  settings: PlaylistSettingsSchema.default({
-    targetTotalTracks: 20,
-    referenceArtists: []
-  }),
-  mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
   aiGeneration: AiGenerationConfigSchema.default({
     enabled: true,
-    tracksToAdd: 10,
     model: 'gemini-2.5-flash',
-    temperature: 0.7
+    temperature: 0.7,
+    tracksToAdd: 10
   }),
   curationRules: CurationRulesSchema.default({
     maxTrackAgeDays: 30,
@@ -160,56 +147,69 @@ export const PlaylistConfigSchema = z.object({
     removeDuplicates: true,
     shuffleAtEnd: true,
     sizeLimitStrategy: 'drop_random'
+  }),
+  enabled: z.boolean().default(true),
+  id: z
+    .string()
+    .min(1, 'you have to select the target playlist')
+    .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
+  imageUrl: z.string().optional().nullable(),
+  mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
+  name: z.string(), // Name should be required as well
+  ownerId: z.string().min(1, 'Owner ID is required'),
+  settings: PlaylistSettingsSchema.default({
+    referenceArtists: [],
+    targetTotalTracks: 20
   })
 });
 
 // --- User Schema ---
 
 export const SpotifyProfileSchema = z.object({
-  id: z.string(),
+  authError: z.string().optional(),
+  avatarUrl: z.string().url().nullable(),
   displayName: z.string().nullable(),
   email: z.string().email(),
-  avatarUrl: z.string().url().nullable(),
-  product: z.string(),
+  id: z.string(),
   linkedAt: z.date(),
-  status: z.enum(['active', 'invalid']).default('active'),
-  authError: z.string().optional()
+  product: z.string(),
+  status: z.enum(['active', 'invalid']).default('active')
 });
 
 export const UserSchema = z.object({
-  uid: z.string(),
-  email: z.string().email(),
-  displayName: z.string().optional(),
-  photoURL: z.string().url().optional(),
   createdAt: z.date(),
+  displayName: z.string().optional(),
+  email: z.string().email(),
   lastLoginAt: z.date(),
+  photoURL: z.string().url().optional(),
+  spotifyProfile: SpotifyProfileSchema.optional().nullable(),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
-  spotifyProfile: SpotifyProfileSchema.optional().nullable()
+  uid: z.string()
 });
 
 // --- Playlist Metrics Schema ---
 
 export const PlaylistMetricsSchema = z.object({
   followers: z.number(),
-  tracks: z.number(),
-  lastUpdated: z.string() // ISO 8601 timestamp
+  lastUpdated: z.string(), // ISO 8601 timestamp
+  tracks: z.number()
 });
 
-export type SpotifyProfile = z.infer<typeof SpotifyProfileSchema>;
-export type UserProfile = z.infer<typeof UserSchema>;
-export type PlaylistMetrics = z.infer<typeof PlaylistMetricsSchema>;
+export type ActivityLog = z.infer<typeof ActivityLogSchema>;
+export type ActivityMetadata = z.infer<typeof ActivityMetadataSchema>;
+export type AiGenerationConfig = z.infer<typeof AiGenerationConfigSchema>;
 
+export type CurationDiff = z.infer<typeof CurationDiffSchema>;
+export type CurationRules = z.infer<typeof CurationRulesSchema>;
+export type CurationStatus = z.infer<typeof CurationStatusSchema>;
+export type MandatoryTrack = z.infer<typeof MandatoryTrackSchema>;
 // Infer TS types from Zod schemas
 export type PlaylistConfig = z.infer<typeof PlaylistConfigSchema>;
-export type MandatoryTrack = z.infer<typeof MandatoryTrackSchema>;
-export type AiGenerationConfig = z.infer<typeof AiGenerationConfigSchema>;
-export type CurationRules = z.infer<typeof CurationRulesSchema>;
+export type PlaylistMetrics = z.infer<typeof PlaylistMetricsSchema>;
 export type PlaylistSettings = z.infer<typeof PlaylistSettingsSchema>;
 export type PositionRange = z.infer<typeof PositionRangeSchema>;
-export type CurationStatus = z.infer<typeof CurationStatusSchema>;
-export type CurationDiff = z.infer<typeof CurationDiffSchema>;
-export type ActivityMetadata = z.infer<typeof ActivityMetadataSchema>;
-export type ActivityLog = z.infer<typeof ActivityLogSchema>;
+export type SpotifyProfile = z.infer<typeof SpotifyProfileSchema>;
+export type UserProfile = z.infer<typeof UserSchema>;
 
 // --- Orchestration Response Schema ---
 
@@ -217,9 +217,9 @@ export const OrchestrationResultSchema = z.object({
   message: z.string(),
   results: z.array(
     z.object({
+      error: z.string().optional(),
       name: z.string(),
-      status: z.enum(['success', 'error']),
-      error: z.string().optional()
+      status: z.enum(['success', 'error'])
     })
   )
 });
@@ -227,19 +227,38 @@ export const OrchestrationResultSchema = z.object({
 // --- Estimation Result ---
 
 export const CurationEstimateSchema = z.object({
+  added: z
+    .array(BaseTrackSchema.extend({ source: z.enum(['ai', 'mandatory']).optional() }))
+    .optional(),
+  agedOutTracks: z.number(),
+  aiTracksToAdd: z.number(),
+  artistLimitRemoved: z.number(),
   currentTracks: z.number(),
   duplicatesToRemove: z.number(),
-  agedOutTracks: z.number(),
-  artistLimitRemoved: z.number(),
-  sizeLimitRemoved: z.number(),
   mandatoryToAdd: z.number(),
-  aiTracksToAdd: z.number(),
-  predictedFinal: z.number()
+  planId: z.string().optional(),
+  predictedFinal: z.number(),
+  removed: z.array(TrackDiffSchema).optional(),
+  sizeLimitRemoved: z.number()
 });
 
 export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;
 
+// --- Request Schemas ---
+
+export const TriggerCurationRequestSchema = z.object({
+  planId: z.string().optional(),
+  playlistId: z.string().min(1, 'Playlist ID is required')
+});
+
+export const EstimateCurationRequestSchema = z.object({
+  playlistId: z.string().min(1, 'Playlist ID is required')
+});
+
 export type BaseTrack = z.infer<typeof BaseTrackSchema>;
-export type TrackDiff = z.infer<typeof TrackDiffSchema>;
+export type EstimateCurationRequest = z.infer<typeof EstimateCurationRequestSchema>;
 
 export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;
+export type TrackDiff = z.infer<typeof TrackDiffSchema>;
+
+export type TriggerCurationRequest = z.infer<typeof TriggerCurationRequestSchema>;

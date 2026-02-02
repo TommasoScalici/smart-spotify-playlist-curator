@@ -36,11 +36,11 @@ export function ThemeProvider({
   }, [theme]);
 
   const value = {
-    theme,
     setTheme: (theme: Theme) => {
       localStorage.setItem(storageKey, theme);
       setTheme(theme);
-    }
+    },
+    theme
   };
 
   return (

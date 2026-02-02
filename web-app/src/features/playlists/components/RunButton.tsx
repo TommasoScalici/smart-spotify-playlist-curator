@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { CurationEstimate } from '@smart-spotify-curator/shared';
 import { Loader2, Zap } from 'lucide-react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { CurationEstimate } from '@smart-spotify-curator/shared';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ConfirmCurationModal } from '@/features/playlists/components/ConfirmCurationModal';
@@ -10,13 +10,13 @@ import { cn } from '@/lib/utils';
 import { FunctionsService } from '@/services/functions-service';
 
 interface RunButtonProps {
-  playlistId?: string;
-  playlistName?: string;
-  iconOnly?: boolean;
   className?: string;
   disabled?: boolean;
-  onRunStart?: () => void;
+  iconOnly?: boolean;
   onRunComplete?: () => void;
+  onRunStart?: () => void;
+  playlistId?: string;
+  playlistName?: string;
 }
 
 /**
@@ -29,13 +29,13 @@ interface RunButtonProps {
  * @param disabled - Disabled state
  */
 export const RunButton = ({
-  playlistId,
-  playlistName = 'Playlist',
-  iconOnly = false,
   className = '',
   disabled = false,
+  iconOnly = false,
+  onRunComplete,
   onRunStart,
-  onRunComplete
+  playlistId,
+  playlistName = 'Playlist'
 }: RunButtonProps) => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -70,15 +70,15 @@ export const RunButton = ({
     }
   };
 
-  const handleConfirm = async () => {
+  const handleConfirm = async (planId?: string) => {
     setShowModal(false);
     setLoading(true);
     onRunStart?.();
-    const promise = FunctionsService.triggerCuration(playlistId);
+    const promise = FunctionsService.triggerCuration(playlistId, { planId });
     toast.promise(promise, {
+      error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`,
       loading: 'Running automation...',
-      success: 'Automation completed! Check your Spotify.',
-      error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`
+      success: 'Automation completed! Check your Spotify.'
     });
 
     try {
@@ -104,10 +104,6 @@ export const RunButton = ({
             <TooltipTrigger asChild>
               <div className="inline-block">
                 <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={handleClick}
-                  disabled={loading || disabled}
                   aria-label="Run curation"
                   className={cn(
                     'border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary rounded-full shadow-sm transition-all duration-200 hover:scale-105',
@@ -115,6 +111,10 @@ export const RunButton = ({
                       'hover:bg-primary/10 hover:border-primary/20 cursor-not-allowed opacity-50 hover:scale-100',
                     className
                   )}
+                  disabled={loading || disabled}
+                  onClick={handleClick}
+                  size="icon"
+                  variant="outline"
                 >
                   {buttonContent}
                 </Button>
@@ -133,11 +133,11 @@ export const RunButton = ({
         </TooltipProvider>
 
         <ConfirmCurationModal
+          estimate={estimate}
+          isLoading={estimating}
           isOpen={showModal}
           onClose={() => setShowModal(false)}
           onConfirm={handleConfirm}
-          estimate={estimate}
-          isLoading={estimating}
           playlistName={playlistName}
         />
       </>
@@ -148,20 +148,20 @@ export const RunButton = ({
   return (
     <>
       <Button
-        onClick={handleClick}
-        disabled={loading || disabled}
         className={cn('gap-2', className)}
+        disabled={loading || disabled}
+        onClick={handleClick}
       >
         {buttonContent}
         <span>Run Curation</span>
       </Button>
 
       <ConfirmCurationModal
+        estimate={estimate}
+        isLoading={estimating}
         isOpen={showModal}
         onClose={() => setShowModal(false)}
         onConfirm={handleConfirm}
-        estimate={estimate}
-        isLoading={estimating}
         playlistName={playlistName}
       />
     </>

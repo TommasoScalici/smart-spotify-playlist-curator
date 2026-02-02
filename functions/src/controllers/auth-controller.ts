@@ -43,7 +43,7 @@ export const exchangeSpotifyToken = onCall(
       // 3. Exchange Code for Tokens
       // We init with a placeholder because we don't have a token yet,
       // but we need the client ID/Secret configured in the instance.
-      const { refreshToken, accessToken } = await SpotifyService.exchangeCode(
+      const { accessToken, refreshToken } = await SpotifyService.exchangeCode(
         validatedData.code,
         validatedData.redirectUri
       );
@@ -55,12 +55,12 @@ export const exchangeSpotifyToken = onCall(
       const me = await userClient.getMe();
 
       const spotifyProfile = {
-        id: me.id,
+        avatarUrl: me.images?.[0]?.url ?? null,
         displayName: me.display_name,
         email: me.email,
-        avatarUrl: me.images?.[0]?.url ?? null,
-        product: me.product,
+        id: me.id,
         linkedAt: new Date(), // This will be converted to Firestore Timestamp automatically
+        product: me.product,
         status: 'active'
       };
 
@@ -73,9 +73,9 @@ export const exchangeSpotifyToken = onCall(
       const userRef = db.collection('users').doc(uid);
 
       batch.set(secretRef, {
-        refreshToken,
         accessToken,
         expiresAt: new Date(Date.now() + 3600 * 1000).toISOString(),
+        refreshToken,
         updatedAt: new Date().toISOString()
       });
 
@@ -90,7 +90,7 @@ export const exchangeSpotifyToken = onCall(
       await batch.commit();
 
       // 6. Return Success with Profile for Cache Seeding
-      return { success: true, profile: spotifyProfile };
+      return { profile: spotifyProfile, success: true };
     } catch (error) {
       logger.error('Error linking Spotify account:', error);
       // Since we used a batch, we know NOTHING was written if we got here.
