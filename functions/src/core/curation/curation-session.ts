@@ -1,6 +1,5 @@
-import { CurationDiff, PlaylistConfig } from '@smart-spotify-curator/shared';
+import { CurationDiff, PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
 
-import { TrackInfo } from '../../types/spotify';
 import { TrackWithMeta } from '../types-internal';
 
 export interface CurationSession {
@@ -9,7 +8,6 @@ export interface CurationSession {
   currentTracks: TrackInfo[];
   // Diff results
   diff?: CurationDiff;
-  dryRun: boolean;
   finalTrackList: string[];
 
   logId?: string;

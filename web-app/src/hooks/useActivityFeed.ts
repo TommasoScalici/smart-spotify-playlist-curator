@@ -1,4 +1,4 @@
-import { ActivityMetadata } from '@smart-spotify-curator/shared';
+import { ActivityLogSchema, ActivityMetadata } from '@smart-spotify-curator/shared';
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
@@ -27,13 +27,10 @@ export const useActivityFeed = () => {
   const { user } = useAuth();
 
   const [internalActivities, setInternalActivities] = useState<ActivityLog[]>([]);
-  const [internalLoading, setInternalLoading] = useState(true);
-
-  const activities = user ? internalActivities.filter((a) => !a.deleted) : [];
-  const loading = user ? internalLoading : false;
+  const [internalLoading, setInternalLoading] = useState(!IS_DEBUG_MODE);
 
   useEffect(() => {
-    if (!user) {
+    if (!user || IS_DEBUG_MODE) {
       return;
     }
 
@@ -46,10 +43,30 @@ export const useActivityFeed = () => {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const logs = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      })) as ActivityLog[];
+      const logs = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          const parseResult = ActivityLogSchema.safeParse({ id: doc.id, ...data });
+
+          if (!parseResult.success) {
+            console.error('Invalid activity log data:', parseResult.error);
+            return null;
+          }
+
+          const validData = parseResult.data;
+          // Map to internal ActivityLog format
+          return {
+            deleted: validData.deleted,
+            id: doc.id,
+            message: validData.metadata.step || 'Activity logged',
+            metadata: validData.metadata,
+            read: false, // Default to unread
+            timestamp: validData.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+            type: (validData.metadata.state === 'error' ? 'error' : 'info') as ActivityLog['type']
+          };
+        })
+        .filter(Boolean) as ActivityLog[];
+
       setInternalActivities(logs);
       setInternalLoading(false);
     });
@@ -57,16 +74,16 @@ export const useActivityFeed = () => {
     return () => unsubscribe();
   }, [user]);
 
-  // Debug Mode: Return mock activities after all hooks
-  if (IS_DEBUG_MODE) {
-    return {
-      activities: MOCK_ACTIVITIES.map((activity) => ({
+  const activities = IS_DEBUG_MODE
+    ? (MOCK_ACTIVITIES.map((activity) => ({
         ...activity,
         read: false
-      })) as ActivityLog[],
-      loading: false
-    };
-  }
+      })) as ActivityLog[])
+    : user
+      ? internalActivities.filter((a) => !a.deleted)
+      : [];
+
+  const loading = IS_DEBUG_MODE ? false : user ? internalLoading : false;
 
   return { activities, loading };
 };

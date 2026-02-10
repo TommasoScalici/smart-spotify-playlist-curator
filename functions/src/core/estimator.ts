@@ -28,7 +28,6 @@ export class CurationEstimator {
     const session = await this.orchestrator.createPlan(
       config,
       spotifyService,
-      true, // dryRun
       'Pre-Flight',
       undefined
     );

@@ -118,11 +118,9 @@ describe('CurationEstimator', () => {
     expect(result.predictedFinal).toBe(20);
     expect(result.duplicatesToRemove).toBe(0);
     expect(result.planId).toBeDefined();
-    // Validate that createPlan was called with dryRun=true
     expect(mockOrchestrator.createPlan).toHaveBeenCalledWith(
       mockConfig,
       mockSpotifyService,
-      true,
       expect.any(String),
       undefined
     );

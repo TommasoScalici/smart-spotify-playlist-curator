@@ -21,9 +21,6 @@ vi.mock('@/features/playlists/components/PlaylistCard', () => ({
   ),
   PlaylistCardSkeleton: () => <div data-testid="skeleton">Loading...</div>
 }));
-vi.mock('@/features/playlists/components/RunButton', () => ({
-  RunButton: () => <button>Run</button>
-}));
 vi.mock('@/features/dashboard/components/TutorialDialog', () => ({ TutorialDialog: () => null }));
 vi.mock('@/features/dashboard/components/ActivityDrawer', () => ({ ActivityDrawer: () => null }));
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));

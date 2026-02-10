@@ -32,7 +32,7 @@ const createMockMetadata = (overrides: Partial<ActivityMetadata>): ActivityMetad
   addedCount: 0,
   aiTracksAdded: 0,
   artistLimitRemoved: 0,
-  dryRun: false,
+
   duplicatesRemoved: 0,
   expiredRemoved: 0,
   finalCount: 0,

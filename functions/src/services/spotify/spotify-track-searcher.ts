@@ -1,6 +1,5 @@
+import { SearchResult, TrackInfo } from '@smart-spotify-curator/shared';
 import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
-
-import { SearchResult, TrackInfo } from '../../types/spotify';
 
 interface SpotifySearchItem {
   added_at: string;

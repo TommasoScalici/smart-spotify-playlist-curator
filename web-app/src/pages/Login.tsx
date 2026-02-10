@@ -1,18 +1,24 @@
 import { Chrome, Music } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 
 import { useAuth } from '../contexts/AuthContext';
 
+declare const __APP_VERSION__: string;
 export default function Login() {
   const { signIn, user } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
+
   if (user) {
-    navigate('/');
     return null;
   }
 
@@ -63,7 +69,7 @@ export default function Login() {
           </Button>
 
           <div className="text-muted-foreground flex items-center justify-center gap-4 text-[10px] font-bold tracking-widest uppercase opacity-40">
-            <span>v1.3.0</span>
+            <span>v{__APP_VERSION__}</span>
             <span className="h-1 w-1 rounded-full bg-current" />
             <span>OAuth 2.0</span>
           </div>

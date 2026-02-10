@@ -1,8 +1,8 @@
+import { SpotifyTokens, SpotifyTokensSchema } from '@smart-spotify-curator/shared';
 import { AccessToken, IAuthStrategy, SdkConfiguration, SpotifyApi } from '@spotify/web-api-ts-sdk';
 import * as logger from 'firebase-functions/logger';
 
 import { config as env } from '../../config/env';
-import { SpotifyTokens } from '../../types/spotify';
 
 export class SpotifyAuthManager implements IAuthStrategy {
   private accessToken: null | string = null;
@@ -85,7 +85,8 @@ export class SpotifyAuthManager implements IAuthStrategy {
       throw new Error(`Failed to refresh Spotify token: ${response.statusText}`);
     }
 
-    return (await response.json()) as SpotifyTokens;
+    const json = await response.json();
+    return SpotifyTokensSchema.parse(json);
   }
 
   public removeAccessToken(): void {

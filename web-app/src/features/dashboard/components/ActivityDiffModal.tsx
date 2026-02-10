@@ -28,15 +28,14 @@ export const ActivityDiffModal = ({ activity, onClose, open }: ActivityDiffModal
             Curation Report: {activity?.metadata?.playlistName || 'Playlist'}
           </DialogTitle>
           <DialogDescription>
-            Changes from {activity?.metadata?.dryRun ? 'test' : 'automation'} run at{' '}
-            {activity && new Date(activity.timestamp).toLocaleString()}
+            Changes from curation run at {activity && new Date(activity.timestamp).toLocaleString()}
           </DialogDescription>
         </DialogHeader>
 
         <div className="h-full min-h-0 flex-1 overflow-y-auto py-4 pr-1 md:overflow-hidden">
           {activity?.metadata?.diff ? (
             <div className="flex h-full flex-col">
-              <DiffViewer diff={activity.metadata.diff} isDryRun={activity.metadata.dryRun} />
+              <DiffViewer diff={activity.metadata.diff} />
             </div>
           ) : (
             <div className="text-muted-foreground flex h-full flex-col items-center justify-center">

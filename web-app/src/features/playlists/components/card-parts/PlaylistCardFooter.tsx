@@ -92,22 +92,21 @@ export const PlaylistCardFooter = ({
               playlistName={config.name}
             />
 
-            {latestLog?.metadata?.diff && (
-              <Button
-                aria-label="View curation history"
-                className={cn(
-                  'text-muted-foreground h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all',
-                  latestLog.metadata.dryRun
-                    ? 'text-amber-500/80 hover:border-amber-400/30 hover:bg-amber-400/10 hover:text-amber-400'
-                    : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-primary/10 hover:shadow-lg'
-                )}
-                onClick={onShowHistory}
-                size="icon"
-                variant="outline"
-              >
-                <History className="h-4 w-4" />
-              </Button>
-            )}
+            <Button
+              aria-label="View curation history"
+              className={cn(
+                'text-muted-foreground h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all',
+                !latestLog?.metadata?.diff
+                  ? 'cursor-not-allowed opacity-40'
+                  : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-primary/10 hover:scale-105 hover:shadow-lg'
+              )}
+              disabled={!latestLog?.metadata?.diff}
+              onClick={onShowHistory}
+              size="icon"
+              variant="outline"
+            >
+              <History className="h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>

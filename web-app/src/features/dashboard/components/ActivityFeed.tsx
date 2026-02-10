@@ -196,15 +196,8 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
                     >
                       {activity.metadata.triggeredBy}
                     </span>
-                    <span
-                      className={cn(
-                        'rounded border px-1.5 py-0.5 text-[9px] leading-none font-black tracking-wider uppercase',
-                        activity.metadata.dryRun
-                          ? 'border-amber-500/50 bg-amber-500/10 text-amber-500/80'
-                          : 'border-green-500/50 bg-green-500/10 text-green-500/80'
-                      )}
-                    >
-                      {activity.metadata.dryRun ? 'Test Run' : 'Applied on Spotify'}
+                    <span className="rounded border border-green-500/50 bg-green-500/10 px-1.5 py-0.5 text-[9px] leading-none font-black tracking-wider text-green-500/80 uppercase">
+                      Applied on Spotify
                     </span>
                   </div>
                 </>

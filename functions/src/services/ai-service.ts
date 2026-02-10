@@ -69,17 +69,17 @@ export class AiService {
    * @returns Array of structured AiSuggestion objects
    */
   public async generateSuggestions(
-    config: AiGenerationConfig,
+    aiConfig: AiGenerationConfig,
     prompt: string,
     count: number,
     excludedTracks: string[] = [], // Semantic "Artist - Track" strings
     referenceArtists: string[] = []
   ): Promise<AiSuggestion[]> {
-    logger.info(`Sending request to Gemini AI...`, { count, model: config.model });
+    logger.info(`Sending request to Gemini AI...`, { count, model: aiConfig.model });
 
     const requestStart = Date.now();
 
-    // Create model instance with config-specified model
+    // Create model instance with aiConfig-specified model
     // Using native responseSchema for structured output
     const model = this.genAI.getGenerativeModel({
       generationConfig: {
@@ -96,9 +96,9 @@ export class AiService {
           },
           type: SchemaType.ARRAY
         },
-        temperature: config.temperature
+        temperature: aiConfig.temperature
       },
-      model: config.model
+      model: aiConfig.model
     });
 
     let fullPrompt = `Task: Generate exactly ${count} tracks for a Spotify playlist based on the user's description.
@@ -186,14 +186,14 @@ For each suggestion, you MUST provide a 'reasoning' field explaining WHY this tr
    * Suggests reference artists based on playlist metadata.
    */
   public async suggestArtists(
-    config: AiGenerationConfig,
+    generationConfig: AiGenerationConfig,
     playlistName: string,
     description: string | undefined,
     count: number
   ): Promise<string[]> {
     logger.info(`Sending artist suggestion request to Gemini AI...`, {
       count,
-      model: config.model
+      model: generationConfig.model
     });
 
     // Using native responseSchema for artists too
@@ -210,9 +210,9 @@ For each suggestion, you MUST provide a 'reasoning' field explaining WHY this tr
           },
           type: SchemaType.ARRAY
         },
-        temperature: config.temperature
+        temperature: generationConfig.temperature
       },
-      model: config.model
+      model: generationConfig.model
     });
 
     let prompt = `Suggest exactly ${count} famous or representative artists for a Spotify playlist.

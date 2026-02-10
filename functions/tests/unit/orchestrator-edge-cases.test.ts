@@ -99,11 +99,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
       uri: 'uri:B'
     });
 
-    await orchestrator.curatePlaylist(
-      mockConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockSpotifyService.searchTrack).toHaveBeenCalledTimes(2);
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
@@ -119,11 +115,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
   it('should handle AI returning zero suggestions', async () => {
     mockAiService.generateSuggestions.mockResolvedValue([]);
 
-    await orchestrator.curatePlaylist(
-      mockConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockSpotifyService.searchTrack).not.toHaveBeenCalled();
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
@@ -156,11 +148,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
         uri: 'uri:A2'
       });
 
-    await orchestrator.curatePlaylist(
-      mockConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     const aiTracks = mockSlotManager.arrangePlaylist.mock.calls[0][2] as { artist: string }[];
     expect(aiTracks.filter((t) => t.artist === 'Artist A')).toHaveLength(1);
@@ -170,11 +158,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
     mockSpotifyService.getPlaylistTracks.mockRejectedValue(new Error('API Failure'));
 
     await expect(
-      orchestrator.curatePlaylist(
-        mockConfig,
-        mockSpotifyService as unknown as SpotifyService,
-        false
-      )
+      orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService)
     ).rejects.toThrow('API Failure');
 
     expect(mockFirestoreLogger.logActivity).toHaveBeenCalledWith(

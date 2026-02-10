@@ -1,6 +1,6 @@
 # Smart Spotify Playlist Curator
 
-> **Status**: v1.5.0 | **License**: MIT
+> **Status**: v1.7.0 | **License**: MIT
 > **Stack**: React 19, Node 24, Firebase Gen 2, Gemini 2.5 Flash
 
 A powerful **Private Playlist Utility** that curates Spotify playlists for you and your friends using **Google Gemini 2.5 Flash**. Designed as a self-hosted tool for small groups (up to 25 users).
@@ -12,7 +12,7 @@ A powerful **Private Playlist Utility** that curates Spotify playlists for you a
 ### 🧠 AI-Powered Curation
 
 - **Context-Aware Recommendations**: Uses Gemini 2.5 Flash to generate tracks based on "Vibe", "Genre", or complex prompts (e.g., "Songs for a rainy cyberpunk drive").
-- **Sonic Consistency**: Filters tracks using Spotify's audio features (Energy, Valence, Danceability) to ensure mathematical vibe matching.
+- **Sonic Consistency**: Uses AI-driven analysis to infer track characteristics and ensure "vibe" consistency without relying on restricted Audio Features APIs.
 - **Smart Slot Management**: Intelligently mixes "VIP" (Mandatory) tracks with AI suggestions while preserving the user's preferred order.
 
 ### 🛡️ Enterprise-Grade Reliability
@@ -20,6 +20,7 @@ A powerful **Private Playlist Utility** that curates Spotify playlists for you a
 - **Orchestrator Pattern**: Decoupled architecture where HTTP triggers only initiate workflows; Orchestrators handle the complex logic.
 - **Dry-Run Mode**: Simulate playlist updates without touching your actual library.
 - **Rate-Limit Handling**: Robust retry logic with exponential backoff for Spotify API `429` errors.
+- **Optimized Concurrency**: Parallel execution for read-heavy operations (e.g., dashboard loading) while maintaining strict sequential consistency for playlist updates.
 - **Observability**: Structured JSON logging via `firebase-functions/logger` with correlation IDs.
 
 ### 🎨 Premium User Experience
@@ -27,6 +28,11 @@ A powerful **Private Playlist Utility** that curates Spotify playlists for you a
 - **Music Studio UI**: built with **React 19**, **Tailwind CSS v4 (CSS-first config)**, and **shadcn/ui**.
 - **Real-Time Feedback**: Optimistic UI updates for a snappy feel.
 - **Security**: OAuth 2.0 Identity Linking (Spotify) + Firebase Authentication.
+
+### 📸 Screenshots
+
+![Dashboard Preview](assets/dashboard-preview.png)
+_Professional-grade dashboard for managing automated playlists._
 
 ### 👥 Onboarding Friends
 

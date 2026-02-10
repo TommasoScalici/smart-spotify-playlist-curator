@@ -1,9 +1,8 @@
-import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { MandatoryTrack, TrackInfo } from '@smart-spotify-curator/shared';
 import { describe, expect, it } from 'vitest';
 
 import { DiffCalculator } from '../../src/core/diff-calculator';
 import { TrackWithMeta } from '../../src/core/types-internal';
-import { TrackInfo } from '../../src/services/spotify-service';
 
 describe('DiffCalculator', () => {
   // Mock Data Generators

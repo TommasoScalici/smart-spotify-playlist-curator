@@ -202,7 +202,7 @@ export const FirestoreService = {
         if (!snap.empty) {
           targetDocRef = doc(playlistsRef, snap.docs[0].id);
         } else {
-          targetDocRef = doc(playlistsRef); // Random as last resort
+          targetDocRef = doc(playlistsRef);
         }
       }
     }
@@ -301,7 +301,7 @@ export const FirestoreService = {
 
     await Promise.all([
       deleteDoc(secretRef),
-      setDoc(userRef, { spotifyProfile: null }, { merge: true }) // Clear profile
+      setDoc(userRef, { spotifyProfile: null }, { merge: true })
     ]);
   }
 };

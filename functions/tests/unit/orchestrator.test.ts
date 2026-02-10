@@ -140,11 +140,7 @@ describe('PlaylistOrchestrator', () => {
         uri: 'spotify:track:B'
       });
 
-    await orchestrator.curatePlaylist(
-      mockConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
       expect.any(Object),
@@ -201,11 +197,7 @@ describe('PlaylistOrchestrator', () => {
       (survivors as { uri: string }[]).map((t) => t.uri)
     );
 
-    await orchestrator.curatePlaylist(
-      mockConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(mockConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
       expect.any(Array),
@@ -244,11 +236,7 @@ describe('PlaylistOrchestrator', () => {
     ]);
 
     const config = { ...mockConfig, aiGeneration: { ...mockConfig.aiGeneration, enabled: false } };
-    await orchestrator.curatePlaylist(
-      config,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(config, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
       expect.any(Array),
@@ -285,11 +273,7 @@ describe('PlaylistOrchestrator', () => {
       return pool.slice(0, totalSlots).map((t) => t.uri);
     });
 
-    await orchestrator.curatePlaylist(
-      limitConfig,
-      mockSpotifyService as unknown as SpotifyService,
-      false
-    );
+    await orchestrator.curatePlaylist(limitConfig, mockSpotifyService as unknown as SpotifyService);
 
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(
       expect.any(Array),

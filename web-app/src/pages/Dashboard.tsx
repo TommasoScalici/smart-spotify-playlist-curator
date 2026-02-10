@@ -9,7 +9,6 @@ import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
 import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
 import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
 import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
-import { RunButton } from '@/features/playlists/components/RunButton';
 import { ActivityLog } from '@/hooks/useActivityFeed';
 
 import { useAuth } from '../contexts/AuthContext';
@@ -108,9 +107,6 @@ export default function Dashboard() {
             <Plus className="h-4 w-4 transition-transform duration-300 group-hover:rotate-90" /> New
             Playlist
           </Button>
-          <div className="w-full sm:w-auto">
-            <RunButton className="shadow-tertiary/10 min-h-[44px] w-full shadow-lg sm:w-auto" />
-          </div>
         </div>
       </div>
 

@@ -43,33 +43,40 @@
     from {
       height: 0;
     }
+
     to {
       height: var(--radix-accordion-content-height);
     }
   }
+
   @keyframes accordion-up {
     from {
       height: var(--radix-accordion-content-height);
     }
+
     to {
       height: 0;
     }
   }
+
   @keyframes bounce-subtle {
     0%,
     100% {
       transform: translateY(-10%);
       animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
     }
+
     50% {
       transform: none;
       animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
     }
   }
+
   @keyframes progress-indeterminate {
     0% {
       transform: translateX(-100%);
     }
+
     100% {
       transform: translateX(100%);
     }
@@ -115,6 +122,9 @@
 
     --radius: 0.75rem;
     /* Increased radius for modern look */
+
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-border: rgba(255, 255, 255, 0.5);
   }
 
   .dark {
@@ -152,6 +162,9 @@
     --border: 240 3.7% 15.9%;
     --input: 240 3.7% 15.9%;
     --ring: 142.4 71.8% 29.2%;
+
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.08);
   }
 }
 

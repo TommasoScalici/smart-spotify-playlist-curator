@@ -4,8 +4,10 @@ import {
   CurationEstimateSchema,
   OrchestrationResult,
   OrchestrationResultSchema,
+  PlaylistMetrics,
   SearchResult,
-  SpotifyProfile
+  SpotifyProfile,
+  TrackInfo
 } from '@smart-spotify-curator/shared';
 import { httpsCallable } from 'firebase/functions';
 
@@ -29,25 +31,11 @@ export const FunctionsService = {
    * @param playlistId - The Spotify playlist ID
    * @returns Playlist metrics including followers, tracks, and last updated timestamp
    */
-  async getPlaylistMetrics(playlistId: string): Promise<{
-    description?: string;
-    followers: number;
-    imageUrl?: null | string;
-    lastUpdated: string;
-    owner?: string;
-    tracks: number;
-  }> {
-    const getMetrics = httpsCallable<
-      { playlistId: string },
-      {
-        description?: string;
-        followers: number;
-        imageUrl?: null | string;
-        lastUpdated: string;
-        owner?: string;
-        tracks: number;
-      }
-    >(functions, 'getPlaylistMetrics');
+  async getPlaylistMetrics(playlistId: string): Promise<PlaylistMetrics> {
+    const getMetrics = httpsCallable<{ playlistId: string }, PlaylistMetrics>(
+      functions,
+      'getPlaylistMetrics'
+    );
     const result = await getMetrics({ playlistId });
     return result.data;
   },
@@ -57,21 +45,8 @@ export const FunctionsService = {
    * @param trackUri - The Spotify track URI (e.g., spotify:track:...)
    * @returns Track metadata with name, artist, and imageUrl
    */
-  async getTrackDetails(trackUri: string): Promise<{
-    artist: string;
-    imageUrl?: string;
-    name: string;
-    uri: string;
-  }> {
-    const getDetails = httpsCallable<
-      { trackUri: string },
-      {
-        artist: string;
-        imageUrl?: string;
-        name: string;
-        uri: string;
-      }
-    >(functions, 'getTrackDetails');
+  async getTrackDetails(trackUri: string): Promise<TrackInfo> {
+    const getDetails = httpsCallable<{ trackUri: string }, TrackInfo>(functions, 'getTrackDetails');
     const result = await getDetails({ trackUri });
     return result.data;
   },
@@ -140,12 +115,12 @@ export const FunctionsService = {
 
   /**
    * Triggers the curation orchestration manually.
-   * @param playlistId - Optional specific playlist ID to curate
-   * @param options - Optional configuration including dryRun flag
+   * @param playlistId - Specific playlist ID to curate (required)
+   * @param options - Optional configuration including planId from estimation
    * @returns Curation result with message and results array
    */
   async triggerCuration(
-    playlistId?: string,
+    playlistId: string,
     options?: { planId?: string }
   ): Promise<OrchestrationResult> {
     const trigger = httpsCallable<{ planId?: string; playlistId?: string }, unknown>(

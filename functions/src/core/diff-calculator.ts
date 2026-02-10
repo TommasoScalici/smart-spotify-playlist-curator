@@ -1,6 +1,5 @@
-import { BaseTrack, MandatoryTrack, TrackDiff } from '@smart-spotify-curator/shared';
+import { BaseTrack, MandatoryTrack, TrackDiff, TrackInfo } from '@smart-spotify-curator/shared';
 
-import { TrackInfo } from '../services/spotify-service';
 import { TrackWithMeta } from './types-internal';
 
 export interface DiffResult {

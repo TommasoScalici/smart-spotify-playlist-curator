@@ -1,5 +1,6 @@
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { Music, Radio } from 'lucide-react';
+import { useState } from 'react';
 
 import { Switch } from '@/components/ui/switch';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -19,16 +20,31 @@ export const PlaylistCardHeader = ({
   onToggle,
   owner
 }: PlaylistCardHeaderProps) => {
+  const [imgError, setImgError] = useState(false);
+
+  // Prioritize fresh imageUrl from metrics over potentially stale config.imageUrl
+  const coverUrl = imageUrl || config.imageUrl;
+
+  // Track the last URL we saw to know when to reset the error state (Recommended React Pattern > useEffect)
+  const [lastCoverUrl, setLastCoverUrl] = useState(coverUrl);
+
+  if (coverUrl !== lastCoverUrl) {
+    setLastCoverUrl(coverUrl);
+    setImgError(false);
+  }
+  const showImage = coverUrl && !imgError;
+
   return (
     <div className="relative z-10 flex items-start gap-4 p-5">
       {/* Album Art with Glow */}
       <div className="relative shrink-0">
         <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/10 shadow-lg transition-transform duration-500 group-hover:scale-105">
-          {config.imageUrl || imageUrl ? (
+          {showImage ? (
             <img
               alt={config.name}
               className="h-full w-full object-cover"
-              src={config.imageUrl || imageUrl || ''}
+              onError={() => setImgError(true)}
+              src={coverUrl}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center bg-black/40">

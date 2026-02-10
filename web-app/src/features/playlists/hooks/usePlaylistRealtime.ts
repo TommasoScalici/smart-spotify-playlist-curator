@@ -15,20 +15,18 @@ export interface UsePlaylistRealtimeProps {
 export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const [isOptimisticallyRunning, setIsOptimisticallyRunning] = useState(false);
+  const [lastManualTriggerAt, setLastManualTriggerAt] = useState<null | number>(null);
   const [latestLog, setLatestLog] = useState<ActivityLog | null>(null);
   const [isLoadingLog, setIsLoadingLog] = useState(true);
 
-  // 1. Fetch Playlist Metrics (Followers, Tracks, etc.)
   const { data: metrics, isLoading: isLoadingMetrics } = useQuery({
     enabled: !!config.id,
     queryFn: () => FunctionsService.getPlaylistMetrics(config.id),
     queryKey: ['playlistMetrics', config.id],
     retry: 1,
-    staleTime: 1000 * 60 * 5 // 5 minutes
+    staleTime: 1000 * 60 * 5
   });
 
-  // 2. Real-time Log & Progress Subscription
   useEffect(() => {
     if (!user?.uid || !config.id) return;
 
@@ -40,13 +38,6 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
     return () => unsubscribe();
   }, [user?.uid, config.id]);
 
-  // 3. Sync optimistic state with real log state
-  // Reset optimistic flag if we see the real run has started
-  if (latestLog?.metadata?.state === 'running' && isOptimisticallyRunning) {
-    setIsOptimisticallyRunning(false);
-  }
-
-  // 4. Mutation: Toggle Enabled/Disabled
   const toggleEnabledMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
       if (!user?.uid) throw new Error('User not authenticated');
@@ -66,7 +57,6 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
     }
   });
 
-  // 5. Mutation: Delete Playlist
   const deleteMutation = useMutation({
     mutationFn: async () => {
       if (!user?.uid) throw new Error('User not authenticated');
@@ -86,23 +76,35 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
     }
   });
 
-  // Derived Values
   const lastUpdated = metrics?.lastUpdated;
   const lastUpdatedText = useMemo(() => {
     return lastUpdated ? formatDistanceToNow(new Date(lastUpdated), { addSuffix: true }) : '—';
   }, [lastUpdated]);
+
+  const logTimestamp = latestLog?.timestamp;
+  const logMillis = logTimestamp
+    ? logTimestamp.seconds * 1000 + (logTimestamp.nanoseconds || 0) / 1000000
+    : 0;
+
+  const isOptimisticallyRunning =
+    lastManualTriggerAt !== null &&
+    logMillis < lastManualTriggerAt &&
+    latestLog?.metadata?.state !== 'completed' &&
+    latestLog?.metadata?.state !== 'error';
+
+  const isRunning = latestLog?.metadata?.state === 'running' || isOptimisticallyRunning;
 
   return {
     deletePlaylist: () => deleteMutation.mutate(),
     isDeleting: deleteMutation.isPending,
     isLoadingLog,
     isLoadingMetrics,
-    isOptimisticallyRunning,
+    isOptimisticallyRunning: isRunning,
     isToggling: toggleEnabledMutation.isPending,
     lastUpdatedText,
     latestLog,
     metrics,
-    setIsOptimisticallyRunning,
+    setIsOptimisticallyRunning: (val: boolean) => setLastManualTriggerAt(val ? Date.now() : null),
     toggleEnabled: (enabled: boolean) => toggleEnabledMutation.mutate(enabled)
   };
 }

@@ -15,14 +15,14 @@ interface RunButtonProps {
   iconOnly?: boolean;
   onRunComplete?: () => void;
   onRunStart?: () => void;
-  playlistId?: string;
-  playlistName?: string;
+  playlistId: string;
+  playlistName: string;
 }
 
 /**
  * Button component to trigger the curation automation pipeline.
  * Handles the pre-flight check flow (Estimate -> Confirm -> Run).
- * @param playlistId - ID of the playlist to curate
+ * @param playlistId - ID of the playlist to curate (required)
  * @param playlistName - Display name of the playlist (for modal)
  * @param iconOnly - Whether to render as an icon-only button
  * @param className - Additional CSS classes
@@ -35,7 +35,7 @@ export const RunButton = ({
   onRunComplete,
   onRunStart,
   playlistId,
-  playlistName = 'Playlist'
+  playlistName
 }: RunButtonProps) => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
@@ -46,13 +46,6 @@ export const RunButton = ({
     e.stopPropagation();
     if (loading || disabled) return;
 
-    // If no playlistId, this is a "run all" action - show simple toast
-    if (!playlistId) {
-      toast.info('Running all playlists is not yet supported with the new pre-flight check.');
-      return;
-    }
-
-    // Show modal and start fetching estimate
     setShowModal(true);
     setEstimating(true);
     setEstimate(null);
@@ -84,9 +77,10 @@ export const RunButton = ({
     try {
       await promise;
     } catch {
-      onRunComplete?.();
+      // Error handled by toast
     } finally {
       setLoading(false);
+      onRunComplete?.();
     }
   };
 
@@ -121,13 +115,7 @@ export const RunButton = ({
               </div>
             </TooltipTrigger>
             <TooltipContent>
-              <p>
-                {disabled
-                  ? 'Enable playlist to run curation'
-                  : playlistId
-                    ? 'Run Now'
-                    : 'Run All Playlists'}
-              </p>
+              <p>{disabled ? 'Enable playlist to run curation' : 'Run Now'}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -144,7 +132,6 @@ export const RunButton = ({
     );
   }
 
-  // Fallback for non-icon version
   return (
     <>
       <Button

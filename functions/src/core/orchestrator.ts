@@ -21,15 +21,14 @@ export class PlaylistOrchestrator {
   public async createPlan(
     config: PlaylistConfig,
     spotifyService: SpotifyService,
-    dryRun: boolean,
     ownerName?: string,
     existingLogId?: string
   ): Promise<CurationSession> {
     const session: CurationSession = {
       config,
       currentTracks: [],
-      dryRun: !!dryRun,
       finalTrackList: [],
+
       newAiTracks: [],
       ownerName,
       playlistId: config.id.replace('spotify:playlist:', ''),
@@ -60,13 +59,13 @@ export class PlaylistOrchestrator {
   public async curatePlaylist(
     config: PlaylistConfig,
     spotifyService: SpotifyService,
-    dryRun: boolean,
     ownerName?: string
   ): Promise<void> {
-    logger.info(`Starting legacy curation: ${config.name}`, { dryRun });
+    logger.info(`Starting automation curation: ${config.name}`);
 
     // Legacy flow wrapper
-    const session = await this.createPlan(config, spotifyService, dryRun, ownerName);
+    const session = await this.createPlan(config, spotifyService, ownerName);
+
     await this.executePlan(session, spotifyService);
   }
 
@@ -183,7 +182,6 @@ export class PlaylistOrchestrator {
       'error',
       `Failed to curate "${session.config.name}"`,
       {
-        dryRun: !!session.dryRun,
         error: error.message,
         state: 'error',
         triggeredBy: session.ownerName
@@ -200,7 +198,6 @@ export class PlaylistOrchestrator {
       'running',
       `Curating "${session.config.name}"...`,
       {
-        dryRun: session.dryRun,
         playlistId: session.config.id,
         playlistName: session.config.name,
         progress: 0,

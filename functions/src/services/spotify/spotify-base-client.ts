@@ -16,11 +16,7 @@ export class SpotifyBaseClient {
         return await operation();
       } catch (error: unknown) {
         lastError = error;
-        const status =
-          (error as { response?: { status: number }; status?: number; statusCode?: number })
-            .status ||
-          (error as { statusCode?: number }).statusCode ||
-          (error as { response?: { status: number } }).response?.status;
+        const status = this.getHttpStatus(error);
 
         if (status === 401 && onUnauthorized) {
           logger.warn('Spotify Unauthorized (401). Attempting token refresh...');
@@ -29,18 +25,7 @@ export class SpotifyBaseClient {
         }
 
         if (status === 429) {
-          let retryAfter = 2;
-          const err = error as {
-            headers?: { get?: (s: string) => null | string } | Record<string, string>;
-          };
-          if (err.headers) {
-            const headerValue =
-              typeof err.headers.get === 'function'
-                ? err.headers.get('retry-after')
-                : (err.headers as Record<string, string>)['retry-after'];
-            if (headerValue) retryAfter = parseInt(headerValue, 10);
-          }
-
+          const retryAfter = this.getRetryAfter(error);
           logger.warn(`Spotify Rate Limit (429). Retrying after ${retryAfter}s...`);
           await this.delay(retryAfter * 1000);
           continue;
@@ -57,5 +42,45 @@ export class SpotifyBaseClient {
       }
     }
     throw lastError;
+  }
+
+  private getHttpStatus(error: unknown): number | undefined {
+    if (typeof error !== 'object' || error === null) return undefined;
+    // Safe property access
+    const e = error as Record<string, unknown>;
+    if (typeof e.status === 'number') return e.status;
+    if (typeof e.statusCode === 'number') return e.statusCode;
+    if (
+      typeof e.response === 'object' &&
+      e.response &&
+      'status' in e.response &&
+      typeof (e.response as Record<string, unknown>).status === 'number'
+    ) {
+      return (e.response as Record<string, unknown>).status as number;
+    }
+    return undefined;
+  }
+
+  private getRetryAfter(error: unknown): number {
+    if (typeof error !== 'object' || error === null) return 2;
+    const e = error as { headers?: unknown };
+
+    if (!e.headers || typeof e.headers !== 'object') return 2;
+
+    const headers = e.headers as Record<string, unknown>;
+
+    // Handle Headers object (Fetch API) or plain object (Axios/other)
+    let value: unknown;
+    if ('get' in headers && typeof headers.get === 'function') {
+      value = (headers.get as (k: string) => null | string)('retry-after');
+    } else if ('retry-after' in headers) {
+      value = headers['retry-after'];
+    }
+
+    if (typeof value === 'string') {
+      const parsed = parseInt(value, 10);
+      return isNaN(parsed) ? 2 : parsed;
+    }
+    return 2;
   }
 }

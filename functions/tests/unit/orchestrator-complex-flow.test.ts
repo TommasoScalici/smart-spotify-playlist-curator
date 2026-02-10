@@ -168,8 +168,7 @@ describe('PlaylistOrchestrator - Complex Flow ("The Perfect Storm")', () => {
 
     await orchestrator.curatePlaylist(
       configWithVIPs,
-      mockSpotifyService as unknown as SpotifyService,
-      false
+      mockSpotifyService as unknown as SpotifyService
     );
 
     // Verification

@@ -52,7 +52,16 @@ describe('useActivityFeed Hook', () => {
       callback({
         docs: [
           {
-            data: () => ({ message: 'Running', timestamp: '2026-01-25T20:00:00Z', type: 'info' }),
+            data: () => ({
+              metadata: {
+                playlistId: 'playlist123',
+                playlistName: 'My Playlist',
+                state: 'running',
+                step: 'Running'
+              },
+              timestamp: { toDate: () => new Date('2026-01-25T20:00:00Z') },
+              type: 'info'
+            }),
             id: '1'
           }
         ]

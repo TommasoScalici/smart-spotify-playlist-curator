@@ -81,7 +81,7 @@ export const PlaylistCardDialogs = ({
             <DialogHeader>
               <DialogTitle>Curation History: {config.name}</DialogTitle>
               <DialogDescription>
-                Changes from the latest {latestLog?.metadata?.dryRun ? 'test' : 'automation'} run ({' '}
+                Changes from the latest curation run ({' '}
                 {latestLog?.timestamp ? new Date(latestLog.timestamp).toLocaleString() : 'Just now'}
                 )
               </DialogDescription>
@@ -93,7 +93,7 @@ export const PlaylistCardDialogs = ({
                 </div>
               ) : latestLog?.metadata?.diff ? (
                 <div className="flex h-full flex-col">
-                  <DiffViewer diff={latestLog.metadata.diff} isDryRun={latestLog.metadata.dryRun} />
+                  <DiffViewer diff={latestLog.metadata.diff} />
                 </div>
               ) : (
                 <div className="text-muted-foreground flex h-full flex-col items-center justify-center">

@@ -39,6 +39,9 @@ export const AiGenerationConfigSchema = z.object({
 
 // --- Search Result Schema ---
 
+export const SearchTypeSchema = z.enum(['track', 'playlist', 'artist']);
+export type SearchType = z.infer<typeof SearchTypeSchema>;
+
 export const SearchResultSchema = z.object({
   artist: z.string().optional(),
   description: z.string().optional(),
@@ -47,7 +50,7 @@ export const SearchResultSchema = z.object({
   owner: z.string().optional(),
   ownerId: z.string().optional(),
   popularity: z.number().optional(),
-  type: z.enum(['track', 'playlist', 'artist']),
+  type: SearchTypeSchema,
   uri: z.string()
 });
 
@@ -100,7 +103,6 @@ export const ActivityMetadataSchema = z.object({
   aiTracksAdded: z.number().default(0),
   artistLimitRemoved: z.number().default(0),
   diff: CurationDiffSchema.optional(),
-  dryRun: z.boolean().default(false),
   duplicatesRemoved: z.number().default(0),
   error: z.string().optional(),
   expiredRemoved: z.number().default(0),
@@ -125,7 +127,6 @@ export const ActivityLogSchema = z.object({
 
 export const CurationStatusSchema = z.object({
   diff: CurationDiffSchema.optional(),
-  isDryRun: z.boolean().optional(),
   lastUpdated: z.string().optional(),
   progress: z.number().min(0).max(100).default(0),
   state: z.enum(['idle', 'running', 'completed', 'error']).default('idle'),
@@ -190,8 +191,11 @@ export const UserSchema = z.object({
 // --- Playlist Metrics Schema ---
 
 export const PlaylistMetricsSchema = z.object({
+  description: z.string().optional(),
   followers: z.number(),
+  imageUrl: z.string().url().optional().nullable(),
   lastUpdated: z.string(), // ISO 8601 timestamp
+  owner: z.string().optional(),
   tracks: z.number()
 });
 
@@ -262,3 +266,11 @@ export type OrchestrationResult = z.infer<typeof OrchestrationResultSchema>;
 export type TrackDiff = z.infer<typeof TrackDiffSchema>;
 
 export type TriggerCurationRequest = z.infer<typeof TriggerCurationRequestSchema>;
+
+export const SpotifyTokensSchema = z.object({
+  access_token: z.string(),
+  expires_in: z.number(),
+  refresh_token: z.string().optional()
+});
+
+export type SpotifyTokens = z.infer<typeof SpotifyTokensSchema>;
