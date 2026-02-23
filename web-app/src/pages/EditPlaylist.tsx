@@ -101,7 +101,12 @@ export default function EditPlaylist() {
         <div className="bg-primary/5 pointer-events-none absolute top-0 right-0 -z-10 rounded-full p-32 blur-3xl" />
         <div className="bg-secondary/5 pointer-events-none absolute bottom-0 left-0 -z-10 rounded-full p-24 blur-3xl" />
 
-        <ConfigEditor initialConfig={config} isAddMode={isNew} onSubmit={handleSave} />
+        <ConfigEditor
+          initialConfig={config}
+          isAddMode={isNew}
+          onCancel={() => navigate('/')}
+          onSubmit={handleSave}
+        />
       </div>
     </div>
   );

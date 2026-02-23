@@ -218,7 +218,7 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
   // 2. Load and Verify Config
   const { ConfigService } = await import('../services/config-service.js');
   const configService = new ConfigService();
-  let config: null | PlaylistConfig = null;
+  let config: null | PlaylistConfig;
 
   try {
     config = await configService.getPlaylistConfig(playlistId);

@@ -32,7 +32,8 @@ This document serves as the absolute source of truth for all contributors (Human
 | **Database**     | Firestore                | User-centric Schema: `users/{uid}/playlists`                  |
 | **Validation**   | Zod `v4`                 | **MANDATORY** for all inputs/outputs.                         |
 | **Testing**      | Vitest                   | Workspace-native runner for Unit & Integration tests.         |
-| **Versioning**   | release-it               | Conventional Commits & Automated Changelogs.                  |
+| **Linting**      | ESLint `v10`             | Flat config architecture, strict TS rules.                    |
+| **Versioning**   | semantic-release         | Conventional Commits & Automated Changelogs.                  |
 
 ---
 
@@ -124,7 +125,7 @@ We follow the **"Trophy Shape"**: Many Integration tests, some Unit tests, few E
 
 ### 1. Commits & Versioning
 
-We use **Conventional Commits** to automate releases with `release-it`.
+We use **Conventional Commits** to automate releases with `@semantic-release`.
 
 - `feat: ...` -> Minor Version Bump (v1.1.0)
 - `fix: ...` -> Patch Version Bump (v1.0.1)
@@ -135,10 +136,12 @@ We use **Conventional Commits** to automate releases with `release-it`.
 
 ```bash
 npm run release
-# This bumps version, updates CHANGELOG.md, and creates a git tag.
+# This triggers the semantic-release workflow.
 ```
 
 ### 2. CI/CD Pipeline
+
+We use **GitHub Actions** (`ci.yml`) to orchestrate our pipeline on the `main` branch.
 
 - **Pre-commit**: `husky` runs `lint-staged` (Format & Lint) and `npm run type-check`.
 - **Deployment**:

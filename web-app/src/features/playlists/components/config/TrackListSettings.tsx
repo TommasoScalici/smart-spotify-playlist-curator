@@ -163,6 +163,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
                   id={`min-${index}`}
                   max={targetTotalTracks}
                   min={1}
+                  onBlur={field.onBlur}
                   onChange={field.onChange}
                   value={field.value || 0}
                 />
@@ -194,6 +195,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
                   id={`max-${index}`}
                   max={targetTotalTracks}
                   min={1}
+                  onBlur={field.onBlur}
                   onChange={field.onChange}
                   value={field.value || 0}
                 />

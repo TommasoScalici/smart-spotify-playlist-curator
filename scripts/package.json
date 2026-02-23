@@ -16,24 +16,16 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@spotify/web-api-ts-sdk": "^1.2.0",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.3.1",
     "express": "^5.2.1",
-    "firebase-admin": "^13.6.0",
+    "firebase-admin": "^13.6.1",
     "open": "^11.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.2",
     "@types/express": "^5.0.6",
-    "@types/node": "^25.1.0",
     "@types/open": "^6.2.1",
-    "esbuild": "^0.27.2",
-    "eslint": "^9.39.2",
-    "eslint-config-prettier": "^10.1.8",
-    "glob": "^13.0.0",
-    "globals": "^17.2.0",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "typescript-eslint": "^8.54.0"
+    "esbuild": "^0.27.3",
+    "glob": "^13.0.6"
   }
 }

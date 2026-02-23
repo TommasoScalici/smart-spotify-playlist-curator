@@ -53,6 +53,7 @@ Since this is a private tool using the Spotify API in Development Mode:
 - **Database**: Cloud Firestore (NoSQL)
 - **Validation**: Zod `v4` (Contract-first design)
 - **Testing**: Vitest (Monorepo-wide)
+- **Linting**: ESLint `v10` (Flat Config)
 
 ---
 
@@ -141,8 +142,8 @@ firebase deploy --only hosting
 1.  Fork the repo.
 2.  Create your feature branch (`git checkout -b feature/amazing-feature`).
 3.  Commit your changes (`git commit -m 'feat: add amazing feature'`).
-    - _Note: We use Conventional Commits._
-4.  Run tests (`npm test`).
+    - _Note: We use Conventional Commits. `@semantic-release` automatically processes these to generate version bumps._
+4.  Run tests locally (`npm run test` and `npm run type-check`).
 5.  Push to the branch.
 6.  Open a Pull Request.
 
@@ -150,4 +151,4 @@ firebase deploy --only hosting
 
 ## 📄 License
 
-Distributed under the MIT License. See `LICENSE.md` for more information.
+Distributed under the MIT License. See [LICENSE](LICENSE) for more information.

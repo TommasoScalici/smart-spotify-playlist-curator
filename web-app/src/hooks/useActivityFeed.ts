@@ -62,7 +62,11 @@ export const useActivityFeed = () => {
             metadata: validData.metadata,
             read: false, // Default to unread
             timestamp: validData.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
-            type: (validData.metadata.state === 'error' ? 'error' : 'info') as ActivityLog['type']
+            type: (validData.metadata.state === 'error'
+              ? 'error'
+              : validData.metadata.state === 'completed'
+                ? 'success'
+                : 'info') as ActivityLog['type']
           };
         })
         .filter(Boolean) as ActivityLog[];

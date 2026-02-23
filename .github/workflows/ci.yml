@@ -86,3 +86,24 @@ jobs:
           path: shared/dist
       - run: npm run build --workspace=web-app
       - run: npm test --workspace=web-app
+
+  # 5. Semantic Release
+  release:
+    needs: [test-code-quality, functions-ci, webapp-ci]
+    runs-on: ubuntu-latest
+    if: github.repository == 'TommasoScalici/smart-spotify-playlist-curator' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx semantic-release

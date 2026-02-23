@@ -22,6 +22,7 @@ import { TrackListSettings } from './config/TrackListSettings';
 interface ConfigEditorProps {
   initialConfig?: PlaylistConfig;
   isAddMode?: boolean;
+  onCancel?: () => void;
   onSubmit: (data: PlaylistConfig) => Promise<void>;
 }
 
@@ -55,7 +56,12 @@ const getFlatErrorMessages = (obj: null | Record<string, unknown> | undefined): 
   return messages;
 };
 
-export const ConfigEditor = ({ initialConfig, isAddMode, onSubmit }: ConfigEditorProps) => {
+export const ConfigEditor = ({
+  initialConfig,
+  isAddMode,
+  onCancel,
+  onSubmit
+}: ConfigEditorProps) => {
   const { user } = useAuth();
 
   // Fetch existing playlists to check for duplicates in Add mode
@@ -86,7 +92,9 @@ export const ConfigEditor = ({ initialConfig, isAddMode, onSubmit }: ConfigEdito
     watch
   } = useForm<PlaylistConfig>({
     defaultValues: initialConfig || (DEFAULT_PLAYLIST_CONFIG as PlaylistConfig),
-    resolver: zodResolver(validationSchema) as Resolver<PlaylistConfig>
+    mode: 'onTouched',
+    resolver: zodResolver(validationSchema) as Resolver<PlaylistConfig>,
+    reValidateMode: 'onChange'
   });
 
   const totalErrors = countAllErrors(errors as unknown as Record<string, unknown>);
@@ -170,57 +178,72 @@ export const ConfigEditor = ({ initialConfig, isAddMode, onSubmit }: ConfigEdito
 
       {/* Floating Action Bar */}
       <div className="bg-background/80 border-border fixed right-0 bottom-0 left-0 z-50 border-t p-4 shadow-2xl backdrop-blur-xl supports-[padding-bottom:env(safe-area-inset-bottom)]:pb-[env(safe-area-inset-bottom,20px)]">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4">
-          {/* Validation Error Indicator with Tooltip */}
-          {totalErrors > 0 && (
-            <TooltipProvider>
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <div className="text-destructive animate-in fade-in slide-in-from-left-2 bg-destructive/10 flex cursor-help items-center gap-2 rounded-full px-3 py-2 text-sm">
-                    <AlertCircle className="h-4 w-4" />
-                    <span className="font-bold">
-                      {totalErrors}{' '}
-                      <span className="hidden sm:inline">error{totalErrors !== 1 ? 's' : ''}</span>
-                    </span>
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent
-                  align="start"
-                  className="bg-destructive text-destructive-foreground mb-4 max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
-                  side="top"
-                >
-                  <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
-                    Validation Details
-                  </p>
-                  {getFlatErrorMessages(errors as unknown as Record<string, unknown>).map(
-                    (msg, i) => (
-                      <div className="flex gap-2 text-sm" key={i}>
-                        <span className="opacity-70">•</span>
-                        <span>{msg}</span>
-                      </div>
-                    )
-                  )}
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          <div className="flex-1" />
-          <Button
-            className={cn(
-              'w-full shadow-lg transition-all sm:w-auto',
-              totalErrors > 0 && 'opacity-90'
+        <div className="relative mx-auto flex max-w-5xl flex-col-reverse items-center justify-center gap-4 sm:flex-row">
+          {/* Validation Error Indicator */}
+          <div className="flex w-full justify-start sm:absolute sm:left-0 sm:w-auto">
+            {totalErrors > 0 && (
+              <TooltipProvider>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <div className="text-destructive animate-in fade-in slide-in-from-left-2 bg-destructive/10 flex cursor-help items-center gap-2 rounded-full px-3 py-2 text-sm">
+                      <AlertCircle className="h-4 w-4" />
+                      <span className="font-bold">
+                        {totalErrors}{' '}
+                        <span className="hidden sm:inline">
+                          error{totalErrors !== 1 ? 's' : ''}
+                        </span>
+                      </span>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent
+                    align="start"
+                    className="bg-destructive text-destructive-foreground mb-4 max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
+                    side="top"
+                  >
+                    <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
+                      Validation Details
+                    </p>
+                    {getFlatErrorMessages(errors as unknown as Record<string, unknown>).map(
+                      (msg, i) => (
+                        <div className="flex gap-2 text-sm" key={i}>
+                          <span className="opacity-70">•</span>
+                          <span>{msg}</span>
+                        </div>
+                      )
+                    )}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
-            disabled={isSubmitting}
-            size="lg"
-            type="submit"
-          >
-            {isSubmitting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Save className="mr-2 h-4 w-4" />
-            )}
-            <span className="sm:inline">Save Configuration</span>
-          </Button>
+          </div>
+
+          <div className="flex w-full flex-row items-center justify-center gap-6 sm:w-auto">
+            <Button
+              className="w-full min-w-[140px] shadow-lg transition-all sm:w-auto"
+              onClick={onCancel}
+              size="lg"
+              type="button"
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              className={cn(
+                'w-full min-w-[180px] shadow-lg transition-all sm:w-auto',
+                totalErrors > 0 && 'opacity-90'
+              )}
+              disabled={isSubmitting}
+              size="lg"
+              type="submit"
+            >
+              {isSubmitting ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Save className="mr-2 h-4 w-4" />
+              )}
+              <span className="sm:inline">Save Configuration</span>
+            </Button>
+          </div>
         </div>
       </div>
     </form>

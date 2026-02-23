@@ -168,7 +168,9 @@ For each suggestion, you MUST provide a 'reasoning' field explaining WHY this tr
           error: parseError,
           rawText: text
         });
-        throw new Error('AI response was not valid JSON matching the schema.');
+        throw new Error('AI response was not valid JSON matching the schema.', {
+          cause: parseError
+        });
       }
 
       logger.info('AI suggestions parsed & validated successfully', {

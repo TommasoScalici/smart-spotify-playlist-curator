@@ -171,7 +171,7 @@ export const RulesSettings = ({ control, errors }: RulesSettingsProps) => {
                 name="curationRules.sizeLimitStrategy"
                 render={({ field }) => (
                   <select
-                    className="border-input bg-background/50 ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring hover:bg-accent/5 flex h-11 w-full appearance-none rounded-md border px-3 py-2 pr-10 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    className="border-input bg-background/50 ring-offset-background placeholder:text-muted-foreground focus-visible:ring-ring hover:bg-accent/5 flex h-11 w-full appearance-none rounded-md border px-3 py-2 pr-10 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:scheme-dark"
                     id="sizeLimitStrategy"
                     {...field}
                   >

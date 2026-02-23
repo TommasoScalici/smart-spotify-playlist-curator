@@ -1,4 +1,15 @@
-import { Activity, Clock, Sparkles, Trash2, User } from 'lucide-react';
+import {
+  Activity,
+  AlertCircle,
+  CheckCircle2,
+  Clock,
+  Info,
+  ListMusic,
+  Loader2,
+  Sparkles,
+  Trash2,
+  User
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -38,13 +49,11 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
 
   const handleActivityClick = (activity: ActivityLog) => {
-    if (activity.type === 'success' && activity.metadata?.diff) {
-      if (onActivitySelect) {
-        onActivitySelect(activity);
-        onClose?.();
-      } else {
-        setSelectedActivity(activity);
-      }
+    if (onActivitySelect) {
+      onActivitySelect(activity);
+      onClose?.();
+    } else {
+      setSelectedActivity(activity);
     }
   };
 
@@ -104,108 +113,153 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
         </div>
       )}
 
-      {activities.map((activity) => (
-        <div
-          className={cn(
-            'group/item animate-fade-in relative flex items-start gap-3 rounded-lg p-2 transition-all',
-            activity.type === 'success' && activity.metadata?.diff
-              ? 'cursor-pointer hover:bg-white/5'
-              : ''
-          )}
-          key={activity.id}
-          onClick={() => handleActivityClick(activity)}
-        >
-          {/* Delete Button (Hover) */}
-          <Button
-            className="hover:bg-destructive/20 hover:text-destructive absolute top-1 right-1 z-10 h-6 w-6 rounded-full opacity-0 transition-opacity group-hover/item:opacity-100"
-            onClick={(e) => handleDelete(e, activity.id)}
-            size="icon"
-            variant="ghost"
-          >
-            <Trash2 className="h-3 w-3" />
-          </Button>
+      {activities.map((activity) => {
+        const meta = activity.metadata;
+        const isError = activity.type === 'error' || meta?.state === 'error';
+        const isSuccess = activity.type === 'success' || meta?.state === 'completed';
+        const isRunning = meta?.state === 'running';
 
+        const StateIcon = isError
+          ? AlertCircle
+          : isSuccess
+            ? CheckCircle2
+            : isRunning
+              ? Loader2
+              : Info;
+        const stateColor = isError
+          ? 'text-red-500'
+          : isSuccess
+            ? 'text-green-500'
+            : isRunning
+              ? 'text-blue-500'
+              : 'text-zinc-500';
+        const bgHoverColor = isError
+          ? 'hover:bg-red-500/5'
+          : isSuccess
+            ? 'hover:bg-green-500/5'
+            : isRunning
+              ? 'hover:bg-blue-500/5'
+              : 'hover:bg-white/5';
+
+        return (
           <div
             className={cn(
-              'ring-offset-card mt-1 h-2 w-2 shrink-0 rounded-full ring-2 ring-offset-2',
-              activity.type === 'success' && 'bg-green-500 ring-green-500/20',
-              activity.type === 'warning' && 'bg-amber-500 ring-amber-500/20',
-              activity.type === 'info' && 'bg-blue-500 ring-blue-500/20',
-              activity.type === 'error' && 'bg-red-500 ring-red-500/20'
+              'group/item animate-fade-in relative flex cursor-pointer flex-col items-start gap-2 rounded-xl border border-transparent p-3 transition-all hover:border-white/5',
+              bgHoverColor
             )}
-          />
-          <div className="flex-1 space-y-1">
-            <p className="group-hover:text-primary text-sm leading-none font-medium transition-colors">
-              {activity.message}
-            </p>
+            key={activity.id}
+            onClick={() => handleActivityClick(activity)}
+          >
+            <Button
+              className="hover:bg-destructive/20 hover:text-destructive absolute top-2 right-2 z-10 h-6 w-6 rounded-full opacity-0 transition-opacity group-hover/item:opacity-100"
+              onClick={(e) => handleDelete(e, activity.id)}
+              size="icon"
+              variant="ghost"
+            >
+              <Trash2 className="h-3 w-3" />
+            </Button>
+
+            {/* Header */}
+            <div className="flex w-full items-center justify-between pr-6">
+              <div className="flex min-w-0 items-center gap-2">
+                <StateIcon
+                  className={cn('h-4 w-4 shrink-0', stateColor, isRunning && 'animate-spin')}
+                />
+                <span className="truncate text-sm font-semibold">
+                  {meta?.playlistName || 'Unknown Playlist'}
+                </span>
+              </div>
+              <span
+                className={cn(
+                  'rounded border px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase',
+                  isError
+                    ? 'border-red-500/20 bg-red-500/10 text-red-500'
+                    : isSuccess
+                      ? 'border-green-500/20 bg-green-500/10 text-green-500'
+                      : isRunning
+                        ? 'border-blue-500/20 bg-blue-500/10 text-blue-500'
+                        : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-500'
+                )}
+              >
+                {meta?.state || 'idle'}
+              </span>
+            </div>
+
+            {/* Message */}
+            <p className="text-muted-foreground pl-6 text-xs leading-snug">{activity.message}</p>
 
             {/* Rich Metadata Badges */}
-            {activity.type === 'success' && activity.metadata && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {activity.metadata.addedCount ? (
-                  <span className="inline-flex items-center rounded-full border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-bold text-green-500">
-                    +{activity.metadata.addedCount} Added
+            {meta && (
+              <div className="mt-1 flex flex-wrap gap-1.5 pl-6">
+                {meta.addedCount ? (
+                  <span className="inline-flex items-center rounded border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-500">
+                    +{meta.addedCount} Added
                   </span>
                 ) : null}
-                {activity.metadata.removedCount ? (
-                  <span className="inline-flex items-center rounded-full border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-bold text-red-500">
-                    -{activity.metadata.removedCount} Removed
+                {meta.removedCount ? (
+                  <span className="inline-flex items-center rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-red-500">
+                    -{meta.removedCount} Removed
                   </span>
                 ) : null}
-                {activity.metadata.aiTracksAdded ? (
-                  <span className="inline-flex items-center rounded-full border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-500">
-                    {activity.metadata.aiTracksAdded} AI
+                {meta.aiTracksAdded ? (
+                  <span className="inline-flex items-center rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-500">
+                    {meta.aiTracksAdded} AI
                   </span>
                 ) : null}
-                {activity.metadata.duplicatesRemoved ? (
-                  <span className="inline-flex items-center rounded-full border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-bold text-amber-500">
-                    -{activity.metadata.duplicatesRemoved} Duplicates
+                {meta.duplicatesRemoved ? (
+                  <span className="inline-flex items-center rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500">
+                    -{meta.duplicatesRemoved} Dups
                   </span>
                 ) : null}
-                {activity.metadata.expiredRemoved ? (
-                  <span className="inline-flex items-center rounded-full border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-bold text-rose-500">
-                    -{activity.metadata.expiredRemoved} Expired
+                {meta.expiredRemoved ? (
+                  <span className="inline-flex items-center rounded border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">
+                    -{meta.expiredRemoved} Expired
                   </span>
                 ) : null}
-                {activity.metadata.artistLimitRemoved ? (
-                  <span className="inline-flex items-center rounded-full border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-bold text-purple-500">
-                    -{activity.metadata.artistLimitRemoved} Artist Limit
+                {meta.artistLimitRemoved ? (
+                  <span className="inline-flex items-center rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-500">
+                    -{meta.artistLimitRemoved} Artist Limit
                   </span>
                 ) : null}
-                {activity.metadata.sizeLimitRemoved ? (
-                  <span className="inline-flex items-center rounded-full border border-pink-500/20 bg-pink-500/10 px-1.5 py-0.5 text-[10px] font-bold text-pink-500">
-                    -{activity.metadata.sizeLimitRemoved} Size Limit
+                {meta.sizeLimitRemoved ? (
+                  <span className="inline-flex items-center rounded border border-pink-500/20 bg-pink-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-pink-500">
+                    -{meta.sizeLimitRemoved} Size Limit
                   </span>
                 ) : null}
               </div>
             )}
 
-            <div className="text-muted-foreground flex items-center gap-2 pt-1 text-xs">
-              <Clock className="h-3 w-3" />
-              <span>{formatTimeAgo(activity.timestamp)}</span>
-              {activity.metadata?.triggeredBy && (
-                <>
-                  <span>•</span>
-                  <div className="flex items-center gap-1.5">
-                    <div className="bg-primary/20 flex h-4 w-4 items-center justify-center rounded-full">
-                      <User className="text-primary fill-primary/30 h-2.5 w-2.5" />
-                    </div>
-                    <span
-                      className="wrap-break-word"
-                      title={`Triggered by ${activity.metadata.triggeredBy}`}
-                    >
-                      {activity.metadata.triggeredBy}
-                    </span>
-                    <span className="rounded border border-green-500/50 bg-green-500/10 px-1.5 py-0.5 text-[9px] leading-none font-black tracking-wider text-green-500/80 uppercase">
-                      Applied on Spotify
-                    </span>
-                  </div>
-                </>
+            {/* Footer Info */}
+            <div className="text-muted-foreground flex w-full flex-wrap items-center gap-2 pt-2 pl-6 text-[10px] font-medium">
+              <div className="flex items-center gap-1">
+                <Clock className="h-3 w-3" />
+                <span>{formatTimeAgo(activity.timestamp)}</span>
+              </div>
+
+              {meta?.triggeredBy && (
+                <div className="flex items-center gap-1">
+                  <span className="opacity-50">•</span>
+                  <User className="h-3 w-3" />
+                  <span
+                    className="max-w-[100px] truncate"
+                    title={`Triggered by ${meta.triggeredBy}`}
+                  >
+                    {meta.triggeredBy}
+                  </span>
+                </div>
+              )}
+
+              {meta?.finalCount !== undefined && meta?.finalCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <span className="opacity-50">•</span>
+                  <ListMusic className="h-3 w-3" />
+                  <span>{meta.finalCount} tracks</span>
+                </div>
               )}
             </div>
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Report Modal (Local state for non-drawer usage) */}
       <ActivityDiffModal
