@@ -108,6 +108,7 @@ export const RunButton = ({
                   disabled={loading || disabled}
                   onClick={handleClick}
                   size="icon"
+                  type="button"
                   variant="outline"
                 >
                   {buttonContent}
@@ -138,6 +139,7 @@ export const RunButton = ({
         className={cn('gap-2', className)}
         disabled={loading || disabled}
         onClick={handleClick}
+        type="button"
       >
         {buttonContent}
         <span>Run Curation</span>

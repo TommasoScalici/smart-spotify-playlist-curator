@@ -177,10 +177,10 @@ export const ConfigEditor = ({
       </div>
 
       {/* Floating Action Bar */}
-      <div className="bg-background/80 border-border fixed right-0 bottom-0 left-0 z-50 border-t p-4 shadow-2xl backdrop-blur-xl supports-[padding-bottom:env(safe-area-inset-bottom)]:pb-[env(safe-area-inset-bottom,20px)]">
+      <div className="bg-background/80 border-border fixed right-0 bottom-0 left-0 z-50 border-t px-4 pt-4 pb-[calc(1rem+env(safe-area-inset-bottom,0px))] shadow-2xl backdrop-blur-xl">
         <div className="relative mx-auto flex max-w-5xl flex-col-reverse items-center justify-center gap-4 sm:flex-row">
           {/* Validation Error Indicator */}
-          <div className="flex w-full justify-start sm:absolute sm:left-0 sm:w-auto">
+          <div className="flex w-full justify-start sm:absolute sm:inset-y-0 sm:left-0 sm:flex sm:w-auto sm:items-center">
             {totalErrors > 0 && (
               <TooltipProvider>
                 <Tooltip delayDuration={0}>

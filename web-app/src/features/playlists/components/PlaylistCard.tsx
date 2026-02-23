@@ -57,6 +57,10 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     [config.id, config.enabled]
   );
 
+  if (isLoadingMetrics) {
+    return <PlaylistCardSkeleton />;
+  }
+
   return (
     <Card
       className={cn(

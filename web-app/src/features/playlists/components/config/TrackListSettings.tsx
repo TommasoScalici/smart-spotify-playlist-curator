@@ -218,6 +218,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
           className="text-muted-foreground hover:text-destructive hover:bg-destructive/10 h-8 w-8"
           onClick={() => remove(index)}
           size="icon"
+          type="button"
           variant="ghost"
         >
           <Trash2 className="h-4 w-4" />
@@ -258,6 +259,7 @@ export const TrackListSettings = ({ control, errors, setValue }: TrackListSettin
             className="w-full sm:w-auto"
             onClick={() => append({ positionRange: { max: 1, min: 1 }, uri: '' })}
             size="sm"
+            type="button"
             variant="secondary"
           >
             <Plus className="mr-2 h-4 w-4" /> Add Track
@@ -277,6 +279,7 @@ export const TrackListSettings = ({ control, errors, setValue }: TrackListSettin
             </p>
             <Button
               onClick={() => append({ positionRange: { max: 1, min: 1 }, uri: '' })}
+              type="button"
               variant="outline"
             >
               Add Your First Track

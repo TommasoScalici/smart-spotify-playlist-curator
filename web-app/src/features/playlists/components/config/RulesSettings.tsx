@@ -175,11 +175,21 @@ export const RulesSettings = ({ control, errors }: RulesSettingsProps) => {
                     id="sizeLimitStrategy"
                     {...field}
                   >
-                    <option value="drop_random">Drop Random (Default)</option>
-                    <option value="drop_newest">Drop Newest (Keep Oldest)</option>
-                    <option value="drop_oldest">Drop Oldest (Keep Newest)</option>
-                    <option value="drop_most_popular">Drop Most Popular (Keep Niche)</option>
-                    <option value="drop_least_popular">Drop Least Popular (Keep Hits)</option>
+                    <option className="bg-background text-foreground" value="drop_random">
+                      Drop Random (Default)
+                    </option>
+                    <option className="bg-background text-foreground" value="drop_newest">
+                      Drop Newest (Keep Oldest)
+                    </option>
+                    <option className="bg-background text-foreground" value="drop_oldest">
+                      Drop Oldest (Keep Newest)
+                    </option>
+                    <option className="bg-background text-foreground" value="drop_most_popular">
+                      Drop Most Popular (Keep Niche)
+                    </option>
+                    <option className="bg-background text-foreground" value="drop_least_popular">
+                      Drop Least Popular (Keep Hits)
+                    </option>
                   </select>
                 )}
               />

@@ -186,6 +186,7 @@ export const BasicSettings = ({
                     setValue('settings.description', '');
                   }}
                   size="icon"
+                  type="button"
                   variant="ghost"
                 >
                   <X className="h-4 w-4" />

@@ -162,6 +162,7 @@ export const ArtistSelector = ({
             <button
               className="hover:text-destructive ml-1 focus:outline-none"
               onClick={() => handleRemove(artist.uri)}
+              type="button"
             >
               <X className="h-3 w-3" />
             </button>
@@ -243,6 +244,7 @@ export const ArtistSelector = ({
             className="w-full justify-between border-dashed bg-transparent"
             disabled={value.length >= maxArtists}
             role="combobox"
+            type="button"
             variant="outline"
           >
             {value.length >= maxArtists
