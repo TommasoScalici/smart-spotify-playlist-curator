@@ -1,3 +1,13 @@
+# [1.8.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.7.0...v1.8.0) (2026-02-23)
+
+### Bug Fixes
+
+- **ci:** add required permissions for semantic-release to write tags and issues ([7e2ca8c](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/7e2ca8c17e819feca4b093bd2b9057aebdb1fcec))
+
+### Features
+
+- **web-app:** enhance config UI with tooltips and AI controls ([3dc1436](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/3dc143674bcff9c046666d6a3ffd9b2b3b4914b1))
+
 # Changelog
 
 # [1.7.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.6.0...v1.7.0) (2026-01-29)
