@@ -1,7 +1,7 @@
 import * as dotenv from 'dotenv';
 import { setGlobalOptions } from 'firebase-functions/v2';
 import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { isAbsolute, resolve } from 'path';
 
 // Load environment variables from root .env ONLY for local development
 // In Cloud Functions, credentials are automatically provided
@@ -10,6 +10,15 @@ if (isLocalDevelopment) {
   const envPath = resolve(__dirname, '../../.env');
   if (existsSync(envPath)) {
     dotenv.config({ path: envPath });
+
+    // FIX: If GOOGLE_APPLICATION_CREDENTIALS is a relative path (e.g. ./service-account.json),
+    // make it absolute relative to the workspace root to prevent firebase-admin
+    // from silently failing to find it and falling back to the metadata server,
+    // which causes a 10s timeout during deployment local analysis.
+    const creds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    if (creds && !isAbsolute(creds)) {
+      process.env.GOOGLE_APPLICATION_CREDENTIALS = resolve(__dirname, '../../', creds);
+    }
   }
 }
 
