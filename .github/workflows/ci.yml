@@ -92,6 +92,10 @@ jobs:
     needs: [test-code-quality, functions-ci, webapp-ci]
     runs-on: ubuntu-latest
     if: github.repository == 'TommasoScalici/smart-spotify-playlist-curator' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
         with:
