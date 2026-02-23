@@ -1,3 +1,9 @@
+## [1.8.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.8.0...v1.8.1) (2026-02-23)
+
+### Bug Fixes
+
+- **functions:** resolve deployment timeout caused by firebase-admin hanging on missing relative credentials path ([86bad0e](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/86bad0ef01624ba6c4fcfe9eb616313e21a782ec))
+
 # [1.8.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.7.0...v1.8.0) (2026-02-23)
 
 ### Bug Fixes
