@@ -1,3 +1,13 @@
+# [1.9.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.8.1...v1.9.0) (2026-02-24)
+
+### Bug Fixes
+
+- fixed various UI bugs and inconsistencies in the dashboard ant the config editor ([94490dc](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/94490dc1279e514c17528ca340c40cba3c4cc34c))
+
+### Features
+
+- optimize curation logic, logs & bundle performance ([d1d011a](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/d1d011a6e2caea39fde70d4afef9155cde57a75c))
+
 ## [1.8.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.8.0...v1.8.1) (2026-02-23)
 
 ### Bug Fixes
