@@ -1,6 +1,7 @@
-import { CurationEstimate } from '@smart-spotify-curator/shared';
+import { CurationEstimate, CurationRules } from '@smart-spotify-curator/shared';
 import { AlertTriangle, ArrowRight, Info, Loader2, Music2, Play, X } from 'lucide-react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -14,6 +15,7 @@ import {
 import { ChangeRow } from './curation-modal/ChangeRow';
 
 interface ConfirmCurationModalProps {
+  curationRules?: CurationRules;
   estimate: CurationEstimate | null;
   isLoading?: boolean;
   isOpen: boolean;
@@ -23,6 +25,7 @@ interface ConfirmCurationModalProps {
 }
 
 export const ConfirmCurationModal = ({
+  curationRules,
   estimate,
   isLoading = false,
   isOpen,
@@ -51,7 +54,7 @@ export const ConfirmCurationModal = ({
 
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-white/10 bg-black/80 text-white shadow-2xl backdrop-blur-xl duration-300 sm:max-w-[500px]">
+      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-border/50 bg-background/80 text-foreground max-h-[90vh] w-[95vw] overflow-y-auto shadow-2xl backdrop-blur-xl duration-300 sm:max-w-[500px] md:max-w-[800px] lg:max-w-[950px]">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-3 text-2xl font-light tracking-wide">
             <div className="bg-primary/20 text-primary flex h-10 w-10 items-center justify-center rounded-full shadow-[0_0_15px_rgba(29,185,84,0.3)]">
@@ -66,7 +69,7 @@ export const ConfirmCurationModal = ({
           </DialogTitle>
           <DialogDescription className="text-muted-foreground text-base">
             Review the projected changes for{' '}
-            <span className="font-semibold text-white">"{playlistName}"</span>.
+            <span className="text-foreground font-semibold">"{playlistName}"</span>.
           </DialogDescription>
         </DialogHeader>
 
@@ -81,106 +84,166 @@ export const ConfirmCurationModal = ({
             </p>
           </div>
         ) : estimate ? (
-          <div className="animate-in slide-in-from-bottom-5 fill-mode-forwards space-y-6 py-4 delay-150 duration-500">
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 gap-4">
-              {/* Before Card */}
-              <div className="flex flex-col gap-1 rounded-xl border border-white/5 bg-white/5 p-4 transition-colors hover:bg-white/10">
-                <span className="text-muted-foreground text-xs font-medium uppercase">
-                  Current State
-                </span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-3xl font-bold">{estimate.currentTracks}</span>
-                  <span className="text-muted-foreground text-sm">tracks</span>
+          <div className="animate-in slide-in-from-bottom-5 fill-mode-forwards flex flex-col gap-6 py-4 delay-150 duration-500 md:flex-row">
+            {/* Left Column (Stats & Rules) */}
+            <div className="flex flex-col gap-6 md:w-5/12 lg:w-1/3">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-4">
+                {/* Before Card */}
+                <div className="border-border/50 bg-muted/50 hover:bg-muted flex flex-col gap-1 rounded-xl border p-4 transition-colors">
+                  <span className="text-muted-foreground text-xs font-medium uppercase">
+                    Current State
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-bold">{estimate.currentTracks}</span>
+                    <span className="text-muted-foreground text-sm">tracks</span>
+                  </div>
+                </div>
+
+                {/* After Card */}
+                <div className="border-primary/20 bg-primary/5 hover:bg-primary/10 group relative flex flex-col gap-1 overflow-hidden rounded-xl border p-4 transition-colors">
+                  <div className="absolute top-0 right-0 p-2 opacity-10 transition-opacity group-hover:opacity-20">
+                    <Music2 className="h-12 w-12 -rotate-12" />
+                  </div>
+                  <span className="text-primary/80 text-xs font-medium uppercase">
+                    Predicted Final
+                  </span>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-primary text-3xl font-bold">
+                      {estimate.predictedFinal}
+                    </span>
+                    <span className="text-primary/80 text-sm">tracks</span>
+                  </div>
                 </div>
               </div>
 
-              {/* After Card */}
-              <div className="border-primary/20 bg-primary/5 hover:bg-primary/10 group relative flex flex-col gap-1 overflow-hidden rounded-xl border p-4 transition-colors">
-                <div className="absolute top-0 right-0 p-2 opacity-10 transition-opacity group-hover:opacity-20">
-                  <Music2 className="h-12 w-12 -rotate-12" />
-                </div>
-                <span className="text-primary/80 text-xs font-medium uppercase">
-                  Predicted Final
-                </span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-primary text-3xl font-bold">{estimate.predictedFinal}</span>
-                  <span className="text-primary/80 text-sm">tracks</span>
-                </div>
-              </div>
-            </div>
+              {/* Applied Rules Settings */}
+              {curationRules && (
+                <div className="border-border/50 bg-background/40 space-y-3 rounded-xl border p-5">
+                  <h4 className="text-muted-foreground mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
+                    <span className="bg-border/50 h-px flex-1"></span>
+                    Applied Rules
+                    <span className="bg-border/50 h-px flex-1"></span>
+                  </h4>
 
-            {/* Visual Flow of Changes */}
-            <div className="space-y-3 rounded-xl border border-white/5 bg-black/40 p-5">
-              <h4 className="text-muted-foreground mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
-                <span className="h-px flex-1 bg-white/10"></span>
-                Transformation Log
-                <span className="h-px flex-1 bg-white/10"></span>
-              </h4>
-
-              <div className="space-y-3">
-                <ChangeRow
-                  bg="bg-blue-400/10"
-                  color="text-blue-400"
-                  count={estimate.duplicatesToRemove}
-                  icon={<X className="h-3 w-3" />}
-                  label="Duplicates"
-                  tracks={duplicates}
-                  type="remove"
-                />
-                <ChangeRow
-                  bg="bg-amber-400/10"
-                  color="text-amber-400"
-                  count={estimate.agedOutTracks}
-                  icon={<X className="h-3 w-3" />}
-                  label="Aged Out"
-                  tracks={agedOut}
-                  type="remove"
-                />
-                <ChangeRow
-                  bg="bg-purple-400/10"
-                  color="text-purple-400"
-                  count={estimate.artistLimitRemoved}
-                  icon={<X className="h-3 w-3" />}
-                  label="Artist limit"
-                  tracks={artistLimit}
-                  type="remove"
-                />
-                <ChangeRow
-                  bg="bg-rose-400/10"
-                  color="text-rose-400"
-                  count={estimate.sizeLimitRemoved}
-                  icon={<X className="h-3 w-3" />}
-                  label="Size limit"
-                  tracks={sizeLimit}
-                  type="remove"
-                />
-                <ChangeRow
-                  bg="bg-emerald-400/10"
-                  color="text-emerald-400"
-                  count={estimate.mandatoryToAdd}
-                  icon={<ArrowRight className="h-3 w-3" />}
-                  label="VIP Tracks"
-                  tracks={vipTracks}
-                  type="add"
-                />
-                <ChangeRow
-                  bg="bg-purple-400/10"
-                  color="text-purple-400"
-                  count={estimate.aiTracksToAdd}
-                  icon={<Music2 className="h-3 w-3" />}
-                  label="AI Suggestions"
-                  tracks={aiTracks}
-                  type="add"
-                />
-              </div>
-
-              {totalChanges === 0 && (
-                <div className="flex items-center justify-center gap-2 py-2 text-sm text-yellow-500/80 italic">
-                  <AlertTriangle className="h-4 w-4" />
-                  No changes detected based on current rules.
+                  <div className="flex flex-wrap gap-2">
+                    <Badge
+                      className="border-primary/20 bg-primary/5 text-primary"
+                      variant="outline"
+                    >
+                      Max track age: {curationRules.maxTrackAgeDays} days
+                    </Badge>
+                    <Badge
+                      className="border-primary/20 bg-primary/5 text-primary"
+                      variant="outline"
+                    >
+                      Max: {curationRules.maxTracksPerArtist} / artist
+                    </Badge>
+                    {curationRules.removeDuplicates && (
+                      <Badge
+                        className="border-blue-500/20 bg-blue-500/10 text-blue-500"
+                        variant="outline"
+                      >
+                        Remove Duplicates
+                      </Badge>
+                    )}
+                    {curationRules.shuffleAtEnd && (
+                      <Badge
+                        className="border-purple-500/20 bg-purple-500/10 text-purple-500"
+                        variant="outline"
+                      >
+                        Shuffled
+                      </Badge>
+                    )}
+                    <Badge
+                      className="border-amber-500/20 bg-amber-500/10 text-amber-500"
+                      variant="outline"
+                    >
+                      Size Strategy:{' '}
+                      {curationRules.sizeLimitStrategy
+                        .split('_')
+                        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                        .join(' ')}
+                    </Badge>
+                  </div>
                 </div>
               )}
+            </div>
+
+            {/* Right Column (Transformation Log) */}
+            <div className="flex flex-col md:w-7/12 lg:w-2/3">
+              {/* Visual Flow of Changes */}
+              <div className="border-border/50 bg-background/40 h-full space-y-3 rounded-xl border p-5">
+                <h4 className="text-muted-foreground mb-4 flex items-center gap-2 text-xs font-semibold tracking-wider uppercase">
+                  <span className="bg-border/50 h-px flex-1"></span>
+                  Transformation Log
+                  <span className="bg-border/50 h-px flex-1"></span>
+                </h4>
+
+                <div className="space-y-3">
+                  <ChangeRow
+                    bg="bg-blue-400/10"
+                    color="text-blue-400"
+                    count={estimate.duplicatesToRemove}
+                    icon={<X className="h-3 w-3" />}
+                    label="Duplicates"
+                    tracks={duplicates}
+                    type="remove"
+                  />
+                  <ChangeRow
+                    bg="bg-amber-400/10"
+                    color="text-amber-400"
+                    count={estimate.agedOutTracks}
+                    icon={<X className="h-3 w-3" />}
+                    label="Aged Out"
+                    tracks={agedOut}
+                    type="remove"
+                  />
+                  <ChangeRow
+                    bg="bg-purple-400/10"
+                    color="text-purple-400"
+                    count={estimate.artistLimitRemoved}
+                    icon={<X className="h-3 w-3" />}
+                    label="Artist limit"
+                    tracks={artistLimit}
+                    type="remove"
+                  />
+                  <ChangeRow
+                    bg="bg-rose-400/10"
+                    color="text-rose-400"
+                    count={estimate.sizeLimitRemoved}
+                    icon={<X className="h-3 w-3" />}
+                    label="Size limit"
+                    tracks={sizeLimit}
+                    type="remove"
+                  />
+                  <ChangeRow
+                    bg="bg-emerald-400/10"
+                    color="text-emerald-400"
+                    count={estimate.mandatoryToAdd}
+                    icon={<ArrowRight className="h-3 w-3" />}
+                    label="VIP Tracks"
+                    tracks={vipTracks}
+                    type="add"
+                  />
+                  <ChangeRow
+                    bg="bg-purple-400/10"
+                    color="text-purple-400"
+                    count={estimate.aiTracksToAdd}
+                    icon={<Music2 className="h-3 w-3" />}
+                    label="AI Suggestions"
+                    tracks={aiTracks}
+                    type="add"
+                  />
+                </div>
+
+                {totalChanges === 0 && (
+                  <div className="flex items-center justify-center gap-2 py-2 text-sm text-yellow-500/80 italic">
+                    <AlertTriangle className="h-4 w-4" />
+                    No changes detected based on current rules.
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
@@ -191,7 +254,7 @@ export const ConfirmCurationModal = ({
 
         <DialogFooter className="gap-3 pt-2 sm:gap-0">
           <Button
-            className="hover:bg-white/5 hover:text-white"
+            className="hover:bg-muted hover:text-foreground"
             disabled={isLoading}
             onClick={onClose}
             variant="ghost"

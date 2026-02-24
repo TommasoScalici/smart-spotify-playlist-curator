@@ -1,4 +1,4 @@
-import { CurationEstimate } from '@smart-spotify-curator/shared';
+import { CurationEstimate, CurationRules } from '@smart-spotify-curator/shared';
 import { Loader2, Zap } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -11,6 +11,7 @@ import { FunctionsService } from '@/services/functions-service';
 
 interface RunButtonProps {
   className?: string;
+  curationRules?: CurationRules;
   disabled?: boolean;
   iconOnly?: boolean;
   onRunComplete?: () => void;
@@ -30,6 +31,7 @@ interface RunButtonProps {
  */
 export const RunButton = ({
   className = '',
+  curationRules,
   disabled = false,
   iconOnly = false,
   onRunComplete,
@@ -98,7 +100,7 @@ export const RunButton = ({
             <TooltipTrigger asChild>
               <div className="inline-block">
                 <Button
-                  aria-label="Run curation"
+                  aria-label="Run Pre-flight"
                   className={cn(
                     'border-primary/20 bg-primary/10 hover:bg-primary/20 hover:border-primary/50 text-primary rounded-full shadow-sm transition-all duration-200 hover:scale-105',
                     disabled &&
@@ -122,6 +124,7 @@ export const RunButton = ({
         </TooltipProvider>
 
         <ConfirmCurationModal
+          curationRules={curationRules}
           estimate={estimate}
           isLoading={estimating}
           isOpen={showModal}
@@ -142,10 +145,11 @@ export const RunButton = ({
         type="button"
       >
         {buttonContent}
-        <span>Run Curation</span>
+        <span>Run Pre-flight</span>
       </Button>
 
       <ConfirmCurationModal
+        curationRules={curationRules}
         estimate={estimate}
         isLoading={estimating}
         isOpen={showModal}

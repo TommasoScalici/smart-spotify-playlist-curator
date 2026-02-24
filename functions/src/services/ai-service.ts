@@ -191,7 +191,8 @@ For each suggestion, you MUST provide a 'reasoning' field explaining WHY this tr
     generationConfig: AiGenerationConfig,
     playlistName: string,
     description: string | undefined,
-    count: number
+    count: number,
+    excludedArtists: string[] = []
   ): Promise<string[]> {
     logger.info(`Sending artist suggestion request to Gemini AI...`, {
       count,
@@ -224,6 +225,11 @@ Playlist Name: "${playlistName}"`;
     }
     prompt += `\n\nIdentify artists that perfectly capture the sonic profile and "vibe" of this playlist.
 Suggest ONLY real, well-known artists that are likely to be on Spotify.`;
+
+    if (excludedArtists.length > 0) {
+      prompt += `\n\nSpecific Exclusions (Do NOT suggest these - already selected/added):
+      ${JSON.stringify(excludedArtists)}`;
+    }
 
     try {
       const result = await model.generateContent(prompt);

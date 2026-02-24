@@ -22,13 +22,15 @@ export class PlaylistOrchestrator {
     config: PlaylistConfig,
     spotifyService: SpotifyService,
     ownerName?: string,
-    existingLogId?: string
+    existingLogId?: string,
+    isSimulation: boolean = false
   ): Promise<CurationSession> {
     const session: CurationSession = {
       config,
       currentTracks: [],
       finalTrackList: [],
 
+      isSimulation,
       newAiTracks: [],
       ownerName,
       playlistId: config.id.replace('spotify:playlist:', ''),
@@ -74,6 +76,14 @@ export class PlaylistOrchestrator {
     spotifyService: SpotifyService
   ): Promise<void> {
     try {
+      if (session.isSimulation) {
+        session.isSimulation = false;
+      }
+
+      if (!session.logId) {
+        await this.initializeSession(session);
+      }
+
       await this.executeUpdates(session, spotifyService);
       await this.finalizeSession(session);
     } catch (error) {
@@ -136,6 +146,7 @@ export class PlaylistOrchestrator {
   }
 
   private async finalizeSession(session: CurationSession) {
+    if (session.isSimulation) return;
     if (!session.config.ownerId || !session.logId) return;
 
     await this.firestoreLogger.logActivity(
@@ -175,6 +186,7 @@ export class PlaylistOrchestrator {
 
   private async handleCurationError(session: CurationSession, error: Error) {
     logger.error(`Curation failed for ${session.config.name}`, error);
+    if (session.isSimulation) return;
     if (!session.config.ownerId || !session.logId) return;
 
     await this.firestoreLogger.logActivity(
@@ -191,6 +203,7 @@ export class PlaylistOrchestrator {
   }
 
   private async initializeSession(session: CurationSession) {
+    if (session.isSimulation) return;
     if (!session.config.ownerId) return;
 
     session.logId = await this.firestoreLogger.logActivity(
@@ -214,6 +227,7 @@ export class PlaylistOrchestrator {
     step: string,
     diff?: CurationDiff
   ) {
+    if (session.isSimulation) return;
     if (!session.config.ownerId || !session.logId) return;
     await this.firestoreLogger.logActivity(
       session.config.ownerId,

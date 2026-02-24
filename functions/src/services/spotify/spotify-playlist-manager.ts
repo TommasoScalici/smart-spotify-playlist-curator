@@ -30,26 +30,54 @@ export class SpotifyPlaylistManager {
     const currentItems = await this.getAllPlaylistTracks(playlistIdClean);
     const currentUris = currentItems.map((item) => item.track.uri);
 
-    const targetSet = new Set(targetOrderedUris);
+    // 1. Calculate allowed frequencies from target list
+    const targetCounts = new Map<string, number>();
+    targetOrderedUris.forEach((uri) => targetCounts.set(uri, (targetCounts.get(uri) || 0) + 1));
+
+    // 2. Identify exact track indices to remove (excess duplicates + completely removed tracks)
+    const keptCounts = new Map<string, number>();
     const toRemove: { positions: number[]; uri: string }[] = [];
+
     currentUris.forEach((uri, index) => {
-      if (!targetSet.has(uri)) {
+      const allowed = targetCounts.get(uri) || 0;
+      const currentKept = keptCounts.get(uri) || 0;
+
+      if (currentKept < allowed) {
+        keptCounts.set(uri, currentKept + 1);
+      } else {
         toRemove.push({ positions: [index], uri });
       }
     });
 
     if (toRemove.length > 0) {
+      // Sort removals descending by position to prevent index shifting during multiple batch requests
+      toRemove.sort((a, b) => b.positions[0] - a.positions[0]);
       await this.removeTracksWithPositions(playlistIdClean, toRemove);
     }
 
-    const stateAfterRemovals = currentUris.filter((uri) => targetSet.has(uri));
-    const stateAfterRemovalsSet = new Set(stateAfterRemovals);
-    const toAdd = targetOrderedUris.filter((uri) => !stateAfterRemovalsSet.has(uri));
+    // 3. Identify exact tracks to add (respecting required frequencies)
+    const missingCounts = new Map<string, number>();
+    targetCounts.forEach((allowed, uri) => {
+      const kept = keptCounts.get(uri) || 0;
+      if (allowed > kept) {
+        missingCounts.set(uri, allowed - kept);
+      }
+    });
+
+    const toAdd: string[] = [];
+    targetOrderedUris.forEach((uri) => {
+      const missing = missingCounts.get(uri) || 0;
+      if (missing > 0) {
+        toAdd.push(uri);
+        missingCounts.set(uri, missing - 1);
+      }
+    });
 
     if (toAdd.length > 0) {
       await this.addTracks(playlistIdClean, toAdd);
     }
 
+    // 4. Reorder the finalized selection to match exactly targetOrderedUris
     const finalStateItems = await this.getAllPlaylistTracks(playlistIdClean);
     const finalUris = finalStateItems.map((t) => t.track.uri);
 

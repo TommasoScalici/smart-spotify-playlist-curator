@@ -113,7 +113,7 @@ describe('RunButton', () => {
 
     // Main button should now be disabled
     await waitFor(() => {
-      const btn = screen.getByRole('button', { name: /Run Curation/i });
+      const btn = screen.getByRole('button', { name: /Run Pre-flight/i });
       expect(btn).toBeDisabled();
     });
 

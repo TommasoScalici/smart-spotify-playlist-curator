@@ -29,7 +29,8 @@ export class CurationEstimator {
       config,
       spotifyService,
       'Pre-Flight',
-      undefined
+      undefined,
+      true
     );
 
     // 2. Validate/Sanitize Session for Storage
@@ -64,7 +65,7 @@ export class CurationEstimator {
 
     for (const added of diff.added) {
       if (aiUris.has(added.uri)) aiAddedCount++;
-      if (mandatoryUris.has(added.uri)) mandatoryAddedCount++;
+      else if (mandatoryUris.has(added.uri)) mandatoryAddedCount++;
     }
 
     const annotatedAdded = diff.added.map((added) => {

@@ -98,18 +98,20 @@ export const FunctionsService = {
     playlistName: string,
     description?: string,
     count: number = 5,
-    aiConfig?: AiGenerationConfig
+    aiConfig?: AiGenerationConfig,
+    excludedArtists?: string[]
   ): Promise<SearchResult[]> {
     const suggest = httpsCallable<
       {
         aiConfig?: AiGenerationConfig;
         count: number;
         description?: string;
+        excludedArtists?: string[];
         playlistName: string;
       },
       { artists: SearchResult[] }
     >(functions, 'suggestReferenceArtists');
-    const result = await suggest({ aiConfig, count, description, playlistName });
+    const result = await suggest({ aiConfig, count, description, excludedArtists, playlistName });
     return result.data.artists;
   },
 

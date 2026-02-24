@@ -1,15 +1,22 @@
 import * as dotenv from 'dotenv';
 import { setGlobalOptions } from 'firebase-functions/v2';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { isAbsolute, resolve } from 'path';
 
-// Load environment variables from root .env ONLY for local development
-// In Cloud Functions, credentials are automatically provided
+// Load environment variables from root .env ONLY for local development.
+// In Cloud Functions, credentials are automatically provided.
+// We avoid `dotenv.config()` because v17+ logs tips to stdout which corrupts
+// Firebase CLI's local discovery JSON parsing, causing a 10s timeout.
 const isLocalDevelopment = !process.env.FUNCTION_TARGET && !process.env.K_SERVICE;
 if (isLocalDevelopment) {
   const envPath = resolve(__dirname, '../../.env');
   if (existsSync(envPath)) {
-    dotenv.config({ path: envPath });
+    const parsedEnv = dotenv.parse(readFileSync(envPath, 'utf-8'));
+    for (const [key, value] of Object.entries(parsedEnv)) {
+      if (!process.env[key]) {
+        process.env[key] = value;
+      }
+    }
 
     // FIX: If GOOGLE_APPLICATION_CREDENTIALS is a relative path (e.g. ./service-account.json),
     // make it absolute relative to the workspace root to prevent firebase-admin
@@ -17,7 +24,10 @@ if (isLocalDevelopment) {
     // which causes a 10s timeout during deployment local analysis.
     const creds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
     if (creds && !isAbsolute(creds)) {
-      process.env.GOOGLE_APPLICATION_CREDENTIALS = resolve(__dirname, '../../', creds);
+      const absoluteCreds = resolve(__dirname, '../../', creds);
+      if (existsSync(absoluteCreds)) {
+        process.env.GOOGLE_APPLICATION_CREDENTIALS = absoluteCreds;
+      }
     }
   }
 }

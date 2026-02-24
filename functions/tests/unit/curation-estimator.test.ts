@@ -122,7 +122,8 @@ describe('CurationEstimator', () => {
       mockConfig,
       mockSpotifyService,
       expect.any(String),
-      undefined
+      undefined,
+      true
     );
   });
 

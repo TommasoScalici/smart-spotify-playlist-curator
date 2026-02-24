@@ -14,6 +14,7 @@ const SuggestReferenceArtistsSchema = z.object({
   aiConfig: AiConfigSchema.optional(),
   count: z.number().optional(),
   description: z.string().optional(),
+  excludedArtists: z.array(z.string()).optional(),
   playlistName: z.string().min(1)
 });
 
@@ -31,7 +32,7 @@ export async function suggestReferenceArtistsHandler(
     throw new HttpsError('invalid-argument', 'Playlist name is required.');
   }
 
-  const { aiConfig, count, description, playlistName } = parseResult.data;
+  const { aiConfig, count, description, excludedArtists, playlistName } = parseResult.data;
   const uid = request.auth.uid;
 
   try {
@@ -48,7 +49,8 @@ export async function suggestReferenceArtistsHandler(
       finalAiConfig,
       playlistName,
       description,
-      count || 5
+      count || 5,
+      excludedArtists || []
     );
 
     logger.info('AI suggested artists', { artistNames });
@@ -70,10 +72,17 @@ export async function suggestReferenceArtistsHandler(
 
     await persistSpotifyTokens(uid, spotifyService, originalRefreshToken);
 
-    const validatedArtists = searchResults.filter(Boolean);
+    // Deduplicate by URI to prevent duplicate objects inside the response
+    const validArtists = searchResults.filter((r): r is NonNullable<typeof r> => r !== null);
+    const uniqueArtistsMap = new Map();
+    for (const artist of validArtists) {
+      if (!uniqueArtistsMap.has(artist.uri)) {
+        uniqueArtistsMap.set(artist.uri, artist);
+      }
+    }
 
     return {
-      artists: validatedArtists
+      artists: Array.from(uniqueArtistsMap.values())
     };
   } catch (error) {
     logger.error('suggestReferenceArtists failed', error);

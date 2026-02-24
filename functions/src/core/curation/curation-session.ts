@@ -10,6 +10,7 @@ export interface CurationSession {
   diff?: CurationDiff;
   finalTrackList: string[];
 
+  isSimulation?: boolean;
   logId?: string;
   newAiTracks: {
     addedAt?: Date;
@@ -19,7 +20,7 @@ export interface CurationSession {
     uri: string;
   }[];
   ownerName?: string;
-  playlistId: string;
 
+  playlistId: string;
   survivingTracks: TrackWithMeta[];
 }

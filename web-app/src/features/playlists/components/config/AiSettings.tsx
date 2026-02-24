@@ -1,5 +1,6 @@
 import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Bot, RefreshCw, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -92,6 +93,10 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
   const isAiEnabled = watch('aiGeneration.enabled');
   const aiConfig = watch('aiGeneration');
   const referenceArtists = watch('settings.referenceArtists') || [];
+
+  const [promptPreview, setPromptPreview] = useState(() =>
+    generatePromptPreview(playlistName, playlistDescription, isInstrumental, referenceArtists)
+  );
 
   return (
     <Card className="mb-6">
@@ -202,9 +207,15 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
                 <Button
                   className="h-7 text-xs"
                   onClick={() => {
-                    toast.info('Prompt regenerated based on latest metadata.', {
-                      description: 'This is a preview of the logic that runs automatically on save.'
-                    });
+                    setPromptPreview(
+                      generatePromptPreview(
+                        playlistName,
+                        playlistDescription,
+                        isInstrumental,
+                        referenceArtists
+                      )
+                    );
+                    toast.success('Prompt regenerated successfully.');
                   }}
                   size="sm"
                   type="button"
@@ -218,12 +229,7 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
                 className="bg-muted min-h-[120px] cursor-not-allowed resize-none font-mono text-sm"
                 id="prompt-preview"
                 readOnly
-                value={generatePromptPreview(
-                  playlistName,
-                  playlistDescription,
-                  isInstrumental,
-                  referenceArtists
-                )}
+                value={promptPreview}
               />
               <p className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Sparkles className="h-3 w-3" />

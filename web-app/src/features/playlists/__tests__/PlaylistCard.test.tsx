@@ -88,16 +88,19 @@ describe('PlaylistCard', () => {
   it('renders playlist details correctly', async () => {
     render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
 
-    expect(screen.getByText('Chill Vibes')).toBeInTheDocument();
+    expect(await screen.findByText('Chill Vibes')).toBeInTheDocument();
     expect(await screen.findByText('Tommaso')).toBeInTheDocument();
   });
 
   it('toggles automation enabled state', async () => {
     render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
 
-    // Find the switch. It's an accessible element with role="switch"
-    const toggle = screen.getByRole('switch');
-    expect(toggle).toBeChecked(); // Should be checked initially as config.enabled is true
+    // The shadcn Switch component is a button with role="switch", but we might need to find it by type or value
+    const buttons = await screen.findAllByRole('switch');
+    // Assuming there's only one switch per card
+    const toggle = buttons[0];
+
+    expect(toggle).toHaveAttribute('data-state', 'checked');
 
     fireEvent.click(toggle);
 
@@ -114,10 +117,10 @@ describe('PlaylistCard', () => {
   it('shows delete confirmation dialog', async () => {
     render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
 
-    const deleteBtn = screen.getByLabelText('Delete playlist');
+    const deleteBtn = await screen.findByLabelText('Delete playlist');
     fireEvent.click(deleteBtn);
 
     // Dialog should open
-    expect(screen.getByText('Delete Playlist from App?')).toBeInTheDocument();
+    expect(await screen.findByText('Delete Playlist from App?')).toBeInTheDocument();
   });
 });

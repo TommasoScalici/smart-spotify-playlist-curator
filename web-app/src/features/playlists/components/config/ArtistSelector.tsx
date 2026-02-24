@@ -116,11 +116,12 @@ export const ArtistSelector = ({
         playlistName,
         description,
         nToGenerate,
-        effectiveConfig
+        effectiveConfig,
+        value.map((v) => v.name)
       );
 
       const currentUris = new Set(value.map((v) => v.uri));
-      const newArtists = suggested.filter((a) => !currentUris.has(a.uri));
+      const newArtists = suggested.filter((a) => !currentUris.has(a.uri)).slice(0, nToGenerate);
 
       if (newArtists.length > 0) {
         const updated = [...value, ...newArtists].slice(0, maxArtists);

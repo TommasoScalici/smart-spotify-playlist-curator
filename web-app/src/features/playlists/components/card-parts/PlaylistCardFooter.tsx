@@ -85,6 +85,7 @@ export const PlaylistCardFooter = ({
 
             <RunButton
               className="h-10 min-h-[44px] flex-1"
+              curationRules={config.curationRules}
               disabled={!config.enabled}
               onRunComplete={onRunComplete}
               onRunStart={onRunStart}
