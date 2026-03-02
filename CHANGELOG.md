@@ -1,3 +1,9 @@
+# [1.10.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.9.0...v1.10.0) (2026-03-02)
+
+### Features
+
+- improve curation logic with anti-adjacency, fix VIP ranges, and prevent re-adding removed tracks. Update schemas for rich activity diffs and enhance UI. Add diagnostic scripts for Spotify/Firestore analysis. Resolve build & lint issues. ([54365d6](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/54365d63b23d6808035ba8fd98eb2c7a9ea1da55))
+
 # [1.9.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.8.1...v1.9.0) (2026-02-24)
 
 ### Bug Fixes
