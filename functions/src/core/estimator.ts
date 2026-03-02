@@ -19,7 +19,8 @@ export class CurationEstimator {
   public async estimate(
     config: PlaylistConfig,
     spotifyService: SpotifyService,
-    uid: string
+    uid: string,
+    ownerName?: string
   ): Promise<CurationEstimate> {
     const playlistId = config.id.replace('spotify:playlist:', '');
     logger.info(`Estimating curation (Pre-flight) for: ${config.name}`, { playlistId });
@@ -28,7 +29,7 @@ export class CurationEstimator {
     const session = await this.orchestrator.createPlan(
       config,
       spotifyService,
-      'Pre-Flight',
+      ownerName,
       undefined,
       true
     );
@@ -57,21 +58,23 @@ export class CurationEstimator {
     const artistLimitRemoved = diff.removed.filter((t) => t.reason === 'artist_limit').length;
     const sizeLimitRemoved = diff.removed.filter((t) => t.reason === 'size_limit').length;
 
-    const aiUris = new Set(newAiTracks.map((t) => t.uri));
-    const mandatoryUris = new Set(sessionConfig.mandatoryTracks.map((t) => t.uri));
+    const aiUris = new Set(newAiTracks.map((t) => t.uri.toLowerCase()));
+    const mandatoryUris = new Set(sessionConfig.mandatoryTracks.map((t) => t.uri.toLowerCase()));
 
     let aiAddedCount = 0;
     let mandatoryAddedCount = 0;
 
     for (const added of diff.added) {
-      if (aiUris.has(added.uri)) aiAddedCount++;
-      else if (mandatoryUris.has(added.uri)) mandatoryAddedCount++;
+      const uri = added.uri.toLowerCase();
+      if (aiUris.has(uri)) aiAddedCount++;
+      else if (mandatoryUris.has(uri)) mandatoryAddedCount++;
     }
 
     const annotatedAdded = diff.added.map((added) => {
       let source: 'ai' | 'mandatory' | undefined;
-      if (aiUris.has(added.uri)) source = 'ai';
-      else if (mandatoryUris.has(added.uri)) source = 'mandatory';
+      const uri = added.uri.toLowerCase();
+      if (aiUris.has(uri)) source = 'ai';
+      else if (mandatoryUris.has(uri)) source = 'mandatory';
       return { ...added, source };
     });
 

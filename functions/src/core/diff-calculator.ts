@@ -3,7 +3,7 @@ import { BaseTrack, MandatoryTrack, TrackDiff, TrackInfo } from '@smart-spotify-
 import { TrackWithMeta } from './types-internal';
 
 export interface DiffResult {
-  added: BaseTrack[];
+  added: TrackDiff[];
   keptMandatory: BaseTrack[];
   removed: TrackDiff[];
 }
@@ -26,10 +26,17 @@ export class DiffCalculator {
     const tracksToAddUris = finalTrackListUris.filter((uri) => !survivorUris.has(uri));
 
     // 2. Resolve Added Metadata
-    const added = tracksToAddUris.map((uri) => {
+    const added: TrackDiff[] = tracksToAddUris.map((uri) => {
       // Priority 1: AI Tracks (Most likely source of newness)
       const aiMatch = newAiTracks.find((t) => t.uri === uri);
-      if (aiMatch) return { artist: aiMatch.artist, name: aiMatch.track, uri };
+      if (aiMatch) {
+        return {
+          artist: aiMatch.artist,
+          name: aiMatch.track,
+          reason: 'ai_suggestion',
+          uri
+        };
+      }
 
       // Priority 2: Mandatory Tracks (If they were missing and got re-added)
       const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
@@ -37,12 +44,18 @@ export class DiffCalculator {
         return {
           artist: vipMatch.artist || 'Unknown Artist',
           name: vipMatch.name || 'Unknown Track',
+          reason: 'vip_readd',
           uri
         };
       }
 
       // Priority 3: Fallback (Should be rare)
-      return { artist: 'Unknown Artist', name: 'Unknown Track', uri };
+      return {
+        artist: 'Unknown Artist',
+        name: 'Unknown Track',
+        reason: 'other',
+        uri
+      };
     });
 
     // 3. Identify Removed URIs (Accounting for Duplicates)

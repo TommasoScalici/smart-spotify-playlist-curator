@@ -158,13 +158,18 @@ describe('PlaylistOrchestrator - Complex Flow ("The Perfect Storm")', () => {
     ]);
 
     // Mock Search to succeed
-    mockSpotifyService.searchTrack.mockImplementation(async (query: string) => ({
-      // Use the artist from query to ensure they are distinct for artist limits
-      artist: query.split(' ')[0],
-      name: query,
-      popularity: 50,
-      uri: `spotify:track:ai_${Math.random()}`
-    }));
+    mockSpotifyService.searchTrack.mockImplementation(async (query: string) => {
+      // Extract the full artist part from our carefully constructed suggestions "AI X Song X"
+      const artistMatch = query.match(/AI \d+/);
+      const artist = artistMatch ? artistMatch[0] : 'Unknown AI';
+
+      return {
+        artist,
+        name: query,
+        popularity: 50,
+        uri: `spotify:track:ai_${Math.random().toString(36).substring(2, 9)}`
+      };
+    });
 
     await orchestrator.curatePlaylist(
       configWithVIPs,

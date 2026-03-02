@@ -138,10 +138,8 @@ Unless the user explicitly asks for them, strictly REJECT any track title contai
 ${BANNED_TERMS.join(', ')}.`;
 
     if (excludedTracks.length > 0) {
-      // Increased slice limit for Gemini 2.5 Flash context window
-      const recentExclusions = excludedTracks.slice(0, 200);
       fullPrompt += `\n\nSpecific Exclusions (Do NOT suggest these - already in playlist):
-${JSON.stringify(recentExclusions)}`;
+${JSON.stringify(excludedTracks)}`;
     }
 
     fullPrompt += `\n\nReasoning Requirement:

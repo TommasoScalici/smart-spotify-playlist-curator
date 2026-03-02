@@ -114,14 +114,21 @@ export class PlaylistOrchestrator {
       }
     }
 
-    session.diff = DiffCalculator.calculate(
-      session.currentTracks,
-      session.survivingTracks,
-      session.finalTrackList,
-      session.config.mandatoryTracks,
-      session.newAiTracks,
-      removalReasons
-    );
+    session.diff = {
+      ...DiffCalculator.calculate(
+        session.currentTracks,
+        session.survivingTracks,
+        session.finalTrackList,
+        session.config.mandatoryTracks,
+        session.newAiTracks,
+        removalReasons
+      ),
+      stats: {
+        final: session.finalTrackList.length,
+        success: true,
+        target: session.config.settings.targetTotalTracks
+      }
+    };
   }
 
   private async executeUpdates(session: CurationSession, spotifyService: SpotifyService) {
@@ -166,21 +173,41 @@ export class PlaylistOrchestrator {
 
   private async generateSuggestions(session: CurationSession, spotifyService: SpotifyService) {
     const { aiGeneration } = session.config;
-    if (!aiGeneration.enabled || aiGeneration.tracksToAdd <= 0) return;
+    if (!aiGeneration.enabled) return;
+
+    // Calculate current fill (unique mandatory + surviving non-mandatory)
+    const mandatoryUris = new Set(session.config.mandatoryTracks.map((m) => m.uri));
+    const survivingNonMandatory = session.survivingTracks.filter((t) => !mandatoryUris.has(t.uri));
+    const currentFill = mandatoryUris.size + survivingNonMandatory.length;
+
+    const targetTotal = session.config.settings.targetTotalTracks;
+    const neededToReachTarget = Math.max(0, targetTotal - currentFill);
+
+    // We add at least as many as configured in aiGeneration.tracksToAdd,
+    // but ensure we add enough to hit the target if we are below it.
+    const tracksToRequest = Math.max(aiGeneration.tracksToAdd, neededToReachTarget);
+
+    if (tracksToRequest <= 0) return;
 
     const engine = new AISuggestionEngine(this.aiService, spotifyService, this.firestoreLogger);
+
+    const existingUris = new Set(session.currentTracks.map((t) => t.uri.toLowerCase()));
+    const existingSignatures = session.currentTracks.map((t) =>
+      `${t.artist} - ${t.name}`.toLowerCase()
+    );
 
     session.newAiTracks = await engine.generateAndFindTracks(
       session.config.name,
       session.config.settings.description,
       session.config.settings.referenceArtists,
       aiGeneration,
-      aiGeneration.tracksToAdd,
-      session.survivingTracks.map((t) => `${t.artist} - ${t.name}`),
+      tracksToRequest,
+      existingSignatures,
       session.config.ownerId,
       session.logId,
       session.config.curationRules.maxTracksPerArtist,
-      session.ownerName
+      session.ownerName,
+      existingUris
     );
   }
 

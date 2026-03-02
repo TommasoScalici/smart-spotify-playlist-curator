@@ -191,39 +191,58 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
             {/* Rich Metadata Badges */}
             {meta && (
               <div className="mt-1 flex flex-wrap gap-1.5 pl-6">
-                {meta.addedCount ? (
+                {meta.diff?.added?.length || meta.addedCount ? (
                   <span className="inline-flex items-center rounded border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-500">
-                    +{meta.addedCount} Added
+                    +{meta.diff?.added?.length || meta.addedCount} Added
                   </span>
                 ) : null}
-                {meta.removedCount ? (
+                {meta.diff?.removed?.length || meta.removedCount ? (
                   <span className="inline-flex items-center rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-red-500">
-                    -{meta.removedCount} Removed
+                    -{meta.diff?.removed?.length || meta.removedCount} Removed
                   </span>
                 ) : null}
-                {meta.aiTracksAdded ? (
+                {meta.diff?.added?.filter((t) => t.reason === 'ai_suggestion').length ||
+                meta.aiTracksAdded ? (
                   <span className="inline-flex items-center rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-500">
-                    {meta.aiTracksAdded} AI
+                    {meta.diff?.added?.filter((t) => t.reason === 'ai_suggestion').length ||
+                      meta.aiTracksAdded}{' '}
+                    AI
                   </span>
                 ) : null}
-                {meta.duplicatesRemoved ? (
+                {meta.diff?.removed?.filter((t) => t.reason === 'duplicate').length ||
+                meta.duplicatesRemoved ? (
                   <span className="inline-flex items-center rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500">
-                    -{meta.duplicatesRemoved} Dups
+                    -
+                    {meta.diff?.removed?.filter((t) => t.reason === 'duplicate').length ||
+                      meta.duplicatesRemoved}{' '}
+                    Dups
                   </span>
                 ) : null}
-                {meta.expiredRemoved ? (
+                {meta.diff?.removed?.filter((t) => t.reason === 'expired').length ||
+                meta.expiredRemoved ? (
                   <span className="inline-flex items-center rounded border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">
-                    -{meta.expiredRemoved} Expired
+                    -
+                    {meta.diff?.removed?.filter((t) => t.reason === 'expired').length ||
+                      meta.expiredRemoved}{' '}
+                    Expired
                   </span>
                 ) : null}
-                {meta.artistLimitRemoved ? (
+                {meta.diff?.removed?.filter((t) => t.reason === 'artist_limit').length ||
+                meta.artistLimitRemoved ? (
                   <span className="inline-flex items-center rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-500">
-                    -{meta.artistLimitRemoved} Artist Limit
+                    -
+                    {meta.diff?.removed?.filter((t) => t.reason === 'artist_limit').length ||
+                      meta.artistLimitRemoved}{' '}
+                    Artist Limit
                   </span>
                 ) : null}
-                {meta.sizeLimitRemoved ? (
+                {meta.diff?.removed?.filter((t) => t.reason === 'size_limit').length ||
+                meta.sizeLimitRemoved ? (
                   <span className="inline-flex items-center rounded border border-pink-500/20 bg-pink-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-pink-500">
-                    -{meta.sizeLimitRemoved} Size Limit
+                    -
+                    {meta.diff?.removed?.filter((t) => t.reason === 'size_limit').length ||
+                      meta.sizeLimitRemoved}{' '}
+                    Size Limit
                   </span>
                 ) : null}
               </div>

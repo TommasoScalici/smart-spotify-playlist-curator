@@ -145,7 +145,7 @@ describe('PlaylistOrchestrator', () => {
     expect(mockAiService.generateSuggestions).toHaveBeenCalledWith(
       expect.any(Object),
       expect.any(String),
-      15,
+      20,
       expect.any(Array)
     );
     expect(mockSlotManager.arrangePlaylist).toHaveBeenCalledWith(

@@ -121,7 +121,7 @@ describe('CurationEstimator', () => {
     expect(mockOrchestrator.createPlan).toHaveBeenCalledWith(
       mockConfig,
       mockSpotifyService,
-      expect.any(String),
+      undefined,
       undefined,
       true
     );

@@ -82,11 +82,21 @@ export const BaseTrackSchema = z.object({
 });
 
 export const TrackDiffSchema = BaseTrackSchema.extend({
-  reason: z.enum(['duplicate', 'expired', 'artist_limit', 'size_limit', 'other']).optional()
+  reason: z
+    .enum([
+      'duplicate',
+      'expired',
+      'artist_limit',
+      'size_limit',
+      'other',
+      'ai_suggestion',
+      'vip_readd'
+    ])
+    .optional()
 });
 
 export const CurationDiffSchema = z.object({
-  added: z.array(BaseTrackSchema),
+  added: z.array(TrackDiffSchema),
   keptMandatory: z.array(BaseTrackSchema).optional(),
   removed: z.array(TrackDiffSchema),
   stats: z
@@ -135,34 +145,45 @@ export const CurationStatusSchema = z.object({
 
 // --- Main Schema ---
 
-export const PlaylistConfigSchema = z.object({
-  aiGeneration: AiGenerationConfigSchema.default({
-    enabled: true,
-    model: 'gemini-2.5-flash',
-    temperature: 0.7,
-    tracksToAdd: 10
-  }),
-  curationRules: CurationRulesSchema.default({
-    maxTrackAgeDays: 30,
-    maxTracksPerArtist: 2,
-    removeDuplicates: true,
-    shuffleAtEnd: true,
-    sizeLimitStrategy: 'drop_random'
-  }),
-  enabled: z.boolean().default(true),
-  id: z
-    .string()
-    .min(1, 'you have to select the target playlist')
-    .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
-  imageUrl: z.string().optional().nullable(),
-  mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
-  name: z.string(), // Name should be required as well
-  ownerId: z.string().min(1, 'Owner ID is required'),
-  settings: PlaylistSettingsSchema.default({
-    referenceArtists: [],
-    targetTotalTracks: 20
+export const PlaylistConfigSchema = z
+  .object({
+    aiGeneration: AiGenerationConfigSchema.default({
+      enabled: true,
+      model: 'gemini-2.5-flash',
+      temperature: 0.7,
+      tracksToAdd: 10
+    }),
+    curationRules: CurationRulesSchema.default({
+      maxTrackAgeDays: 30,
+      maxTracksPerArtist: 2,
+      removeDuplicates: true,
+      shuffleAtEnd: true,
+      sizeLimitStrategy: 'drop_random'
+    }),
+    enabled: z.boolean().default(true),
+    id: z
+      .string()
+      .min(1, 'you have to select the target playlist')
+      .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' }),
+    imageUrl: z.string().optional().nullable(),
+    mandatoryTracks: z.array(MandatoryTrackSchema).default([]),
+    name: z.string(), // Name should be required as well
+    ownerId: z.string().min(1, 'Owner ID is required'),
+    settings: PlaylistSettingsSchema.default({
+      referenceArtists: [],
+      targetTotalTracks: 20
+    })
   })
-});
+  .superRefine((data, ctx) => {
+    const sum = (data.aiGeneration?.tracksToAdd || 0) + (data.mandatoryTracks?.length || 0);
+    if (data.enabled && data.settings.targetTotalTracks < sum) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: `Target tracks (${data.settings.targetTotalTracks}) must be at least the sum of AI tracks (${data.aiGeneration?.tracksToAdd || 0}) and VIPs (${data.mandatoryTracks?.length || 0})`,
+        path: ['settings', 'targetTotalTracks']
+      });
+    }
+  });
 
 // --- User Schema ---
 

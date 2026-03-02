@@ -22,7 +22,8 @@ export class AISuggestionEngine {
     ownerId: string | undefined,
     logId: string | undefined,
     maxTracksPerArtist: number,
-    ownerName?: string
+    ownerName?: string,
+    existingUris: Set<string> = new Set()
   ) {
     const prompt = PromptGenerator.generatePrompt(
       playlistName,
@@ -34,11 +35,12 @@ export class AISuggestionEngine {
     const suggestions = await this.aiService.generateSuggestions(
       aiConfig,
       prompt,
-      tracksNeeded + 5,
+      tracksNeeded + 10, // Request even more to account for overlap/failures
       existingTrackSignatures
     );
 
     const foundTracks = [];
+    const foundUris = new Set<string>();
     const artistCounts: Record<string, number> = {};
     const BATCH_SIZE = 5;
 
@@ -46,7 +48,7 @@ export class AISuggestionEngine {
       if (foundTracks.length >= tracksNeeded) break;
 
       if (ownerId && logId) {
-        const progress = Math.round(30 + (i / suggestions.length) * 40);
+        const progress = Math.min(Math.round(30 + (i / suggestions.length) * 40), 75);
         await this.firestoreLogger.logActivity(
           ownerId,
           'running',
@@ -59,7 +61,8 @@ export class AISuggestionEngine {
       const batch = suggestions.slice(i, i + BATCH_SIZE);
       const results = await Promise.all(
         batch.map(async (s) => {
-          if ((artistCounts[s.artist] || 0) >= maxTracksPerArtist) return null;
+          const normAiArtist = s.artist.toLowerCase().trim();
+          if ((artistCounts[normAiArtist] || 0) >= maxTracksPerArtist) return null;
           const track = await this.spotifyService.searchTrack(`${s.artist} ${s.track}`);
           return track ? { s, track } : null;
         })
@@ -67,7 +70,14 @@ export class AISuggestionEngine {
 
       for (const res of results) {
         if (res && foundTracks.length < tracksNeeded) {
-          if ((artistCounts[res.s.artist] || 0) >= maxTracksPerArtist) continue;
+          const spotifyUri = res.track.uri.toLowerCase();
+
+          // Skip if track is already in the playlist OR already found in this run
+          if (existingUris.has(spotifyUri) || foundUris.has(spotifyUri)) continue;
+
+          // Double check artist limit with Spotify's normalized artist name
+          const spotifyArtist = res.track.artist.split(',')[0].toLowerCase().trim();
+          if ((artistCounts[spotifyArtist] || 0) >= maxTracksPerArtist) continue;
 
           foundTracks.push({
             addedAt: new Date(),
@@ -76,7 +86,8 @@ export class AISuggestionEngine {
             track: res.track.name,
             uri: res.track.uri
           });
-          artistCounts[res.s.artist] = (artistCounts[res.s.artist] || 0) + 1;
+          foundUris.add(spotifyUri);
+          artistCounts[spotifyArtist] = (artistCounts[spotifyArtist] || 0) + 1;
         }
       }
     }

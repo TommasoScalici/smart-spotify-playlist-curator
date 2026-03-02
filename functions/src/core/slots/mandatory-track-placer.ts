@@ -23,8 +23,8 @@ export class MandatoryTrackPlacer {
     for (const meta of mandatoryTracks) {
       const { max, min } = meta.positionRange;
       if (min !== max) {
-        const start = Math.max(0, min - 1);
-        const end = Math.min(totalSlots - 1, max - 1);
+        const start = Math.max(0, Math.min(totalSlots - 1, min - 1));
+        const end = Math.max(start, Math.min(totalSlots - 1, max - 1));
 
         const rangeSlots = [];
         for (let i = start; i <= end; i++) {

@@ -38,6 +38,7 @@ describe('DiffCalculator', () => {
     expect(result.added[0]).toEqual({
       artist: 'Artist 2',
       name: 'New AI',
+      reason: 'ai_suggestion',
       uri: 'spotify:track:2'
     });
     expect(result.removed).toHaveLength(0);
@@ -67,6 +68,7 @@ describe('DiffCalculator', () => {
     expect(result.added[0]).toEqual({
       artist: 'VIP Artist',
       name: 'VIP Song',
+      reason: 'vip_readd',
       uri: 'spotify:track:vip'
     });
   });
@@ -103,6 +105,7 @@ describe('DiffCalculator', () => {
     expect(result.added[0]).toEqual({
       artist: 'Unknown Artist',
       name: 'Unknown Track',
+      reason: 'other',
       uri: 'spotify:track:mystery'
     });
   });

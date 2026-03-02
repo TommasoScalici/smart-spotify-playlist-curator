@@ -43,7 +43,7 @@ export class SlotManager {
     const aiTrackUris = new Set(newAiTracks.map((t) => t.uri));
     const allTracksLookup = [...survivorTracks, ...newAiTracks];
 
-    return SlotFiller.fillWithShuffle(playlist, pool, aiTrackUris, allTracksLookup);
+    return SlotFiller.fillWithShuffle(playlist, pool, aiTrackUris, allTracksLookup, mandatoryUris);
   }
 
   /**

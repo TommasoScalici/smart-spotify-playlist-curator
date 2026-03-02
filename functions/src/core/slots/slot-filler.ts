@@ -23,7 +23,8 @@ export class SlotFiller {
     playlist: (null | string)[],
     pool: PoolTrack[],
     aiTrackUris: Set<string>,
-    allTracks: PoolTrack[]
+    allTracks: PoolTrack[],
+    mandatoryUris: Set<string>
   ): string[] {
     const totalSlots = playlist.length;
     const topSlotsLimit = 30;
@@ -75,6 +76,55 @@ export class SlotFiller {
       }
     }
 
-    return result.filter((uri): uri is string => uri !== null);
+    const finalResult = result.filter((uri): uri is string => uri !== null);
+
+    // 4. Post-processing: Remove adjacent tracks by the same artist
+    for (let i = 1; i < finalResult.length; i++) {
+      const prevUri = finalResult[i - 1];
+      const currUri = finalResult[i];
+
+      const prevArtist = allTracks.find((t) => t.uri === prevUri)?.artist;
+      const currArtist = allTracks.find((t) => t.uri === currUri)?.artist;
+
+      if (prevArtist && currArtist && prevArtist === currArtist) {
+        // Find a candidate to swap with `currUri`
+        for (let j = 0; j < finalResult.length; j++) {
+          if (i === j || j === i - 1) continue;
+
+          const swapUri = finalResult[j];
+          if (mandatoryUris.has(swapUri) || mandatoryUris.has(currUri)) continue; // Don't swap VIPs!
+
+          const swapArtist = allTracks.find((t) => t.uri === swapUri)?.artist;
+          if (!swapArtist) continue;
+
+          const beforeSwapArtist =
+            j > 0 ? allTracks.find((t) => t.uri === finalResult[j - 1])?.artist : null;
+          const afterSwapArtist =
+            j < finalResult.length - 1
+              ? allTracks.find((t) => t.uri === finalResult[j + 1])?.artist
+              : null;
+          const afterCurrArtist =
+            i < finalResult.length - 1
+              ? allTracks.find((t) => t.uri === finalResult[i + 1])?.artist
+              : null;
+
+          // Check if swapping creates new adjacencies
+          if (
+            swapArtist !== currArtist && // Current track fits in swap spot?
+            beforeSwapArtist !== currArtist &&
+            afterSwapArtist !== currArtist &&
+            swapArtist !== prevArtist && // Swap track fits in current spot?
+            swapArtist !== afterCurrArtist
+          ) {
+            // Perform swap
+            finalResult[i] = swapUri;
+            finalResult[j] = currUri;
+            break;
+          }
+        }
+      }
+    }
+
+    return finalResult;
   }
 }

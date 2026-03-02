@@ -50,6 +50,16 @@ export async function estimateCurationHandler(
     throw new HttpsError('permission-denied', 'You do not own this playlist.');
   }
 
+  // 2.5 Fetch Caller Name
+  let callerName = '';
+  try {
+    const userSnap = await db.doc(`users/${uid}`).get();
+    const userData = userSnap.data();
+    callerName = userData?.spotifyProfile?.displayName || userData?.displayName || 'User';
+  } catch (e) {
+    logger.warn(`Failed to fetch caller name for ${uid}`, e);
+  }
+
   try {
     const { originalRefreshToken, service: spotifyService } =
       await getAuthorizedSpotifyService(uid);
@@ -71,7 +81,7 @@ export async function estimateCurationHandler(
     const { CurationEstimator } = await import('../core/estimator.js');
     const estimator = new CurationEstimator(orchestrator);
 
-    const estimate = await estimator.estimate(config, spotifyService, uid);
+    const estimate = await estimator.estimate(config, spotifyService, uid, callerName);
 
     // Persist any token updates
     await persistSpotifyTokens(uid, spotifyService, originalRefreshToken);
@@ -150,6 +160,7 @@ export async function runOrchestrator(
       }
 
       if (session) {
+        session.ownerName = callerName;
         await orchestrator.executePlan(session, spotifyService);
         await planRef.delete();
       }
