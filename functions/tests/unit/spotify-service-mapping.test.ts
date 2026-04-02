@@ -65,6 +65,8 @@ describe('SpotifyService - Metadata Mapping', () => {
       addedAt: '2024-01-27T12:00:00Z',
       album: 'Album 1',
       artist: 'Artist 1',
+      isEpisode: false,
+      isLocal: false,
       name: 'Track 1',
       popularity: 85,
       uri: 'spotify:track:1'
