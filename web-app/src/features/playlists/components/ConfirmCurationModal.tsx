@@ -1,5 +1,5 @@
 import { CurationEstimate, CurationRules } from '@smart-spotify-curator/shared';
-import { AlertTriangle, ArrowRight, Info, Loader2, Music2, Play, X } from 'lucide-react';
+import { AlertTriangle, ArrowRight, History, Info, Loader2, Music2, Play, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -45,9 +45,10 @@ export const ConfirmCurationModal = ({
 
   // Derived lists for accordion details
   const duplicates = estimate?.removed?.filter((t) => t.reason === 'duplicate');
-  const agedOut = estimate?.removed?.filter((t) => t.reason === 'expired');
+  const expired = estimate?.removed?.filter((t) => t.reason === 'expired');
   const artistLimit = estimate?.removed?.filter((t) => t.reason === 'artist_limit');
   const sizeLimit = estimate?.removed?.filter((t) => t.reason === 'size_limit');
+  const unsupported = estimate?.removed?.filter((t) => t.reason === 'unsupported_format');
 
   const vipTracks = estimate?.added?.filter((t) => t.source === 'mandatory');
   const aiTracks = estimate?.added?.filter((t) => t.source === 'ai');
@@ -116,6 +117,26 @@ export const ConfirmCurationModal = ({
                   </div>
                 </div>
               </div>
+
+              {/* Unsupported Tracks Warning */}
+              {(estimate.hasLocalTracks || estimate.hasEpisodes) && (
+                <div className="border-destructive/50 bg-destructive/10 text-destructive flex items-start gap-3 rounded-xl border p-4">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+                  <div className="flex flex-col gap-1">
+                    <span className="text-sm font-semibold tracking-wider uppercase">
+                      Unsupported Tracks Detected
+                    </span>
+                    <p className="text-sm opacity-90">
+                      This playlist contains {estimate.hasLocalTracks && 'local MP3s'}
+                      {estimate.hasLocalTracks && estimate.hasEpisodes && ' and '}
+                      {estimate.hasEpisodes && 'podcast episodes'}. These track types are not
+                      supported and will be{' '}
+                      <strong className="font-bold underline">completely wiped out</strong> if you
+                      proceed.
+                    </p>
+                  </div>
+                </div>
+              )}
 
               {/* Applied Rules Settings */}
               {curationRules && (
@@ -191,12 +212,22 @@ export const ConfirmCurationModal = ({
                     type="remove"
                   />
                   <ChangeRow
+                    bg="bg-destructive/10"
+                    className="border-destructive/20 bg-destructive/5"
+                    color="text-destructive"
+                    count={estimate.unsupportedFormatTracks || 0}
+                    icon={<AlertTriangle className="h-3 w-3" />}
+                    label="Unsupported"
+                    tracks={unsupported}
+                    type="remove"
+                  />
+                  <ChangeRow
                     bg="bg-amber-400/10"
                     color="text-amber-400"
                     count={estimate.agedOutTracks}
-                    icon={<X className="h-3 w-3" />}
-                    label="Aged Out"
-                    tracks={agedOut}
+                    icon={<History className="h-3 w-3" />}
+                    label="Expired"
+                    tracks={expired}
                     type="remove"
                   />
                   <ChangeRow

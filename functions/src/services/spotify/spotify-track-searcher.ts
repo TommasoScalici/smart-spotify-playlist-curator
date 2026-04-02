@@ -3,15 +3,18 @@ import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
 
 interface SpotifySearchItem {
   added_at: string;
+  is_local?: boolean;
   track: {
-    album: {
+    album?: {
       name: string;
     };
-    artists: {
+    artists?: {
       name: string;
     }[];
+    is_local?: boolean;
     name: string;
-    popularity: number;
+    popularity?: number;
+    type: string;
     uri: string;
   };
 }
@@ -61,7 +64,7 @@ export class SpotifyTrackSearcher {
       const response = await this.spotify.playlists.getPlaylistItems(
         playlistIdClean,
         undefined,
-        'items(added_at,track(uri,name,popularity,album(name),artists(name))),total',
+        'items(added_at,is_local,track(uri,name,popularity,album(name),artists(name),type,is_local)),total',
         50 as MaxInt<50>,
         offset
       );
@@ -71,9 +74,11 @@ export class SpotifyTrackSearcher {
         items.map((item: SpotifySearchItem) => ({
           addedAt: item.added_at,
           album: item.track.album?.name || '',
-          artist: item.track.artists[0]?.name || 'Unknown',
+          artist: item.track.artists?.[0]?.name || 'Unknown',
+          isEpisode: item.track.type === 'episode',
+          isLocal: item.is_local === true || item.track.is_local === true,
           name: item.track.name,
-          popularity: item.track.popularity,
+          popularity: item.track.popularity || 0,
           uri: item.track.uri
         }))
       );

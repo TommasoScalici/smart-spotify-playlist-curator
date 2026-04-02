@@ -104,7 +104,7 @@ export class PlaylistOrchestrator {
       session.config.curationRules.sizeLimitStrategy
     );
 
-    const removalReasons = new Map<string, 'other' | 'size_limit' | RemovalReason>();
+    const removalReasons = new Map<string, 'other' | RemovalReason>();
     initiallyRemoved.forEach((rt) => removalReasons.set(rt.uri, rt.reason));
 
     const finalSet = new Set(session.finalTrackList);

@@ -1,4 +1,5 @@
 import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
+import * as logger from 'firebase-functions/logger';
 
 import { AiService } from '../../services/ai-service';
 import { FirestoreLogger } from '../../services/firestore-logger';
@@ -32,10 +33,11 @@ export class AISuggestionEngine {
       referenceArtists
     );
 
+    const overFetchCount = Math.max(tracksNeeded + 10, Math.ceil(tracksNeeded * 1.5));
     const suggestions = await this.aiService.generateSuggestions(
       aiConfig,
       prompt,
-      tracksNeeded + 10, // Request even more to account for overlap/failures
+      overFetchCount, // Smart over-fetch to account for API match failures / hallucination limits
       existingTrackSignatures
     );
 
@@ -89,6 +91,21 @@ export class AISuggestionEngine {
           foundUris.add(spotifyUri);
           artistCounts[spotifyArtist] = (artistCounts[spotifyArtist] || 0) + 1;
         }
+      }
+    }
+
+    if (foundTracks.length < tracksNeeded) {
+      logger.warn(
+        `Graceful degradation for ${playlistName}: Target was ${tracksNeeded} AI tracks, but only identified ${foundTracks.length} valid tracks in Spotify.`
+      );
+      if (ownerId && logId) {
+        await this.firestoreLogger.logActivity(
+          ownerId,
+          'warning',
+          `AI target missed: found ${foundTracks.length} out of ${tracksNeeded} requested tracks.`,
+          { state: 'warning', step: 'AI Generation Degraded', triggeredBy: ownerName },
+          logId
+        );
       }
     }
 

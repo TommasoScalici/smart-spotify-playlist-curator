@@ -69,7 +69,7 @@ export const OnboardingHero = () => {
     <div className="bg-card/80 dark:bg-card/95 border-border/50 animate-in fade-in zoom-in-95 relative mx-4 my-auto flex min-h-[500px] w-full max-w-4xl flex-col items-center overflow-hidden rounded-3xl border-2 p-6 text-center shadow-2xl ring-1 ring-black/5 backdrop-blur-3xl transition-all duration-1000 sm:mx-auto sm:min-h-fit sm:p-8 md:p-10 dark:ring-white/5">
       {/* Dynamic Ambient Background */}
       <div className="from-primary/10 via-background to-secondary/10 absolute inset-0 z-0 bg-linear-to-br" />
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/noise.svg')] opacity-20" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-2xl space-y-6 md:space-y-8">

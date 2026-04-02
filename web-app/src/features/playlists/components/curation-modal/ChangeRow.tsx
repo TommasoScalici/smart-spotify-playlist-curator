@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 
 interface ChangeRowProps {
   bg: string;
+  className?: string;
   color: string;
   count: number;
   icon: React.ReactNode;
@@ -15,7 +16,16 @@ interface ChangeRowProps {
   type: 'add' | 'remove';
 }
 
-export const ChangeRow = ({ bg, color, count, icon, label, tracks, type }: ChangeRowProps) => {
+export const ChangeRow = ({
+  bg,
+  className,
+  color,
+  count,
+  icon,
+  label,
+  tracks,
+  type
+}: ChangeRowProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [previewTrackUri, setPreviewTrackUri] = useState<null | string>(null);
   const hasTracks = tracks && tracks.length > 0;
@@ -23,7 +33,7 @@ export const ChangeRow = ({ bg, color, count, icon, label, tracks, type }: Chang
   if (count <= 0) return null;
 
   return (
-    <div className="flex flex-col">
+    <div className={cn('flex flex-col', className)}>
       <div
         className={cn(
           'group flex items-center justify-between py-2 transition-colors',

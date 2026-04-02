@@ -5,6 +5,8 @@ export const TrackInfoSchema = z.object({
   album: z.string(),
   artist: z.string(),
   imageUrl: z.string().optional(),
+  isEpisode: z.boolean().optional(),
+  isLocal: z.boolean().optional(),
   name: z.string(),
   popularity: z.number().min(0).max(100).optional(),
   uri: z.string()
@@ -88,6 +90,7 @@ export const TrackDiffSchema = BaseTrackSchema.extend({
       'expired',
       'artist_limit',
       'size_limit',
+      'unsupported_format',
       'other',
       'ai_suggestion',
       'vip_readd'
@@ -260,11 +263,14 @@ export const CurationEstimateSchema = z.object({
   artistLimitRemoved: z.number(),
   currentTracks: z.number(),
   duplicatesToRemove: z.number(),
+  hasEpisodes: z.boolean().optional(),
+  hasLocalTracks: z.boolean().optional(),
   mandatoryToAdd: z.number(),
   planId: z.string().optional(),
   predictedFinal: z.number(),
   removed: z.array(TrackDiffSchema).optional(),
-  sizeLimitRemoved: z.number()
+  sizeLimitRemoved: z.number(),
+  unsupportedFormatTracks: z.number().optional()
 });
 
 export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;

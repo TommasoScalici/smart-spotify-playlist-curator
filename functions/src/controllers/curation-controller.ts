@@ -127,8 +127,43 @@ export async function runOrchestrator(
 
   const results: OrchestrationResult['results'] = [];
 
-  // Single Playlist Execution
-  // const playlistConfig = config; // Removed redundant alias
+  const playlistIdRaw = config.id.replace('spotify:playlist:', '');
+  const playlistRef = db.doc(`users/${config.ownerId}/playlists/${playlistIdRaw}`);
+
+  // CONCURRENCY LOCK (Distributed state via Firestore Transaction)
+  try {
+    await db.runTransaction(async (transaction) => {
+      const doc = await transaction.get(playlistRef);
+      if (!doc.exists) {
+        throw new Error('CONFIG_NOT_FOUND');
+      }
+
+      const data = doc.data();
+      if (data?.curationLockTimestamp) {
+        const lockTime = new Date(data.curationLockTimestamp).getTime();
+        const now = Date.now();
+        // 10 minutes timeout = 600000 ms to prevent zombie locks
+        if (now - lockTime < 600_000) {
+          throw new Error('CONCURRENCY_ABORT');
+        } else {
+          logger.warn(`Stale curation lock detected for ${config.name}. Stealing lock.`);
+        }
+      }
+
+      transaction.update(playlistRef, { curationLockTimestamp: new Date().toISOString() });
+    });
+  } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'CONCURRENCY_ABORT') {
+      logger.warn(`Concurrency block: Playlist ${config.name} is already being curated.`);
+      throw new Error('This playlist is currently being curated by another process. Please wait.', {
+        cause: err
+      });
+    }
+    if (err instanceof Error && err.message === 'CONFIG_NOT_FOUND') {
+      throw new Error('Playlist configuration document not found.', { cause: err });
+    }
+    throw err;
+  }
 
   try {
     // 3. Fetch User's Spotify Token & Create Orchestrator
@@ -197,6 +232,12 @@ export async function runOrchestrator(
     // Note: Orchestrator already logs the error state internally using currentLogId.
     // We do NOT need to log it again here, as that creates a duplicate "New Log" entry
     // instead of updating the existing "Running" one.
+  } finally {
+    try {
+      await playlistRef.update({ curationLockTimestamp: null });
+    } catch (e) {
+      logger.error(`Failed to release lock for playlist ${config.name}`, e);
+    }
   }
 
   return { message: 'Playlist update completed', results };
@@ -277,6 +318,9 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
 
     // Map common errors to friendly messages
     const msg = (e as Error).message;
+    if (msg.includes('currently being curated')) {
+      throw new HttpsError('aborted', msg);
+    }
     if (msg.includes('rate limit')) {
       throw new HttpsError(
         'resource-exhausted',

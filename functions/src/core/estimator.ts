@@ -57,6 +57,9 @@ export class CurationEstimator {
     const agedOutTracks = diff.removed.filter((t) => t.reason === 'expired').length;
     const artistLimitRemoved = diff.removed.filter((t) => t.reason === 'artist_limit').length;
     const sizeLimitRemoved = diff.removed.filter((t) => t.reason === 'size_limit').length;
+    const unsupportedFormatTracks = diff.removed.filter(
+      (t) => t.reason === 'unsupported_format'
+    ).length;
 
     const aiUris = new Set(newAiTracks.map((t) => t.uri.toLowerCase()));
     const mandatoryUris = new Set(sessionConfig.mandatoryTracks.map((t) => t.uri.toLowerCase()));
@@ -78,6 +81,9 @@ export class CurationEstimator {
       return { ...added, source };
     });
 
+    const hasLocalTracks = session.currentTracks.some((t) => t.isLocal);
+    const hasEpisodes = session.currentTracks.some((t) => t.isEpisode);
+
     return {
       added: annotatedAdded,
       agedOutTracks,
@@ -85,11 +91,14 @@ export class CurationEstimator {
       artistLimitRemoved,
       currentTracks: session.currentTracks.length,
       duplicatesToRemove,
+      hasEpisodes,
+      hasLocalTracks,
       mandatoryToAdd: mandatoryAddedCount,
       planId, // Return the Plan ID
       predictedFinal: session.finalTrackList.length,
       removed: diff.removed,
-      sizeLimitRemoved
+      sizeLimitRemoved,
+      unsupportedFormatTracks
     };
   }
 }

@@ -2,7 +2,12 @@ import { PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
 
 import { TrackWithMeta } from './types-internal';
 
-export type RemovalReason = 'artist_limit' | 'duplicate' | 'expired' | 'size_limit';
+export type RemovalReason =
+  | 'artist_limit'
+  | 'duplicate'
+  | 'expired'
+  | 'size_limit'
+  | 'unsupported_format';
 
 export interface RemovedTrack {
   artist: string;
@@ -40,6 +45,17 @@ export class TrackCleaner {
     const artistCounts: Record<string, number> = {};
 
     for (const item of currentTracks) {
+      // 0. Type Safety Check (Unsupported formats: Local files & Podcasts)
+      if (item.isLocal || item.isEpisode) {
+        removedTracks.push({
+          artist: item.artist,
+          name: item.name,
+          reason: 'unsupported_format',
+          uri: item.uri
+        });
+        continue;
+      }
+
       const normalizedName = item.name.toLowerCase().replace(/\s+/g, ' ').trim();
       const normalizedArtist = item.artist.toLowerCase().replace(/\s+/g, ' ').trim();
       const normalizedAlbum = item.album.toLowerCase().replace(/\s+/g, ' ').trim();

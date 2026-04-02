@@ -19,7 +19,10 @@ export class DiffCalculator {
     finalTrackListUris: string[], // The final ordered list of URIs
     mandatoryTracks: MandatoryTrack[], // Setup config (source of truth for VIPs)
     newAiTracks: { artist: string; track: string; uri: string }[], // AI selections
-    removalReasons?: Map<string, 'artist_limit' | 'duplicate' | 'expired' | 'other' | 'size_limit'>
+    removalReasons?: Map<
+      string,
+      'artist_limit' | 'duplicate' | 'expired' | 'other' | 'size_limit' | 'unsupported_format'
+    >
   ): DiffResult {
     // 1. Identify Added URIs
     const survivorUris = new Set(keptTracks.map((t) => t.uri));

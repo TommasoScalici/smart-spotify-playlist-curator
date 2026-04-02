@@ -12,12 +12,12 @@
   "scripts": {
     "build": "npm run build --workspaces --if-present",
     "dev": "npm run dev --workspace=web-app",
-    "deploy": "tsx scripts/src/admin/build.ts && firebase deploy",
-    "prepare": "husky",
+    "deploy-firebase": "tsx scripts/src/admin/build.ts && firebase deploy",
     "fix": "npm run lint:fix && npm run format",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
+    "prepare": "husky",
     "type-check": "tsc -b",
     "test": "npm run test --workspaces --if-present",
     "release": "semantic-release"

@@ -30,7 +30,7 @@ export class SpotifyService extends SpotifyBaseClient {
   // --- Static Helpers ---
   public static async exchangeCode(code: string, redirectUri: string) {
     const basicAuth = Buffer.from(
-      `${config.SPOTIFY_CLIENT_ID}:${config.SPOTIFY_CLIENT_SECRET} `
+      `${config.SPOTIFY_CLIENT_ID}:${config.SPOTIFY_CLIENT_SECRET}`
     ).toString('base64');
     const response = await fetch('https://accounts.spotify.com/api/token', {
       body: new URLSearchParams({
@@ -39,13 +39,16 @@ export class SpotifyService extends SpotifyBaseClient {
         redirect_uri: redirectUri
       }),
       headers: {
-        Authorization: `Basic ${basicAuth} `,
+        Authorization: `Basic ${basicAuth}`,
         'Content-Type': 'application/x-www-form-urlencoded'
       },
       method: 'POST'
     });
 
-    if (!response.ok) throw new Error(`Code exchange failed: ${response.statusText} `);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Code exchange failed: ${response.statusText} - ${errorText}`);
+    }
     const data = await response.json();
     return { accessToken: data.access_token, refreshToken: data.refresh_token };
   }
