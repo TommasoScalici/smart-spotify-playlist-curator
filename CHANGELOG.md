@@ -1,3 +1,13 @@
+# [1.11.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.10.0...v1.11.0) (2026-04-02)
+
+### Bug Fixes
+
+- fixed test after updated curation logic to handle local files and podcasts ([846b612](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/846b612fa458633bf313225af19c0ab6c1e6145a))
+
+### Features
+
+- fixed partial mutation failures, fixed AI hallucinations & track search misses, fix race conditions & special track types handling ([be54159](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/be54159db88dda73b1c5e18df102b828676c2acd))
+
 # [1.10.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.9.0...v1.10.0) (2026-03-02)
 
 ### Features
