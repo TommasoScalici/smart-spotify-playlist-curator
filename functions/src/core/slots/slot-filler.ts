@@ -1,3 +1,5 @@
+import { normalizeSpotifyUri } from '@smart-spotify-curator/shared';
+
 import { PoolTrack } from './selection-strategy';
 
 export class SlotFiller {
@@ -31,8 +33,9 @@ export class SlotFiller {
     const result = [...playlist];
 
     // 1. Separate AI tracks for top-30 prioritization
-    const aiPool = pool.filter((p) => aiTrackUris.has(p.uri));
-    const nonAiPool = pool.filter((p) => !aiTrackUris.has(p.uri));
+    const normalizedAiUris = new Set([...aiTrackUris].map((u) => normalizeSpotifyUri(u)));
+    const aiPool = pool.filter((p) => normalizedAiUris.has(normalizeSpotifyUri(p.uri)));
+    const nonAiPool = pool.filter((p) => !normalizedAiUris.has(normalizeSpotifyUri(p.uri)));
 
     // A. Prioritize AI tracks in top 30
     for (let i = 0; i < Math.min(topSlotsLimit, totalSlots); i++) {
@@ -92,7 +95,10 @@ export class SlotFiller {
           if (i === j || j === i - 1) continue;
 
           const swapUri = finalResult[j];
-          if (mandatoryUris.has(swapUri) || mandatoryUris.has(currUri)) continue; // Don't swap VIPs!
+          const normalizedSwapUri = normalizeSpotifyUri(swapUri);
+          const normalizedCurrUri = normalizeSpotifyUri(currUri);
+          if (mandatoryUris.has(normalizedSwapUri) || mandatoryUris.has(normalizedCurrUri))
+            continue; // Don't swap VIPs!
 
           const swapArtist = allTracks.find((t) => t.uri === swapUri)?.artist;
           if (!swapArtist) continue;

@@ -50,4 +50,4 @@ export type {
   UserProfile
 } from './schemas';
 
-export { getPlaylistDocId } from './utils';
+export { getPlaylistDocId, normalizeSpotifyUri } from './utils';

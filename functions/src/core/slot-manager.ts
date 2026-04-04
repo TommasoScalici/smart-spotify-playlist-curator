@@ -1,4 +1,4 @@
-import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { MandatoryTrack, normalizeSpotifyUri } from '@smart-spotify-curator/shared';
 
 import { MandatoryTrackPlacer } from './slots/mandatory-track-placer';
 import { PoolTrack, SelectionStrategy, SizeLimitStrategy } from './slots/selection-strategy';
@@ -18,7 +18,7 @@ export class SlotManager {
     sizeLimitStrategy: SizeLimitStrategy = 'drop_random'
   ): string[] {
     // 1. Prepare candidate pool first to determine available content
-    const mandatoryUris = new Set(mandatoryTracks.map((m) => m.uri));
+    const mandatoryUris = new Set(mandatoryTracks.map((m) => normalizeSpotifyUri(m.uri)));
     let pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
 
     // 2. Resize grid if we have fewer tracks than slots (Sparse Mode)

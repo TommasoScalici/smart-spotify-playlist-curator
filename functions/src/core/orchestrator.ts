@@ -1,4 +1,4 @@
-import { CurationDiff, PlaylistConfig } from '@smart-spotify-curator/shared';
+import { CurationDiff, normalizeSpotifyUri, PlaylistConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
 import { AiService } from '../services/ai-service';
@@ -191,7 +191,7 @@ export class PlaylistOrchestrator {
 
     const engine = new AISuggestionEngine(this.aiService, spotifyService, this.firestoreLogger);
 
-    const existingUris = new Set(session.currentTracks.map((t) => t.uri.toLowerCase()));
+    const existingUris = new Set(session.currentTracks.map((t) => normalizeSpotifyUri(t.uri)));
     const existingSignatures = session.currentTracks.map((t) =>
       `${t.artist} - ${t.name}`.toLowerCase()
     );

@@ -72,7 +72,7 @@ export class AISuggestionEngine {
 
       for (const res of results) {
         if (res && foundTracks.length < tracksNeeded) {
-          const spotifyUri = res.track.uri.toLowerCase();
+          const spotifyUri = res.track.uri;
 
           // Skip if track is already in the playlist OR already found in this run
           if (existingUris.has(spotifyUri) || foundUris.has(spotifyUri)) continue;

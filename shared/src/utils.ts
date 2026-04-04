@@ -9,5 +9,24 @@
  */
 export function getPlaylistDocId(spotifyUri: string): string {
   if (!spotifyUri) return '';
-  return spotifyUri.replace(/:/g, '_');
+  // Normalize then replace
+  return normalizeSpotifyUri(spotifyUri).replace(/:/g, '_');
+}
+
+/**
+ * Standardizes a Spotify URI by lowercasing the scheme and type parts
+ * while preserving the case of the ID (Spotify IDs are case-sensitive).
+ *
+ * Example: `Spotify:Track:ABC123` -> `spotify:track:ABC123`
+ */
+export function normalizeSpotifyUri(uri: string): string {
+  if (!uri) return '';
+  const parts = uri.split(':');
+  if (parts.length < 3) return uri; // Handle dummy values like 'm1' or 's1'
+
+  const scheme = parts[0].toLowerCase();
+  const type = parts[1].toLowerCase();
+  const id = parts.slice(2).join(':');
+
+  return `${scheme}:${type}:${id}`;
 }
