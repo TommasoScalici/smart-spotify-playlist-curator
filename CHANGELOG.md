@@ -1,3 +1,9 @@
+## [1.11.3](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.2...v1.11.3) (2026-04-04)
+
+### Bug Fixes
+
+- industrial-grade URI normalization and VIP protection ([a0ff9f8](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/a0ff9f8e0b3f1dc8a7541a8f4e22ce16afdda513))
+
 ## [1.11.2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.1...v1.11.2) (2026-04-04)
 
 ### Bug Fixes
