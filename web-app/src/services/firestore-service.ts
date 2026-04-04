@@ -1,6 +1,7 @@
 import {
   ActivityLog,
   ActivityLogSchema,
+  getPlaylistDocId,
   PlaylistConfig,
   PlaylistConfigSchema,
   SpotifyProfile
@@ -192,7 +193,7 @@ export const FirestoreService = {
       const playlistsRef = collection(db, 'users', uid, 'playlists');
       // Enforce deterministic ID based on Spotify URI if available
       if (config.id && config.id.startsWith('spotify:playlist:')) {
-        const deterministicId = config.id.replace(/:/g, '_');
+        const deterministicId = getPlaylistDocId(config.id);
         targetDocRef = doc(playlistsRef, deterministicId);
       } else {
         // Fallback or legacy check (optional, but good for safety)

@@ -49,3 +49,5 @@ export type {
   TriggerCurationRequest,
   UserProfile
 } from './schemas';
+
+export { getPlaylistDocId } from './utils';

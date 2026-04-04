@@ -31,7 +31,16 @@ async function main() {
   }
 
   const app = express();
-  const PORT = 8888;
+
+  // Extract port from Redirect URI
+  let PORT = 8888;
+  try {
+    const url = new URL(redirectUri);
+    PORT = parseInt(url.port) || (url.protocol === 'https:' ? 443 : 80);
+  } catch {
+    console.warn(`Invalid Redirect URI: ${redirectUri}, falling back to port 8888`);
+  }
+
   const state = randomBytes(16).toString('hex');
 
   app.get('/login', (_req: Request, res: Response) => {

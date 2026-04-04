@@ -1,4 +1,4 @@
-import { PlaylistMetricsSchema } from '@smart-spotify-curator/shared';
+import { getPlaylistDocId, PlaylistMetricsSchema } from '@smart-spotify-curator/shared';
 import { logger } from 'firebase-functions/v2';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
 import { z } from 'zod';
@@ -53,7 +53,12 @@ export async function getPlaylistMetricsHandler(
 
     // --- DATA REPAIR & METADATA SYNC ---
     // Always update imageUrl and owner to keep them fresh (Spotify CDN URLs can expire)
-    const playlistRef = db.collection('users').doc(uid).collection('playlists').doc(playlistId);
+    const deterministicId = getPlaylistDocId(playlistId);
+    const playlistRef = db
+      .collection('users')
+      .doc(uid)
+      .collection('playlists')
+      .doc(deterministicId);
     const playlistSnap = await playlistRef.get();
     let lastCuratedAt: null | string = null;
 

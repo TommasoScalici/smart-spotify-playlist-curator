@@ -6,6 +6,7 @@ import type {
   TriggerCurationRequest
 } from '@smart-spotify-curator/shared';
 
+import { getPlaylistDocId } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
 
@@ -127,8 +128,8 @@ export async function runOrchestrator(
 
   const results: OrchestrationResult['results'] = [];
 
-  const playlistIdRaw = config.id.replace('spotify:playlist:', '');
-  const playlistRef = db.doc(`users/${config.ownerId}/playlists/${playlistIdRaw}`);
+  const deterministicId = getPlaylistDocId(config.id);
+  const playlistRef = db.doc(`users/${config.ownerId}/playlists/${deterministicId}`);
 
   // CONCURRENCY LOCK (Distributed state via Firestore Transaction)
   try {

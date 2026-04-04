@@ -15,7 +15,8 @@ describe('Spotify Integration: Search', () => {
     service = new SpotifyService(process.env.SPOTIFY_REFRESH_TOKEN);
   });
 
-  const conditionalDescribe = process.env.SPOTIFY_CLIENT_ID ? describe : describe.skip;
+  const conditionalDescribe =
+    process.env.SPOTIFY_CLIENT_ID && process.env.SPOTIFY_REFRESH_TOKEN ? describe : describe.skip;
 
   conditionalDescribe('searchTrack', () => {
     it('should find exact matches for known tracks', async () => {
