@@ -22,8 +22,8 @@ export class SlotManager {
     let pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
 
     // 2. Resize grid if we have fewer tracks than slots (Sparse Mode)
-    // accessible content = unique mandatory + unique pool
-    const availableContentCount = mandatoryUris.size + pool.length;
+    // accessible content = total mandatory placements + available pool tracks
+    const availableContentCount = mandatoryTracks.length + pool.length;
     const effectiveTotalSlots = Math.min(totalSlots, availableContentCount);
 
     const playlist: (null | string)[] = new Array(effectiveTotalSlots).fill(null);

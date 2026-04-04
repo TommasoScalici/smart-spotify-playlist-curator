@@ -1,3 +1,4 @@
+import { normalizeSpotifyUri } from '@smart-spotify-curator/shared';
 import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
 import * as logger from 'firebase-functions/logger';
 
@@ -29,24 +30,29 @@ export class SpotifyPlaylistManager {
 
     const currentItems = await this.getAllPlaylistTracks(playlistIdClean);
     const currentUris = currentItems.map((item) => item.track.uri);
+    const currentUrisNormalized = currentUris.map((u) => normalizeSpotifyUri(u));
 
     try {
-      // 1. Calculate allowed frequencies from target list
-      const targetCounts = new Map<string, number>();
-      targetOrderedUris.forEach((uri) => targetCounts.set(uri, (targetCounts.get(uri) || 0) + 1));
+      // 1. Calculate allowed frequencies from target list (Using Normalized URIs)
+      const targetCountsNormalized = new Map<string, number>();
+      targetOrderedUris.forEach((uri) => {
+        const norm = normalizeSpotifyUri(uri);
+        targetCountsNormalized.set(norm, (targetCountsNormalized.get(norm) || 0) + 1);
+      });
 
       // 2. Identify exact track indices to remove (excess duplicates + completely removed tracks)
       const keptCounts = new Map<string, number>();
       const toRemove: { positions: number[]; uri: string }[] = [];
 
-      currentUris.forEach((uri, index) => {
-        const allowed = targetCounts.get(uri) || 0;
-        const currentKept = keptCounts.get(uri) || 0;
+      currentUrisNormalized.forEach((uriNormalized, index) => {
+        const allowed = targetCountsNormalized.get(uriNormalized) || 0;
+        const currentKept = keptCounts.get(uriNormalized) || 0;
 
         if (currentKept < allowed) {
-          keptCounts.set(uri, currentKept + 1);
+          keptCounts.set(uriNormalized, currentKept + 1);
         } else {
-          toRemove.push({ positions: [index], uri });
+          // Remove exact index using raw URI
+          toRemove.push({ positions: [index], uri: currentUris[index] });
         }
       });
 
@@ -58,19 +64,21 @@ export class SpotifyPlaylistManager {
 
       // 3. Identify exact tracks to add (respecting required frequencies)
       const missingCounts = new Map<string, number>();
-      targetCounts.forEach((allowed, uri) => {
-        const kept = keptCounts.get(uri) || 0;
+      targetCountsNormalized.forEach((allowed, uriNormalized) => {
+        const kept = keptCounts.get(uriNormalized) || 0;
         if (allowed > kept) {
-          missingCounts.set(uri, allowed - kept);
+          missingCounts.set(uriNormalized, allowed - kept);
         }
       });
 
+      // Find which tracks to add by checking target list order
       const toAdd: string[] = [];
       targetOrderedUris.forEach((uri) => {
-        const missing = missingCounts.get(uri) || 0;
+        const norm = normalizeSpotifyUri(uri);
+        const missing = missingCounts.get(norm) || 0;
         if (missing > 0) {
           toAdd.push(uri);
-          missingCounts.set(uri, missing - 1);
+          missingCounts.set(norm, missing - 1);
         }
       });
 
@@ -88,7 +96,10 @@ export class SpotifyPlaylistManager {
 
       for (let i = 0; i < targetOrderedUris.length; i++) {
         const targetUri = targetOrderedUris[i];
-        const actualIndex = finalUris.indexOf(targetUri, i);
+        const targetUriNorm = normalizeSpotifyUri(targetUri);
+
+        // Find current position using case-insensitive normalized comparison
+        const actualIndex = this.findActualIndex(finalUris, targetUriNorm, i);
 
         // Defensively check indices
         if (actualIndex !== i && actualIndex !== -1 && actualIndex < finalUris.length) {
@@ -104,7 +115,6 @@ export class SpotifyPlaylistManager {
               playlistLength: finalUris.length,
               targetIndex: i
             });
-            // Continue to next track instead of crashing the whole process
           }
         }
       }
@@ -149,6 +159,18 @@ export class SpotifyPlaylistManager {
         tracks: batch
       });
     }
+  }
+
+  /**
+   * Finds the first occurrence of a normalized URI in a list of raw URIs, starting from fromIndex.
+   */
+  private findActualIndex(uris: string[], targetNorm: string, fromIndex: number): number {
+    for (let i = fromIndex; i < uris.length; i++) {
+      if (normalizeSpotifyUri(uris[i]) === targetNorm) {
+        return i;
+      }
+    }
+    return -1;
   }
 
   private async getAllPlaylistTracks(playlistId: string): Promise<PlaylistItemResponse[]> {

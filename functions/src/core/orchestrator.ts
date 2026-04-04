@@ -176,9 +176,13 @@ export class PlaylistOrchestrator {
     if (!aiGeneration.enabled) return;
 
     // Calculate current fill (unique mandatory + surviving non-mandatory)
-    const mandatoryUris = new Set(session.config.mandatoryTracks.map((m) => m.uri));
-    const survivingNonMandatory = session.survivingTracks.filter((t) => !mandatoryUris.has(t.uri));
-    const currentFill = mandatoryUris.size + survivingNonMandatory.length;
+    const mandatoryUrisNormalized = new Set(
+      session.config.mandatoryTracks.map((m) => normalizeSpotifyUri(m.uri))
+    );
+    const survivingNonMandatory = session.survivingTracks.filter(
+      (t) => !mandatoryUrisNormalized.has(normalizeSpotifyUri(t.uri))
+    );
+    const currentFill = mandatoryUrisNormalized.size + survivingNonMandatory.length;
 
     const targetTotal = session.config.settings.targetTotalTracks;
     const neededToReachTarget = Math.max(0, targetTotal - currentFill);

@@ -1,4 +1,4 @@
-import { MandatoryTrack } from '@smart-spotify-curator/shared';
+import { MandatoryTrack, normalizeSpotifyUri } from '@smart-spotify-curator/shared';
 
 export class MandatoryTrackPlacer {
   public static place(
@@ -44,13 +44,30 @@ export class MandatoryTrackPlacer {
     }
 
     // Phase C: Fallback for unplaced tracks
-    const placedUris = new Set(playlist.filter((uri): uri is string => uri !== null));
+    const targetCount = new Map<string, number>();
+    for (const m of mandatoryTracks) {
+      const norm = normalizeSpotifyUri(m.uri);
+      targetCount.set(norm, (targetCount.get(norm) || 0) + 1);
+    }
+
+    const actualCount = new Map<string, number>();
+    playlist.forEach((uri) => {
+      if (uri !== null) {
+        const norm = normalizeSpotifyUri(uri);
+        actualCount.set(norm, (actualCount.get(norm) || 0) + 1);
+      }
+    });
+
     for (const meta of mandatoryTracks) {
-      if (!placedUris.has(meta.uri)) {
+      const norm = normalizeSpotifyUri(meta.uri);
+      const target = targetCount.get(norm) || 1; // At least one
+      const current = actualCount.get(norm) || 0;
+
+      if (current < target) {
         const emptyIndex = playlist.indexOf(null);
         if (emptyIndex !== -1) {
           playlist[emptyIndex] = meta.uri;
-          placedUris.add(meta.uri);
+          actualCount.set(norm, current + 1);
         }
       }
     }
