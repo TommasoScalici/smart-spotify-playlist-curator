@@ -1,3 +1,9 @@
+## [1.11.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.0...v1.11.1) (2026-04-04)
+
+### Bug Fixes
+
+- standardize playlist document ID generation and resolve auth script port mismatch ([3985165](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/3985165515f693a0963d9f26f7e53ae8255626ec))
+
 # [1.11.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.10.0...v1.11.0) (2026-04-02)
 
 ### Bug Fixes
