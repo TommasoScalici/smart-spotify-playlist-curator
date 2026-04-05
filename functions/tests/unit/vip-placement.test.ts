@@ -3,10 +3,10 @@ import { describe, expect, it } from 'vitest';
 
 import { SlotManager } from '../../src/core/slot-manager';
 
-describe('VIP Placement Regression: Case Sensitivity & Swap Protection', () => {
+describe('VIP Track Placement', () => {
   const slotManager = new SlotManager();
 
-  it('should protect VIP tracks from being swapped even with mixed-case URIs', () => {
+  it('should protect mandatory tracks from being swapped during shuffle', () => {
     // 1. Setup a VIP track with a specific case in config
     const vipUri = 'spotify:track:VipTrackID_MixedCase';
     const mandatory: MandatoryTrack[] = [
@@ -55,7 +55,7 @@ describe('VIP Placement Regression: Case Sensitivity & Swap Protection', () => {
     }
   });
 
-  it('should NOT move a VIP track to position 52 if it belongs in 1-10', () => {
+  it('should ensure mandatory tracks remain within their designated position ranges', () => {
     const vipUri = 'spotify:track:VIP_1_10';
     const mandatory: MandatoryTrack[] = [{ positionRange: { max: 10, min: 1 }, uri: vipUri }];
 

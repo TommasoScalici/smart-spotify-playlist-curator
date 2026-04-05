@@ -1,4 +1,8 @@
-import { CurationEstimate, PlaylistConfig } from '@smart-spotify-curator/shared';
+import {
+  CurationEstimate,
+  normalizeSpotifyUri,
+  PlaylistConfig
+} from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -61,21 +65,23 @@ export class CurationEstimator {
       (t) => t.reason === 'unsupported_format'
     ).length;
 
-    const aiUris = new Set(newAiTracks.map((t) => t.uri.toLowerCase()));
-    const mandatoryUris = new Set(sessionConfig.mandatoryTracks.map((t) => t.uri.toLowerCase()));
+    const aiUris = new Set(newAiTracks.map((t) => normalizeSpotifyUri(t.uri)));
+    const mandatoryUris = new Set(
+      sessionConfig.mandatoryTracks.map((t) => normalizeSpotifyUri(t.uri))
+    );
 
     let aiAddedCount = 0;
     let mandatoryAddedCount = 0;
 
     for (const added of diff.added) {
-      const uri = added.uri.toLowerCase();
+      const uri = normalizeSpotifyUri(added.uri);
       if (aiUris.has(uri)) aiAddedCount++;
       else if (mandatoryUris.has(uri)) mandatoryAddedCount++;
     }
 
     const annotatedAdded = diff.added.map((added) => {
       let source: 'ai' | 'mandatory' | undefined;
-      const uri = added.uri.toLowerCase();
+      const uri = normalizeSpotifyUri(added.uri);
       if (aiUris.has(uri)) source = 'ai';
       else if (mandatoryUris.has(uri)) source = 'mandatory';
       return { ...added, source };

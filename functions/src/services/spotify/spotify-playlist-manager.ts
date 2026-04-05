@@ -28,6 +28,19 @@ export class SpotifyPlaylistManager {
   public async performSmartUpdate(playlistId: string, targetOrderedUris: string[]): Promise<void> {
     const playlistIdClean = playlistId.replace('spotify:playlist:', '');
 
+    // Safety: Deduplicate target list (defense-in-depth against upstream bugs)
+    const seenNormalized = new Set<string>();
+    const deduplicatedTarget: string[] = [];
+    for (const uri of targetOrderedUris) {
+      const norm = normalizeSpotifyUri(uri);
+      if (!seenNormalized.has(norm)) {
+        seenNormalized.add(norm);
+        deduplicatedTarget.push(uri);
+      } else {
+        logger.warn(`Duplicate URI detected in target list, removing: ${uri}`);
+      }
+    }
+
     const currentItems = await this.getAllPlaylistTracks(playlistIdClean);
     const currentUris = currentItems.map((item) => item.track.uri);
     const currentUrisNormalized = currentUris.map((u) => normalizeSpotifyUri(u));
@@ -35,7 +48,7 @@ export class SpotifyPlaylistManager {
     try {
       // 1. Calculate allowed frequencies from target list (Using Normalized URIs)
       const targetCountsNormalized = new Map<string, number>();
-      targetOrderedUris.forEach((uri) => {
+      deduplicatedTarget.forEach((uri) => {
         const norm = normalizeSpotifyUri(uri);
         targetCountsNormalized.set(norm, (targetCountsNormalized.get(norm) || 0) + 1);
       });
@@ -73,7 +86,7 @@ export class SpotifyPlaylistManager {
 
       // Find which tracks to add by checking target list order
       const toAdd: string[] = [];
-      targetOrderedUris.forEach((uri) => {
+      deduplicatedTarget.forEach((uri) => {
         const norm = normalizeSpotifyUri(uri);
         const missing = missingCounts.get(norm) || 0;
         if (missing > 0) {
@@ -91,11 +104,11 @@ export class SpotifyPlaylistManager {
       const finalUris = finalStateItems.map((t) => t.track.uri);
 
       logger.info(
-        `Synchronizing playlist ${playlistIdClean}: ${finalUris.length} tracks actual vs ${targetOrderedUris.length} target.`
+        `Synchronizing playlist ${playlistIdClean}: ${finalUris.length} tracks actual vs ${deduplicatedTarget.length} target.`
       );
 
-      for (let i = 0; i < targetOrderedUris.length; i++) {
-        const targetUri = targetOrderedUris[i];
+      for (let i = 0; i < deduplicatedTarget.length; i++) {
+        const targetUri = deduplicatedTarget[i];
         const targetUriNorm = normalizeSpotifyUri(targetUri);
 
         // Find current position using case-insensitive normalized comparison
@@ -146,6 +159,13 @@ export class SpotifyPlaylistManager {
     }
   }
 
+  /**
+   * Removes multiple tracks from a playlist using their exact positions.
+   * NOTE: For this to work correctly across batches, the 'tracks' array MUST be
+   * sorted in descending order of position globally BEFORE calling this method.
+   * This ensures that removing a track at index 150 (Batch 1) does not shift the
+   * position of a track at index 50 (Batch 2).
+   */
   public async removeTracksWithPositions(
     playlistId: string,
     tracks: { positions: number[]; uri: string }[]

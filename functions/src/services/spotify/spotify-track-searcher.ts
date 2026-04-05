@@ -1,5 +1,6 @@
 import { SearchResult, TrackInfo } from '@smart-spotify-curator/shared';
 import { MaxInt, SpotifyApi } from '@spotify/web-api-ts-sdk';
+import * as logger from 'firebase-functions/logger';
 
 interface SpotifySearchItem {
   added_at: string;
@@ -36,6 +37,12 @@ export class SpotifyTrackSearcher {
       1 as MaxInt<50>,
       Math.max(0, totalTracks - 1)
     );
+
+    if (!lastTrackBatch.items[0]) {
+      logger.warn(
+        `Failed to fetch latest track for playlist ${playlistId}. Curation state might be inconsistent if tracks were added/removed recently.`
+      );
+    }
 
     return lastTrackBatch.items[0]?.added_at || null;
   }

@@ -257,7 +257,10 @@ export const TrackListSettings = ({ control, errors, setValue }: TrackListSettin
           </div>
           <Button
             className="w-full sm:w-auto"
-            onClick={() => append({ positionRange: { max: 1, min: 1 }, uri: '' })}
+            onClick={() => {
+              const nextPos = fields.length + 1;
+              append({ positionRange: { max: nextPos, min: nextPos }, uri: '' });
+            }}
             size="sm"
             type="button"
             variant="secondary"

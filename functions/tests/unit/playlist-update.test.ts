@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { SpotifyPlaylistManager } from '../../src/services/spotify/spotify-playlist-manager';
 
-describe('SpotifyPlaylistManager: Smart Update Normalization', () => {
+describe('SpotifyPlaylistManager: Smart Update', () => {
   let manager: SpotifyPlaylistManager;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let mockSpotify: any;

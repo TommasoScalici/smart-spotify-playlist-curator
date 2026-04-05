@@ -19,7 +19,9 @@ export class SlotManager {
   ): string[] {
     // 1. Prepare candidate pool first to determine available content
     const mandatoryUris = new Set(mandatoryTracks.map((m) => normalizeSpotifyUri(m.uri)));
-    let pool = [...survivorTracks, ...newAiTracks].filter((t) => !mandatoryUris.has(t.uri));
+    let pool = [...survivorTracks, ...newAiTracks].filter(
+      (t) => !mandatoryUris.has(normalizeSpotifyUri(t.uri))
+    );
 
     // 2. Resize grid if we have fewer tracks than slots (Sparse Mode)
     // accessible content = total mandatory placements + available pool tracks
@@ -40,7 +42,7 @@ export class SlotManager {
     }
 
     // 4. Shuffle Fill Logic
-    const aiTrackUris = new Set(newAiTracks.map((t) => t.uri));
+    const aiTrackUris = new Set(newAiTracks.map((t) => normalizeSpotifyUri(t.uri)));
     const allTracksLookup = [...survivorTracks, ...newAiTracks];
 
     return SlotFiller.fillWithShuffle(playlist, pool, aiTrackUris, allTracksLookup, mandatoryUris);

@@ -16,10 +16,15 @@ export type TrackInfo = z.infer<typeof TrackInfoSchema>;
 
 // --- Sub-schemas ---
 
-export const PositionRangeSchema = z.object({
-  max: z.number().min(1),
-  min: z.number().min(1)
-});
+export const PositionRangeSchema = z
+  .object({
+    max: z.number().min(1),
+    min: z.number().min(1)
+  })
+  .refine((data) => data.min <= data.max, {
+    message: 'Min position must be less than or equal to max position',
+    path: ['min']
+  });
 
 export const MandatoryTrackSchema = z.object({
   artist: z.string().optional(),

@@ -1,4 +1,4 @@
-import { MandatoryTrack, TrackInfo } from '@smart-spotify-curator/shared';
+import { MandatoryTrack, normalizeSpotifyUri, TrackInfo } from '@smart-spotify-curator/shared';
 import { describe, expect, it } from 'vitest';
 
 import { DiffCalculator } from '../../src/core/diff-calculator';
@@ -143,5 +143,62 @@ describe('DiffCalculator', () => {
     const result = DiffCalculator.calculate(current, kept, finalUris, [], [], reasons);
 
     expect(result.removed[0].reason).toBe('duplicate');
+  });
+
+  describe('URI Normalization & Case Sensitivity', () => {
+    it('should correctly identify added tracks despite prefix casing differences', () => {
+      const kept = [createKeptTrack('ConsistentID', 'Track', 'Artist')];
+      const finalUris = [
+        'Spotify:Track:ConsistentID', // Different prefix casing, same ID
+        'spotify:track:NewTrack'
+      ];
+
+      const result = DiffCalculator.calculate(
+        [],
+        kept,
+        finalUris,
+        [],
+        [{ artist: 'Artist', track: 'New Track', uri: 'spotify:track:NewTrack' }]
+      );
+
+      // 'Spotify:Track:ConsistentID' should be considered KEPT because it matches 'spotify:track:ConsistentID' normalized
+      expect(result.added).toHaveLength(1);
+      expect(result.added[0].uri).toBe('spotify:track:NewTrack');
+    });
+
+    it('should correctly identify kept mandatory tracks despite prefix casing differences', () => {
+      const mandatory: MandatoryTrack[] = [
+        {
+          artist: 'Artist',
+          name: 'VIP',
+          positionRange: { max: 1, min: 1 },
+          uri: 'spotify:track:VipID'
+        }
+      ];
+      const finalUris = [
+        'Spotify:Track:VipID' // Different prefix casing
+      ];
+
+      const result = DiffCalculator.calculate([], [], finalUris, mandatory, []);
+
+      expect(result.keptMandatory).toHaveLength(1);
+      expect(normalizeSpotifyUri(result.keptMandatory[0].uri)).toBe(
+        normalizeSpotifyUri('spotify:track:VipID')
+      );
+    });
+
+    it('should treat different track ID casing as distinct tracks (IDs are case-sensitive)', () => {
+      const current = [createSpotifyTrack('caseid', 'Lower', 'A1')];
+      const kept = [createKeptTrack('caseid', 'Lower', 'A1')];
+      const finalUris = ['spotify:track:CASEID']; // Different ID casing = Different Track
+
+      const result = DiffCalculator.calculate(current, kept, finalUris, [], []);
+
+      // Original lower track was removed, upper track was added
+      expect(result.removed).toHaveLength(1);
+      expect(result.added).toHaveLength(1);
+      expect(result.removed[0].uri).toBe('spotify:track:caseid');
+      expect(result.added[0].uri).toBe('spotify:track:CASEID');
+    });
   });
 });

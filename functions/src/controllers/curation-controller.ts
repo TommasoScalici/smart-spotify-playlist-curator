@@ -10,7 +10,7 @@ import { getPlaylistDocId } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
 
-import { db } from '../config/firebase.js';
+import { db, FieldValue } from '../config/firebase.js';
 import { CurationSession } from '../core/curation/curation-session.js';
 import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
 
@@ -141,7 +141,18 @@ export async function runOrchestrator(
 
       const data = doc.data();
       if (data?.curationLockTimestamp) {
-        const lockTime = new Date(data.curationLockTimestamp).getTime();
+        let lockTime: number;
+
+        // Handle both legacy string timestamps and new Firestore Timestamp objects
+        if (typeof data.curationLockTimestamp === 'string') {
+          lockTime = new Date(data.curationLockTimestamp).getTime();
+        } else if (data.curationLockTimestamp.toMillis) {
+          lockTime = data.curationLockTimestamp.toMillis();
+        } else {
+          // Fallback if it's some other format
+          lockTime = 0;
+        }
+
         const now = Date.now();
         // 10 minutes timeout = 600000 ms to prevent zombie locks
         if (now - lockTime < 600_000) {
@@ -151,7 +162,7 @@ export async function runOrchestrator(
         }
       }
 
-      transaction.update(playlistRef, { curationLockTimestamp: new Date().toISOString() });
+      transaction.update(playlistRef, { curationLockTimestamp: FieldValue.serverTimestamp() });
     });
   } catch (err: unknown) {
     if (err instanceof Error && err.message === 'CONCURRENCY_ABORT') {

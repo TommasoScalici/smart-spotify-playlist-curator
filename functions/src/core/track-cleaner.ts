@@ -1,4 +1,4 @@
-import { PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
+import { normalizeSpotifyUri, PlaylistConfig, TrackInfo } from '@smart-spotify-curator/shared';
 
 import { TrackWithMeta } from './types-internal';
 
@@ -35,7 +35,7 @@ export class TrackCleaner {
     const { curationRules } = config;
     const now = Date.now();
     const maxAgeMs = curationRules.maxTrackAgeDays * 24 * 60 * 60 * 1000;
-    const vipSet = new Set(vipUris);
+    const vipSet = new Set(vipUris.map((u) => normalizeSpotifyUri(u)));
 
     const survivingTracks: TrackWithMeta[] = [];
     const removedTracks: RemovedTrack[] = [];
@@ -61,10 +61,12 @@ export class TrackCleaner {
       const normalizedAlbum = item.album.toLowerCase().replace(/\s+/g, ' ').trim();
       const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
 
+      const normalizedUri = normalizeSpotifyUri(item.uri);
+
       // 1. Deduplication (Same URI or Same Metadata Signature)
       if (
         curationRules.removeDuplicates &&
-        (seenUris.has(item.uri) || seenSignatures.has(signature))
+        (seenUris.has(normalizedUri) || seenSignatures.has(signature))
       ) {
         removedTracks.push({
           artist: item.artist,
@@ -74,10 +76,10 @@ export class TrackCleaner {
         });
         continue;
       }
-      seenUris.add(item.uri);
+      seenUris.add(normalizedUri);
       seenSignatures.add(signature);
 
-      const isVip = vipSet.has(item.uri);
+      const isVip = vipSet.has(normalizeSpotifyUri(item.uri));
       const addedAtTime = new Date(item.addedAt).getTime();
 
       // 2. Age Check (Protect VIPs)

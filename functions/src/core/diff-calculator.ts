@@ -1,4 +1,10 @@
-import { BaseTrack, MandatoryTrack, TrackDiff, TrackInfo } from '@smart-spotify-curator/shared';
+import {
+  BaseTrack,
+  MandatoryTrack,
+  normalizeSpotifyUri,
+  TrackDiff,
+  TrackInfo
+} from '@smart-spotify-curator/shared';
 
 import { TrackWithMeta } from './types-internal';
 
@@ -25,13 +31,17 @@ export class DiffCalculator {
     >
   ): DiffResult {
     // 1. Identify Added URIs
-    const survivorUris = new Set(keptTracks.map((t) => t.uri));
-    const tracksToAddUris = finalTrackListUris.filter((uri) => !survivorUris.has(uri));
+    const survivorUris = new Set(keptTracks.map((t) => normalizeSpotifyUri(t.uri)));
+    const tracksToAddUris = finalTrackListUris.filter(
+      (uri) => !survivorUris.has(normalizeSpotifyUri(uri))
+    );
 
     // 2. Resolve Added Metadata
     const added: TrackDiff[] = tracksToAddUris.map((uri) => {
       // Priority 1: AI Tracks (Most likely source of newness)
-      const aiMatch = newAiTracks.find((t) => t.uri === uri);
+      const aiMatch = newAiTracks.find(
+        (t) => normalizeSpotifyUri(t.uri) === normalizeSpotifyUri(uri)
+      );
       if (aiMatch) {
         return {
           artist: aiMatch.artist,
@@ -42,7 +52,9 @@ export class DiffCalculator {
       }
 
       // Priority 2: Mandatory Tracks (If they were missing and got re-added)
-      const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
+      const vipMatch = mandatoryTracks.find(
+        (t) => normalizeSpotifyUri(t.uri) === normalizeSpotifyUri(uri)
+      );
       if (vipMatch) {
         return {
           artist: vipMatch.artist || 'Unknown Artist',
@@ -64,20 +76,26 @@ export class DiffCalculator {
     // 3. Identify Removed URIs (Accounting for Duplicates)
     // We compare counts in the original vs final list
     const finalCounts = new Map<string, number>();
-    finalTrackListUris.forEach((uri) => finalCounts.set(uri, (finalCounts.get(uri) || 0) + 1));
+    finalTrackListUris.forEach((uri) => {
+      const norm = normalizeSpotifyUri(uri);
+      finalCounts.set(norm, (finalCounts.get(norm) || 0) + 1);
+    });
 
     const currentCounts = new Map<string, number>();
-    currentTracks.forEach((t) => currentCounts.set(t.uri, (currentCounts.get(t.uri) || 0) + 1));
+    currentTracks.forEach((t) => {
+      const norm = normalizeSpotifyUri(t.uri);
+      currentCounts.set(norm, (currentCounts.get(norm) || 0) + 1);
+    });
 
     const removed: TrackDiff[] = [];
     const processedUris = new Set<string>();
 
     currentTracks.forEach((t) => {
-      if (processedUris.has(t.uri)) return;
-      processedUris.add(t.uri);
+      if (processedUris.has(normalizeSpotifyUri(t.uri))) return;
+      processedUris.add(normalizeSpotifyUri(t.uri));
 
-      const cCount = currentCounts.get(t.uri) || 0;
-      const fCount = finalCounts.get(t.uri) || 0;
+      const cCount = currentCounts.get(normalizeSpotifyUri(t.uri)) || 0;
+      const fCount = finalCounts.get(normalizeSpotifyUri(t.uri)) || 0;
       const removedCount = Math.max(0, cCount - fCount);
 
       if (removedCount > 0) {
@@ -97,11 +115,13 @@ export class DiffCalculator {
     });
 
     // 5. Identify Kept Mandatory Tracks
-    const finalSet = new Set(finalTrackListUris);
-    const keptMandatoryUris = mandatoryTracks.map((m) => m.uri).filter((uri) => finalSet.has(uri));
+    const finalSet = new Set(finalTrackListUris.map((u) => normalizeSpotifyUri(u)));
+    const keptMandatoryUris = mandatoryTracks
+      .map((m) => normalizeSpotifyUri(m.uri))
+      .filter((uri) => finalSet.has(uri));
 
     const keptMandatory = keptMandatoryUris.map((uri) => {
-      const vipMatch = mandatoryTracks.find((t) => t.uri === uri);
+      const vipMatch = mandatoryTracks.find((t) => normalizeSpotifyUri(t.uri) === uri);
       return {
         artist: vipMatch?.artist || 'Unknown Artist',
         name: vipMatch?.name || 'Unknown Track',

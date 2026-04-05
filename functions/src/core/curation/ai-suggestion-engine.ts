@@ -1,4 +1,8 @@
-import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
+import {
+  AiGenerationConfig,
+  normalizeSpotifyUri,
+  SearchResult
+} from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
 import { AiService } from '../../services/ai-service';
@@ -73,9 +77,10 @@ export class AISuggestionEngine {
       for (const res of results) {
         if (res && foundTracks.length < tracksNeeded) {
           const spotifyUri = res.track.uri;
+          const normalizedUri = normalizeSpotifyUri(spotifyUri);
 
           // Skip if track is already in the playlist OR already found in this run
-          if (existingUris.has(spotifyUri) || foundUris.has(spotifyUri)) continue;
+          if (existingUris.has(normalizedUri) || foundUris.has(normalizedUri)) continue;
 
           // Double check artist limit with Spotify's normalized artist name
           const spotifyArtist = res.track.artist.split(',')[0].toLowerCase().trim();
@@ -86,9 +91,9 @@ export class AISuggestionEngine {
             artist: res.track.artist,
             popularity: res.track.popularity,
             track: res.track.name,
-            uri: res.track.uri
+            uri: spotifyUri // Original URI is fine for adding
           });
-          foundUris.add(spotifyUri);
+          foundUris.add(normalizedUri);
           artistCounts[spotifyArtist] = (artistCounts[spotifyArtist] || 0) + 1;
         }
       }

@@ -32,12 +32,21 @@ export class SlotFiller {
     const topSlotsLimit = 30;
     const result = [...playlist];
 
+    // Record which indices in the grid were placed by MandatoryTrackPlacer.
+    // These indices are LOCKED — no swap may touch them.
+    const vipIndices = new Set<number>();
+    for (let i = 0; i < result.length; i++) {
+      if (result[i] !== null && mandatoryUris.has(normalizeSpotifyUri(result[i]!))) {
+        vipIndices.add(i);
+      }
+    }
+
     // 1. Separate AI tracks for top-30 prioritization
     const normalizedAiUris = new Set([...aiTrackUris].map((u) => normalizeSpotifyUri(u)));
     const aiPool = pool.filter((p) => normalizedAiUris.has(normalizeSpotifyUri(p.uri)));
     const nonAiPool = pool.filter((p) => !normalizedAiUris.has(normalizeSpotifyUri(p.uri)));
 
-    // A. Prioritize AI tracks in top 30
+    // A. Prioritize AI tracks in top 30 (skip VIP-locked slots)
     for (let i = 0; i < Math.min(topSlotsLimit, totalSlots); i++) {
       if (result[i] === null && aiPool.length > 0) {
         const track = aiPool.shift();
@@ -81,8 +90,12 @@ export class SlotFiller {
 
     const finalResult = result.filter((uri): uri is string => uri !== null);
 
-    // 4. Post-processing: Remove adjacent tracks by the same artist
+    // 4. Post-processing: Remove adjacent tracks by the same artist.
+    // CRITICAL: Never swap a track at a VIP-locked index.
     for (let i = 1; i < finalResult.length; i++) {
+      // Skip if either position is VIP-locked
+      if (vipIndices.has(i) || vipIndices.has(i - 1)) continue;
+
       const prevUri = finalResult[i - 1];
       const currUri = finalResult[i];
 
@@ -94,11 +107,10 @@ export class SlotFiller {
         for (let j = 0; j < finalResult.length; j++) {
           if (i === j || j === i - 1) continue;
 
+          // Never swap into or out of a VIP-locked index
+          if (vipIndices.has(j)) continue;
+
           const swapUri = finalResult[j];
-          const normalizedSwapUri = normalizeSpotifyUri(swapUri);
-          const normalizedCurrUri = normalizeSpotifyUri(currUri);
-          if (mandatoryUris.has(normalizedSwapUri) || mandatoryUris.has(normalizedCurrUri))
-            continue; // Don't swap VIPs!
 
           const swapArtist = allTracks.find((t) => t.uri === swapUri)?.artist;
           if (!swapArtist) continue;
