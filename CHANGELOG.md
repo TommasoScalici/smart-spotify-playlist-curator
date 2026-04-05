@@ -1,3 +1,9 @@
+# [1.12.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.3...v1.12.0) (2026-04-05)
+
+### Features
+
+- fix URI normalization in Diff/Cleaner/AI, add PositionRange validation, auto-increment VIP UI defaults, use serverTimestamp for curation lock, and refactor test suite names/structure ([96b81b2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/96b81b2f554372502bbf2132d9bc0cb5b6f2d009))
+
 ## [1.11.3](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.2...v1.11.3) (2026-04-04)
 
 ### Bug Fixes
