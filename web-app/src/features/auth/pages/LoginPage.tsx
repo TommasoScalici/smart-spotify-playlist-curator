@@ -2,7 +2,7 @@ import { Music } from 'lucide-react';
 
 import { GoogleIcon } from '@/components/common/GoogleIcon';
 import { Button } from '@/components/ui/button';
-import { useLogin } from '@/hooks/useLogin';
+import { useLogin } from '@/features/auth/hooks/useLogin';
 
 export default function Login() {
   const { error, handleLogin, user } = useLogin();

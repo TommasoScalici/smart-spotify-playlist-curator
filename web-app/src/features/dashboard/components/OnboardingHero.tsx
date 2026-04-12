@@ -11,9 +11,8 @@ import {
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { useSpotifyAuth } from '@/features/auth/hooks/useSpotifyAuth';
 import { cn } from '@/lib/utils';
-
-import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
 
 export const OnboardingHero = () => {
   const { login } = useSpotifyAuth();

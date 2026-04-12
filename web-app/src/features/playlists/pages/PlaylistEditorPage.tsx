@@ -1,70 +1,16 @@
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'sonner';
+import { useParams } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConfigEditor } from '@/features/playlists/components/ConfigEditor';
-
-import { useAuth } from '../contexts/AuthContext';
-import { FirestoreService } from '../services/firestore-service';
+import { usePlaylistEditor } from '@/features/playlists/hooks/usePlaylistEditor';
 
 export default function EditPlaylist() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { user } = useAuth();
-  const [loading, setLoading] = useState(true);
-  const [config, setConfig] = useState<PlaylistConfig | undefined>(undefined);
-  const [isNew, setIsNew] = useState(false);
 
-  const loadConfig = useCallback(
-    async (docId: string, uid: string) => {
-      try {
-        setLoading(true);
-        const playlist = await FirestoreService.getUserPlaylistById(uid, docId);
-        if (playlist) {
-          setConfig(playlist);
-        } else {
-          toast.error('Playlist not found', {
-            description: 'The requested playlist configuration could not be loaded.'
-          });
-          navigate('/');
-        }
-      } catch {
-        toast.error('Error loading playlist', {
-          description: 'Please check your internet connection and try again.'
-        });
-      } finally {
-        setLoading(false);
-      }
-    },
-    [navigate]
-  );
-
-  useEffect(() => {
-    if (!user) return;
-
-    if (id === 'new') {
-      setIsNew(true);
-      setLoading(false);
-    } else if (id) {
-      loadConfig(id, user.uid);
-    }
-  }, [id, user, loadConfig]);
-
-  const handleSave = async (data: PlaylistConfig) => {
-    if (!user) return;
-
-    toast.promise(FirestoreService.saveUserPlaylist(user.uid, data, isNew ? undefined : id), {
-      error: 'Failed to save playlist. Please try again.',
-      loading: 'Saving configuration...',
-      success: () => {
-        navigate('/');
-        return 'Playlist saved successfully! 💾';
-      }
-    });
-  };
+  const { config, handleCancel, handleSave, isNew, loading } = usePlaylistEditor(id, user?.uid);
 
   if (loading) {
     return (
@@ -80,7 +26,7 @@ export default function EditPlaylist() {
       <div className="flex flex-col gap-2 select-none">
         <Button
           className="hover:text-primary text-muted-foreground -ml-4 w-fit pl-0 transition-colors hover:bg-transparent"
-          onClick={() => navigate('/')}
+          onClick={handleCancel}
           variant="ghost"
         >
           <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
@@ -104,7 +50,7 @@ export default function EditPlaylist() {
         <ConfigEditor
           initialConfig={config}
           isAddMode={isNew}
-          onCancel={() => navigate('/')}
+          onCancel={handleCancel}
           onSubmit={handleSave}
         />
       </div>

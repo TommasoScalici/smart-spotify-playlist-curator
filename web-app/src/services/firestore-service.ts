@@ -22,7 +22,8 @@ import {
   writeBatch
 } from 'firebase/firestore';
 
-import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '../mocks/spotify-mock-data';
+import { MOCK_PLAYLISTS, MOCK_SPOTIFY_PROFILE } from '@/test/mocks/spotify-mock-data';
+
 import { db } from './firebase';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';

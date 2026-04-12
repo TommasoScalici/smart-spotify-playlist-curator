@@ -2,7 +2,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, Save } from 'lucide-react';
-import { useEffect } from 'react';
 import { FieldErrors, Resolver, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -12,8 +11,8 @@ import { DEFAULT_PLAYLIST_CONFIG } from '@/constants/defaults';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
 import { FirestoreService } from '@/services/firestore-service';
-import { FunctionsService } from '@/services/functions-service';
 
+import { usePlaylistSync } from '../hooks/usePlaylistSync';
 import { AiSettings } from './config/AiSettings';
 import { BasicSettings } from './config/BasicSettings';
 import { RulesSettings } from './config/RulesSettings';
@@ -111,37 +110,17 @@ export const ConfigEditor = ({
   };
 
   // --- Playlist Meta Sync Logic ---
-
   const playlistId = useWatch({ control, name: 'id' });
   const playlistName = useWatch({ control, name: 'name' });
   const imageUrl = useWatch({ control, name: 'imageUrl' });
 
-  // Fetch playlist meta if we have ID but missing name or image
-  const shouldFetchPlaylist =
-    !!playlistId && playlistId.startsWith('spotify:playlist:') && (!playlistName || !imageUrl);
-
-  const { data: fetchedPlaylist } = useQuery({
-    enabled: shouldFetchPlaylist,
-    queryFn: async () => {
-      if (!playlistId) return null;
-      const results = await FunctionsService.searchSpotify(playlistId, 'playlist');
-      return results && results.length > 0 ? results[0] : null;
-    },
-    queryKey: ['spotify', 'playlist', playlistId],
-    staleTime: 1000 * 60 * 30 // 30 mins
+  usePlaylistSync({
+    getValues,
+    imageUrl,
+    playlistId,
+    playlistName,
+    setValue
   });
-
-  // Basic one-way sync
-  useEffect(() => {
-    if (fetchedPlaylist) {
-      if (!getValues('name')) {
-        setValue('name', fetchedPlaylist.name);
-      }
-      if (!getValues('imageUrl')) {
-        setValue('imageUrl', fetchedPlaylist.imageUrl);
-      }
-    }
-  }, [fetchedPlaylist, getValues, setValue]);
 
   return (
     <form

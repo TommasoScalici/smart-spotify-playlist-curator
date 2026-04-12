@@ -2,7 +2,7 @@ import { SpotifyTokens, SpotifyTokensSchema } from '@smart-spotify-curator/share
 import { AccessToken, IAuthStrategy, SdkConfiguration, SpotifyApi } from '@spotify/web-api-ts-sdk';
 import * as logger from 'firebase-functions/logger';
 
-import { config as env } from '../../config/env';
+import { config as env } from '../../admin/env.js';
 
 export class SpotifyAuthManager implements IAuthStrategy {
   private accessToken: null | string = null;

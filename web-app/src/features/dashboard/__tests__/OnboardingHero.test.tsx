@@ -2,11 +2,12 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { useSpotifyAuth } from '../../../hooks/useSpotifyAuth';
+import { useSpotifyAuth } from '@/features/auth/hooks/useSpotifyAuth';
+
 import { OnboardingHero } from '../components/OnboardingHero';
 
 // Mock dependencies
-vi.mock('../../../hooks/useSpotifyAuth');
+vi.mock('@/features/auth/hooks/useSpotifyAuth');
 vi.mock('@/components/ui/button', () => ({
   Button: ({
     children,

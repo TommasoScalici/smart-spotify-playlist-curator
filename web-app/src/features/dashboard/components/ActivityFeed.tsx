@@ -17,7 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { ActivityDiffModal } from '@/features/dashboard/components/ActivityDiffModal';
-import { ActivityLog, useActivityFeed } from '@/hooks/useActivityFeed';
+import { ActivityLog, useActivityFeed } from '@/features/dashboard/hooks/useActivityFeed';
 import { cn } from '@/lib/utils';
 import { FirestoreService } from '@/services/firestore-service';
 

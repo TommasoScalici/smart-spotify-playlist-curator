@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
+import { ActivityLog } from '@/features/dashboard/hooks/useActivityFeed';
 import { DiffViewer } from '@/features/playlists/components/DiffViewer';
-import { ActivityLog } from '@/hooks/useActivityFeed';
 
 interface ActivityDiffModalProps {
   activity: ActivityLog | null;

@@ -4,14 +4,14 @@ import { User } from 'firebase/auth';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { AuthContext } from '../contexts/AuthContext';
-import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
-import Dashboard from '../pages/Dashboard';
-import { FirestoreService } from '../services/firestore-service';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useSpotifyStatus } from '@/features/auth/hooks/useSpotifyStatus';
+import Dashboard from '@/features/dashboard/pages/DashboardPage';
+import { FirestoreService } from '@/services/firestore-service';
 
 // Mocks
-vi.mock('../services/firestore-service');
-vi.mock('../hooks/useSpotifyStatus');
+vi.mock('@/services/firestore-service');
+vi.mock('@/features/auth/hooks/useSpotifyStatus');
 vi.mock('@/features/dashboard/components/OnboardingHero', () => ({
   OnboardingHero: () => <div data-testid="onboarding-hero">Onboarding</div>
 }));

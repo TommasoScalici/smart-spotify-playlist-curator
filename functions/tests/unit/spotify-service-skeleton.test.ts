@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SpotifyService } from '../../src/services/spotify-service';
 
 // Mock Config
-vi.mock('../../src/config/env', () => ({
+vi.mock('../../src/admin/env', () => ({
   config: {
     SPOTIFY_CLIENT_ID: 'test-client',
     SPOTIFY_CLIENT_SECRET: 'test-secret',

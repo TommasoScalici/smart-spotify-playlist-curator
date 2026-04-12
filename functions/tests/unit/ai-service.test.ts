@@ -25,7 +25,7 @@ vi.mock('@google/generative-ai', () => ({
 vi.mock('firebase-functions/logger');
 
 // Mock config to avoid missing env var error during test instantiation
-vi.mock('../../src/config/env', () => ({
+vi.mock('../../src/admin/env', () => ({
   config: {
     GOOGLE_AI_API_KEY: 'test-api-key',
     SPOTIFY_CLIENT_ID: 'test',

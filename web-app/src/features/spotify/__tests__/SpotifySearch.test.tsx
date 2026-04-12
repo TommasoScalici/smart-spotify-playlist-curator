@@ -3,7 +3,8 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { FunctionsService } from '../../../services/functions-service';
+import { FunctionsService } from '@/services/functions-service';
+
 import { SpotifySearch } from '../components/SpotifySearch';
 
 // Mock FunctionsService

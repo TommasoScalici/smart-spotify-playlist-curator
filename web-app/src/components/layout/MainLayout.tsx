@@ -40,11 +40,11 @@ import {
   SheetTitle,
   SheetTrigger
 } from '@/components/ui/sheet';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSpotifyStatus } from '@/features/auth/hooks/useSpotifyStatus';
 import { cn } from '@/lib/utils';
+import { FirestoreService } from '@/services/firestore-service';
 
-import { useAuth } from '../../contexts/AuthContext';
-import { useSpotifyStatus } from '../../hooks/useSpotifyStatus';
-import { FirestoreService } from '../../services/firestore-service';
 import { ModeToggle } from '../common/ModeToggle';
 
 export const MainLayout = () => {

@@ -1,7 +1,7 @@
 import { SearchResult, TrackInfo } from '@smart-spotify-curator/shared';
 import { SpotifyApi } from '@spotify/web-api-ts-sdk';
 
-import { config } from '../config/env';
+import { config } from '../admin/env.js';
 import { SpotifyAuthManager } from './spotify/spotify-auth-manager';
 import { SpotifyBaseClient } from './spotify/spotify-base-client';
 import { SpotifyPlaylistManager } from './spotify/spotify-playlist-manager';

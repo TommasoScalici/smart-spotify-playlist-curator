@@ -4,11 +4,11 @@ import { ProtectedRoute } from './components/common/ProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './contexts/AuthContext';
-import Dashboard from './pages/Dashboard';
-import EditPlaylist from './pages/EditPlaylist';
+import Login from './features/auth/pages/LoginPage';
+import SpotifyCallback from './features/auth/pages/SpotifyCallbackPage';
 import './App.css';
-import Login from './pages/Login';
-import SpotifyCallback from './pages/SpotifyCallback';
+import Dashboard from './features/dashboard/pages/DashboardPage';
+import EditPlaylist from './features/playlists/pages/PlaylistEditorPage';
 
 function App() {
   return (

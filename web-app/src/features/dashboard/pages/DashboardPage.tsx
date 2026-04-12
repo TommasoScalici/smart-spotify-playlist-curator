@@ -1,62 +1,33 @@
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { History, Plus, RefreshCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 import { ActivityDiffModal } from '@/features/dashboard/components/ActivityDiffModal';
 import { ActivityDrawer } from '@/features/dashboard/components/ActivityDrawer';
 import { OnboardingHero } from '@/features/dashboard/components/OnboardingHero';
 import { TutorialDialog } from '@/features/dashboard/components/TutorialDialog';
+import { ActivityLog } from '@/features/dashboard/hooks/useActivityFeed';
+import { useDashboard } from '@/features/dashboard/hooks/useDashboard';
 import { PlaylistCard, PlaylistCardSkeleton } from '@/features/playlists/components/PlaylistCard';
-import { ActivityLog } from '@/hooks/useActivityFeed';
-
-import { useAuth } from '../contexts/AuthContext';
-import { useSpotifyStatus } from '../hooks/useSpotifyStatus';
-import { FirestoreService } from '../services/firestore-service';
 
 export default function Dashboard() {
-  const [playlists, setPlaylists] = useState<({ _docId: string } & PlaylistConfig)[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [tutorialDismissed, setTutorialDismissed] = useState(() => {
-    return localStorage.getItem('tutorial_dismissed') === 'true';
-  });
   const [isActivityDrawerOpen, setIsActivityDrawerOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState<ActivityLog | null>(null);
   const navigate = useNavigate();
-
   const { user } = useAuth();
-  const { data, isLoading: checkingLink } = useSpotifyStatus(user?.uid);
-  const isSpotifyLinked = data?.isLinked;
 
-  useEffect(() => {
-    let unsubscribe: (() => void) | undefined;
-
-    if (user?.uid && isSpotifyLinked) {
-      // Use microtask to avoid synchronous state update in effect body
-      queueMicrotask(() => {
-        setLoading(true);
-        setError('');
-      });
-
-      unsubscribe = FirestoreService.subscribeUserPlaylists(user.uid, (data) => {
-        setPlaylists(data);
-        setLoading(false);
-      });
-    } else {
-      queueMicrotask(() => setLoading(false));
-    }
-
-    return () => {
-      if (unsubscribe) unsubscribe();
-    };
-  }, [user?.uid, isSpotifyLinked]);
-
-  const handleDismissTutorial = () => {
-    setTutorialDismissed(true);
-    localStorage.setItem('tutorial_dismissed', 'true');
-  };
+  const {
+    checkingLink,
+    error,
+    handleDismissTutorial,
+    handleRetry,
+    isSpotifyLinked,
+    loading,
+    playlists,
+    tutorialDismissed
+  } = useDashboard(user?.uid);
 
   if (checkingLink || (loading && isSpotifyLinked)) {
     return (
@@ -115,7 +86,7 @@ export default function Dashboard() {
           <span>{error}</span>
           <Button
             className="border-destructive/20 hover:bg-destructive/20 text-destructive hover:text-destructive"
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
             size="sm"
             variant="outline"
           >

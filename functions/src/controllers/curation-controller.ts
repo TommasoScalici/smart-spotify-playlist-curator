@@ -1,18 +1,17 @@
 import type {
   CurationEstimate,
   EstimateCurationRequest,
-  OrchestrationResult,
   PlaylistConfig,
   TriggerCurationRequest
 } from '@smart-spotify-curator/shared';
 
-import { getPlaylistDocId } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
 
-import { db, FieldValue } from '../config/firebase.js';
-import { CurationSession } from '../core/curation/curation-session.js';
-import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../services/auth-service.js';
+import { ServiceFactory } from '../admin/factory.js';
+import { db } from '../admin/firebase.js';
+import { getAuthorizedSpotifyService, persistSpotifyTokens } from '../core/auth-service.js';
+import { CurationUseCase } from '../core/curation-usecase.js';
 
 export async function estimateCurationHandler(
   request: CallableRequest<EstimateCurationRequest>
@@ -34,14 +33,7 @@ export async function estimateCurationHandler(
   const uid = request.auth.uid;
   const { playlistId } = parseResult.data;
 
-  // Load Services
-  const { AiService } = await import('../services/ai-service.js');
-  const { SlotManager } = await import('../core/slot-manager.js');
-  const { TrackCleaner } = await import('../core/track-cleaner.js');
-  const { FirestoreLogger } = await import('../services/firestore-logger.js');
-  const { ConfigService } = await import('../services/config-service.js');
-
-  const configService = new ConfigService();
+  const configService = ServiceFactory.getConfigService();
   const config = await configService.getPlaylistConfig(playlistId);
 
   if (!config) {
@@ -51,7 +43,6 @@ export async function estimateCurationHandler(
     throw new HttpsError('permission-denied', 'You do not own this playlist.');
   }
 
-  // 2.5 Fetch Caller Name
   let callerName = '';
   try {
     const userSnap = await db.doc(`users/${uid}`).get();
@@ -65,26 +56,9 @@ export async function estimateCurationHandler(
     const { originalRefreshToken, service: spotifyService } =
       await getAuthorizedSpotifyService(uid);
 
-    // Instantiate Core Services
-    const aiService = new AiService();
-    const slotManager = new SlotManager();
-    const trackCleaner = new TrackCleaner();
-    const firestoreLogger = new FirestoreLogger();
-
-    const { PlaylistOrchestrator } = await import('../core/orchestrator.js');
-    const orchestrator = new PlaylistOrchestrator(
-      aiService,
-      slotManager,
-      trackCleaner,
-      firestoreLogger
-    );
-
-    const { CurationEstimator } = await import('../core/estimator.js');
-    const estimator = new CurationEstimator(orchestrator);
-
+    const estimator = ServiceFactory.createEstimator();
     const estimate = await estimator.estimate(config, spotifyService, uid, callerName);
 
-    // Persist any token updates
     await persistSpotifyTokens(uid, spotifyService, originalRefreshToken);
 
     return estimate;
@@ -98,165 +72,7 @@ export async function estimateCurationHandler(
   }
 }
 
-// Shared logic for both HTTP and onCall (Web App)
-export async function runOrchestrator(
-  config: PlaylistConfig,
-  callerUid: string,
-  callerName?: string,
-  planId?: string
-): Promise<OrchestrationResult> {
-  // SECURITY VERIFICATION (Deep check)
-  if (config.ownerId !== callerUid) {
-    logger.warn(
-      `User ${callerUid} attempted to run playlist ${config.id} owned by ${config.ownerId}`
-    );
-    throw new Error('Permission denied. You do not own this playlist.');
-  }
-
-  // Move imports into the function or use lazy initialization to speed up cloud-init
-  const { AiService } = await import('../services/ai-service.js');
-  const { PlaylistOrchestrator } = await import('../core/orchestrator.js');
-  const { SlotManager } = await import('../core/slot-manager.js');
-  const { TrackCleaner } = await import('../core/track-cleaner.js');
-  const { FirestoreLogger } = await import('../services/firestore-logger.js');
-
-  // 1. Stateless Services
-  const aiService = new AiService();
-  const slotManager = new SlotManager();
-  const trackCleaner = new TrackCleaner();
-  const firestoreLogger = new FirestoreLogger();
-
-  const results: OrchestrationResult['results'] = [];
-
-  const deterministicId = getPlaylistDocId(config.id);
-  const playlistRef = db.doc(`users/${config.ownerId}/playlists/${deterministicId}`);
-
-  // CONCURRENCY LOCK (Distributed state via Firestore Transaction)
-  try {
-    await db.runTransaction(async (transaction) => {
-      const doc = await transaction.get(playlistRef);
-      if (!doc.exists) {
-        throw new Error('CONFIG_NOT_FOUND');
-      }
-
-      const data = doc.data();
-      if (data?.curationLockTimestamp) {
-        let lockTime: number;
-
-        // Handle both legacy string timestamps and new Firestore Timestamp objects
-        if (typeof data.curationLockTimestamp === 'string') {
-          lockTime = new Date(data.curationLockTimestamp).getTime();
-        } else if (data.curationLockTimestamp.toMillis) {
-          lockTime = data.curationLockTimestamp.toMillis();
-        } else {
-          // Fallback if it's some other format
-          lockTime = 0;
-        }
-
-        const now = Date.now();
-        // 10 minutes timeout = 600000 ms to prevent zombie locks
-        if (now - lockTime < 600_000) {
-          throw new Error('CONCURRENCY_ABORT');
-        } else {
-          logger.warn(`Stale curation lock detected for ${config.name}. Stealing lock.`);
-        }
-      }
-
-      transaction.update(playlistRef, { curationLockTimestamp: FieldValue.serverTimestamp() });
-    });
-  } catch (err: unknown) {
-    if (err instanceof Error && err.message === 'CONCURRENCY_ABORT') {
-      logger.warn(`Concurrency block: Playlist ${config.name} is already being curated.`);
-      throw new Error('This playlist is currently being curated by another process. Please wait.', {
-        cause: err
-      });
-    }
-    if (err instanceof Error && err.message === 'CONFIG_NOT_FOUND') {
-      throw new Error('Playlist configuration document not found.', { cause: err });
-    }
-    throw err;
-  }
-
-  try {
-    // 3. Fetch User's Spotify Token & Create Orchestrator
-    const { originalRefreshToken, service: spotifyService } = await getAuthorizedSpotifyService(
-      config.ownerId
-    );
-
-    // 4. Create Orchestrator (handles Spotify auth internally)
-    const orchestrator = new PlaylistOrchestrator(
-      aiService,
-      slotManager,
-      trackCleaner,
-      firestoreLogger
-    );
-
-    // 5. Execute
-    if (planId) {
-      const planRef = db.doc(`users/${callerUid}/curationPlans/${planId}`);
-      const planSnap = await planRef.get();
-
-      if (!planSnap.exists) {
-        throw new Error('Curation plan not found or expired. Please run estimation again.');
-      }
-
-      const session = planSnap.data() as CurationSession;
-      // Ensure session belongs to this playlist
-      if (session?.config?.id !== config.id) {
-        throw new Error('Plan does not match target playlist.');
-      }
-
-      if (session) {
-        session.ownerName = callerName;
-        await orchestrator.executePlan(session, spotifyService);
-        await planRef.delete();
-      }
-    } else {
-      await orchestrator.curatePlaylist(config, spotifyService, callerName);
-    }
-
-    // 6. Persist any token updates (Important for rotation)
-    await persistSpotifyTokens(config.ownerId, spotifyService, originalRefreshToken);
-
-    results.push({ name: config.name, status: 'success' });
-  } catch (error) {
-    const errMsg = (error as Error).message;
-    logger.error(`Error processing playlist ${config.name}`, error);
-
-    // Handle Critical Auth Failures (Revoked access, deleted account)
-    if ((errMsg.includes('invalid_grant') || errMsg.includes('unauthorized')) && config.ownerId) {
-      await db
-        .doc(`users/${config.ownerId}/secrets/spotify`)
-        .set({ error: errMsg, status: 'invalid' }, { merge: true });
-
-      await db.doc(`users/${config.ownerId}`).update({
-        'spotifyProfile.authError': errMsg,
-        'spotifyProfile.status': 'invalid'
-      });
-    }
-
-    results.push({
-      error: errMsg,
-      name: config.name || 'Unnamed Playlist',
-      status: 'error'
-    });
-
-    // Note: Orchestrator already logs the error state internally using currentLogId.
-    // We do NOT need to log it again here, as that creates a duplicate "New Log" entry
-    // instead of updating the existing "Running" one.
-  } finally {
-    try {
-      await playlistRef.update({ curationLockTimestamp: null });
-    } catch (e) {
-      logger.error(`Failed to release lock for playlist ${config.name}`, e);
-    }
-  }
-
-  return { message: 'Playlist update completed', results };
-}
-
 export async function triggerCurationHandler(request: CallableRequest<TriggerCurationRequest>) {
-  // 1. Auth Check
   if (!request.auth) {
     throw new HttpsError('unauthenticated', 'You must be logged in to curate playlists.');
   }
@@ -274,14 +90,9 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
   const { planId, playlistId } = parseResult.data;
   const uid = request.auth.uid;
 
-  logger.info(`Received triggerCuration from user ${uid}`, {
-    planId,
-    playlistId
-  });
+  logger.info(`Received triggerCuration from user ${uid}`, { planId, playlistId });
 
-  // 2. Load and Verify Config
-  const { ConfigService } = await import('../services/config-service.js');
-  const configService = new ConfigService();
+  const configService = ServiceFactory.getConfigService();
   let config: null | PlaylistConfig;
 
   try {
@@ -308,7 +119,6 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
     );
   }
 
-  // 2.5 Fetch Caller Name
   let callerName = '';
   try {
     const userSnap = await db.doc(`users/${uid}`).get();
@@ -318,9 +128,9 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
     logger.warn(`Failed to fetch caller name for ${uid}`, e);
   }
 
-  // 3. Execute Orchestration
   try {
-    return await runOrchestrator(config, uid, callerName, planId);
+    const useCase = new CurationUseCase();
+    return await useCase.execute(config, uid, callerName, planId);
   } catch (e) {
     logger.error('Orchestrator reached terminal error', {
       error: e instanceof Error ? { message: e.message, stack: e.stack } : e,
@@ -328,7 +138,6 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
       uid
     });
 
-    // Map common errors to friendly messages
     const msg = (e as Error).message;
     if (msg.includes('currently being curated')) {
       throw new HttpsError('aborted', msg);

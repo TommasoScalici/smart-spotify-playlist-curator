@@ -9,7 +9,7 @@ import {
 } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-import { auth, db } from './firebase';
+import { auth, db } from '@/services/firebase';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true';
 

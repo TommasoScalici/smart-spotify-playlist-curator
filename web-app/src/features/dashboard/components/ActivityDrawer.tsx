@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 import { Button } from '@/components/ui/button';
-import { ActivityLog } from '@/hooks/useActivityFeed';
+import { ActivityLog } from '@/features/dashboard/hooks/useActivityFeed';
 import { cn } from '@/lib/utils';
 
 import { ActivityFeed } from './ActivityFeed';

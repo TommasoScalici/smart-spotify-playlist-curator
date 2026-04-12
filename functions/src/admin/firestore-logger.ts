@@ -1,6 +1,6 @@
 import * as logger from 'firebase-functions/logger';
 
-import { db } from '../config/firebase';
+import { db } from './firebase.js';
 
 export type ActivityType = 'error' | 'info' | 'running' | 'success' | 'warning';
 

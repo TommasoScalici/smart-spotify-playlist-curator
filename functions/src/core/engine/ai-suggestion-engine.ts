@@ -5,10 +5,10 @@ import {
 } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
-import { AiService } from '../../services/ai-service';
-import { FirestoreLogger } from '../../services/firestore-logger';
-import { PromptGenerator } from '../../services/prompt-generator';
-import { SpotifyService } from '../../services/spotify-service';
+import { FirestoreLogger } from '../../admin/firestore-logger.js';
+import { AiService } from '../../services/ai-service.js';
+import { PromptGenerator } from '../../services/prompt-generator.js';
+import { SpotifyService } from '../../services/spotify-service.js';
 
 export class AISuggestionEngine {
   constructor(

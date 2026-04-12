@@ -1,14 +1,14 @@
 import { CurationDiff, normalizeSpotifyUri, PlaylistConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
-import { AiService } from '../services/ai-service';
-import { FirestoreLogger } from '../services/firestore-logger';
-import { SpotifyService } from '../services/spotify-service';
-import { AISuggestionEngine } from './curation/ai-suggestion-engine';
-import { CurationSession } from './curation/curation-session';
-import { DiffCalculator } from './diff-calculator';
-import { SlotManager } from './slot-manager';
-import { RemovalReason, RemovedTrack, TrackCleaner } from './track-cleaner';
+import { FirestoreLogger } from '../admin/firestore-logger.js';
+import { AiService } from '../services/ai-service.js';
+import { SpotifyService } from '../services/spotify-service.js';
+import { DiffCalculator } from './diff-calculator.js';
+import { AISuggestionEngine } from './engine/ai-suggestion-engine.js';
+import { CurationSession } from './engine/curation-session.js';
+import { SlotManager } from './slot-manager.js';
+import { RemovalReason, RemovedTrack, TrackCleaner } from './track-cleaner.js';
 
 export class PlaylistOrchestrator {
   constructor(

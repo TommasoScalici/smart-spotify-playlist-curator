@@ -1,6 +1,5 @@
 import { SearchResult } from '@smart-spotify-curator/shared';
 import { Check, ChevronsUpDown, Disc, Loader2, Music } from 'lucide-react';
-import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,7 +13,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
-import { FunctionsService } from '../../../services/functions-service';
+import { useSpotifySearch } from '../hooks/useSpotifySearch';
 
 interface SpotifySearchProps {
   defaultValue?: string;
@@ -29,31 +28,10 @@ export const SpotifySearch = ({
   placeholder,
   type
 }: SpotifySearchProps) => {
-  const [query, setQuery] = useState(defaultValue || '');
-  const [results, setResults] = useState<SearchResult[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (query && query.trim().length >= 3) {
-        setLoading(true);
-        try {
-          const data = await FunctionsService.searchSpotify(query, type);
-          setResults(data);
-          if (data.length > 0) setOpen(true);
-        } catch (error) {
-          console.error('Search failed', error);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setResults([]);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [query, type]);
+  const { loading, open, query, results, setOpen, setQuery } = useSpotifySearch({
+    defaultValue,
+    type
+  });
 
   const handleSelect = (item: SearchResult) => {
     setQuery(item.name);

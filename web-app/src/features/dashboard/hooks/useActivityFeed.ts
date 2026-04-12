@@ -2,9 +2,9 @@ import { ActivityLogSchema, ActivityMetadata } from '@smart-spotify-curator/shar
 import { collection, limit, onSnapshot, orderBy, query, where } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
 
-import { useAuth } from '../contexts/AuthContext';
-import { MOCK_ACTIVITIES } from '../mocks/activity-mock-data';
-import { db } from '../services/firebase';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/services/firebase';
+import { MOCK_ACTIVITIES } from '@/test/mocks/activity-mock-data';
 
 const IS_DEBUG_MODE = import.meta.env.VITE_DEBUG_MODE === 'true' && import.meta.env.MODE !== 'test';
 
@@ -90,7 +90,7 @@ export const useActivityFeed = () => {
   }, [user]);
 
   const activities = IS_DEBUG_MODE
-    ? (MOCK_ACTIVITIES.map((activity) => ({
+    ? (MOCK_ACTIVITIES.map((activity: Omit<ActivityLog, 'read'>) => ({
         ...activity,
         read: false
       })) as ActivityLog[])

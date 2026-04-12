@@ -1,14 +1,14 @@
 import { PlaylistConfig, TrackDiff } from '@smart-spotify-curator/shared';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CurationSession } from '../../src/core/curation/curation-session';
+import { CurationSession } from '../../src/core/engine/curation-session';
 import { CurationEstimator } from '../../src/core/estimator';
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SpotifyService } from '../../src/services/spotify-service';
 
 // Mock Dependencies
 vi.mock('../../src/core/orchestrator');
-vi.mock('../../src/config/firebase', () => ({
+vi.mock('../../src/admin/firebase', () => ({
   db: {
     doc: vi.fn().mockReturnValue({
       delete: vi.fn().mockResolvedValue(undefined),

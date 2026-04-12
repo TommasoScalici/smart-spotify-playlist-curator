@@ -6,9 +6,9 @@ import {
 import * as logger from 'firebase-functions/logger';
 import { v4 as uuidv4 } from 'uuid';
 
-import { db } from '../config/firebase';
-import { SpotifyService } from '../services/spotify-service';
-import { PlaylistOrchestrator } from './orchestrator';
+import { db } from '../admin/firebase.js';
+import { SpotifyService } from '../services/spotify-service.js';
+import { PlaylistOrchestrator } from './orchestrator.js';
 
 /**
  * Estimates the result of a curation run without making changes.

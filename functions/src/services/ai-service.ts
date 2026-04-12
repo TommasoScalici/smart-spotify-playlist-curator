@@ -3,7 +3,7 @@ import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
 
-import { config } from '../config/env';
+import { config } from '../admin/env.js';
 
 export interface AiSuggestion {
   artist: string;

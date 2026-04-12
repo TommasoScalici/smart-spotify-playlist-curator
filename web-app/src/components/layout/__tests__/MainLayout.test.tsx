@@ -6,14 +6,15 @@ import { User } from 'firebase/auth';
 import { BrowserRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
-import { AuthContext } from '../../../contexts/AuthContext';
-import { useSpotifyStatus } from '../../../hooks/useSpotifyStatus';
-import { FirestoreService } from '../../../services/firestore-service';
+import { AuthContext } from '@/contexts/AuthContext';
+import { useSpotifyStatus } from '@/features/auth/hooks/useSpotifyStatus';
+import { FirestoreService } from '@/services/firestore-service';
+
 import { MainLayout } from '../MainLayout';
 
 // Mock dependencies
-vi.mock('../../../hooks/useSpotifyStatus');
-vi.mock('../../../services/firestore-service');
+vi.mock('@/features/auth/hooks/useSpotifyStatus');
+vi.mock('@/services/firestore-service');
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
 
 // Mock ResizeObserver

@@ -17,8 +17,7 @@ import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
 import { NumberInput } from '@/components/ui/number-input';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
-
-import { FunctionsService } from '../../../../services/functions-service';
+import { FunctionsService } from '@/services/functions-service';
 
 interface ArtistSelectorProps {
   aiConfig?: AiGenerationConfig;

@@ -1,18 +1,18 @@
 import { PlaylistConfig } from '@smart-spotify-curator/shared';
 import { beforeEach, describe, expect, it, Mocked, vi } from 'vitest';
 
+import { FirestoreLogger } from '../../src/admin/firestore-logger';
 import { PlaylistOrchestrator } from '../../src/core/orchestrator';
 import { SlotManager } from '../../src/core/slot-manager';
 import { TrackCleaner } from '../../src/core/track-cleaner';
 import { AiService } from '../../src/services/ai-service';
-import { FirestoreLogger } from '../../src/services/firestore-logger';
 import { SpotifyService } from '../../src/services/spotify-service';
 
 // Mock dependencies
 vi.mock('../../src/services/spotify-service');
 vi.mock('../../src/services/ai-service');
 vi.mock('../../src/core/slot-manager');
-vi.mock('../../src/services/firestore-logger');
+vi.mock('../../src/admin/firestore-logger');
 
 // Mock DiffCalculator to avoid crash when mock data is inconsistent
 vi.mock('../../src/core/diff-calculator', () => ({
@@ -25,7 +25,7 @@ vi.mock('../../src/core/diff-calculator', () => ({
   }
 }));
 
-vi.mock('../../src/config/firebase', () => ({
+vi.mock('../../src/admin/firebase', () => ({
   db: {
     collection: vi.fn(() => ({
       doc: vi.fn(() => ({

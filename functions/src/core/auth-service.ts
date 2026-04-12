@@ -1,8 +1,8 @@
 import * as logger from 'firebase-functions/logger';
 import { HttpsError } from 'firebase-functions/v2/https';
 
-import { db } from '../config/firebase';
-import { SpotifyService } from './spotify-service';
+import { db } from '../admin/firebase.js';
+import { SpotifyService } from '../services/spotify-service.js';
 
 /**
  * Gets an authorized Spotify service for a given user, reusing cached access tokens if valid.
