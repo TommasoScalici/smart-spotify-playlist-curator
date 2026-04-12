@@ -54,6 +54,17 @@ export const useActivityFeed = () => {
           }
 
           const validData = parseResult.data;
+
+          // Parse timestamp safely (can be Firestore Timestamp or ISO string)
+          let timestampIso: string;
+          if (validData.timestamp?.toDate) {
+            timestampIso = validData.timestamp.toDate().toISOString();
+          } else if (typeof validData.timestamp === 'string') {
+            timestampIso = validData.timestamp;
+          } else {
+            timestampIso = new Date().toISOString();
+          }
+
           // Map to internal ActivityLog format
           return {
             deleted: validData.deleted,
@@ -61,7 +72,7 @@ export const useActivityFeed = () => {
             message: validData.metadata.step || 'Activity logged',
             metadata: validData.metadata,
             read: false, // Default to unread
-            timestamp: validData.timestamp?.toDate?.()?.toISOString() || new Date().toISOString(),
+            timestamp: timestampIso,
             type: (validData.metadata.state === 'error'
               ? 'error'
               : validData.metadata.state === 'completed'

@@ -1,35 +1,15 @@
-import { Chrome, Music } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Music } from 'lucide-react';
 
+import { GoogleIcon } from '@/components/common/GoogleIcon';
 import { Button } from '@/components/ui/button';
+import { useLogin } from '@/hooks/useLogin';
 
-import { useAuth } from '../contexts/AuthContext';
-
-declare const __APP_VERSION__: string;
 export default function Login() {
-  const { signIn, user } = useAuth();
-  const navigate = useNavigate();
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      navigate('/');
-    }
-  }, [user, navigate]);
+  const { error, handleLogin, user } = useLogin();
 
   if (user) {
     return null;
   }
-
-  const handleLogin = async () => {
-    try {
-      await signIn();
-      navigate('/');
-    } catch {
-      setError('Failed to log in. Please try again.');
-    }
-  };
 
   return (
     <div className="bg-background animate-in fade-in relative flex min-h-screen items-center justify-center overflow-hidden p-6 duration-1000">
@@ -64,7 +44,7 @@ export default function Login() {
             onClick={handleLogin}
             size="lg"
           >
-            <Chrome className="mr-2 h-5 w-5" />
+            <GoogleIcon className="mr-3 h-5 w-5" />
             Sign in with Google
           </Button>
 

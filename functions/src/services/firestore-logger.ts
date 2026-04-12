@@ -35,7 +35,6 @@ export class FirestoreLogger {
         deleted: false,
         metadata: sanitizedMetadata,
         read: false,
-        timestamp: new Date().toISOString(),
         type
       };
 
@@ -62,6 +61,8 @@ export class FirestoreLogger {
         await logsRef.doc(logId).update(updateData);
         return logId;
       } else {
+        // Only set timestamp on creation
+        data.timestamp = new Date();
         const docRef = await logsRef.add(data);
         return docRef.id;
       }
