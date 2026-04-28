@@ -14,7 +14,7 @@
     "dev": "npm run dev --workspace=web-app",
     "deploy-firebase": "tsx scripts/src/admin/build.ts && firebase deploy",
     "dry-run-release": "semantic-release",
-    "fix": "npm run lint:fix && npm run format",
+    "fix": "npm run type-check && npm run lint:fix && npm run format",
     "lint": "npm run lint --workspaces --if-present",
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
@@ -31,6 +31,9 @@
     ],
     "functions/**/*.{ts,js}": [
       "npm run lint --prefix functions --"
+    ],
+    "scripts/**/*.{ts,js}": [
+      "npm run lint --prefix scripts --"
     ]
   },
   "repository": {

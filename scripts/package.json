@@ -8,6 +8,7 @@
     "node": "24"
   },
   "scripts": {
+    "build": "tsc",
     "format": "prettier --write .",
     "get-refresh-token": "tsx src/auth/get-refresh-token.ts",
     "lint": "eslint .",

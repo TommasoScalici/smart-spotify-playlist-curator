@@ -1,2 +1,10 @@
-npx lint-staged
-npm run type-check
+# 1. Format & Lint Fix (Staged files only for speed)
+npx lint-staged || exit 1
+
+# 2. Workspace Builds (Ensures all projects compile)
+npm run build || exit 1
+
+# 3. Full Type Check (Monorepo-wide)
+npm run type-check || exit 1
+
+echo "✅ Pre-commit checks passed!"

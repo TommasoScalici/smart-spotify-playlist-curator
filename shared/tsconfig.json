@@ -4,6 +4,7 @@
     "target": "ESNext",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
+    "composite": true,
     "declaration": true,
     "rootDir": "./src",
     "outDir": "./dist",
