@@ -1,6 +1,6 @@
 # Smart Spotify Playlist Curator
 
-> **Status**: v1.7.0 | **License**: MIT
+> **Status**: v1.12.0 | **License**: MIT
 > **Stack**: React 19, Node 24, Firebase Gen 2, Gemini 2.5 Flash
 
 A powerful **Private Playlist Utility** that curates Spotify playlists for you and your friends using **Google Gemini 2.5 Flash**. Designed as a self-hosted tool for small groups (up to 25 users).
@@ -111,9 +111,16 @@ You need **Firestore** enabled in your Firebase Project.
     npm run dev
     ```
 
-4.  **Run Backend Tests**:
+4.  **Local Backend (Emulators)**:
+
     ```bash
     cd functions
+    npm run serve
+    ```
+
+5.  **Run Tests**:
+    ```bash
+    # Root level
     npm test
     ```
 
@@ -124,12 +131,10 @@ You need **Firestore** enabled in your Firebase Project.
 We use **GitHub Actions** for CI/CD, but you can deploy manually:
 
 ```bash
-# Deploy Backend (Functions + Security Rules)
-npm run deploy
+# Deploy Everything (Bundles functions and deploys all)
+npm run deploy-firebase
 
-# Deploy Frontend (Hosting)
-cd web-app
-npm run build
+# Deploy Only Hosting
 firebase deploy --only hosting
 ```
 
