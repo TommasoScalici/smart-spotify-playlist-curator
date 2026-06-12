@@ -26,7 +26,7 @@
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/open": "^6.2.1",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "glob": "^13.0.6"
   }
 }
