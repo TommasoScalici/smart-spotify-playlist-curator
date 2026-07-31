@@ -10,7 +10,7 @@ async function main() {
     const promptConfig = {
       enabled: true,
       isInstrumentalOnly: false,
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       temperature: 0.7,
       tracksToAdd: 3
     };
