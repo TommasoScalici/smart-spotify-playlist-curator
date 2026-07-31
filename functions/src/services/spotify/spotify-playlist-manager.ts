@@ -117,7 +117,7 @@ export class SpotifyPlaylistManager {
         // Defensively check indices
         if (actualIndex !== i && actualIndex !== -1 && actualIndex < finalUris.length) {
           try {
-            await this.spotify.playlists.movePlaylistItems(playlistIdClean, actualIndex, i, 1);
+            await this.spotify.playlists.movePlaylistItems(playlistIdClean, actualIndex, 1, i);
             const [moved] = finalUris.splice(actualIndex, 1);
             finalUris.splice(i, 0, moved);
           } catch (error) {
@@ -128,6 +128,7 @@ export class SpotifyPlaylistManager {
               playlistLength: finalUris.length,
               targetIndex: i
             });
+            throw error;
           }
         }
       }

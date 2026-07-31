@@ -48,6 +48,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     lastUpdatedText,
     latestLog,
     metrics,
+    refetchMetrics,
     setIsOptimisticallyRunning,
     toggleEnabled
   } = usePlaylistRealtime({ config });
@@ -64,7 +65,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
   return (
     <Card
       className={cn(
-        'group relative flex h-full min-h-[260px] flex-col overflow-hidden border-0 transition-all duration-500',
+        'group relative flex h-full min-h-65 flex-col overflow-hidden border-0 transition-all duration-500',
         'hover:-translate-y-1 hover:shadow-2xl',
         // Glassmorphism Base
         'bg-card/40 backdrop-blur-xl',
@@ -103,7 +104,10 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         latestLog={latestLog}
         onDelete={() => setShowDeleteDialog(true)}
         onEdit={() => navigate(`/playlist/${config._docId}`)}
-        onRunComplete={() => setIsOptimisticallyRunning(false)}
+        onRunComplete={() => {
+          setIsOptimisticallyRunning(false);
+          refetchMetrics();
+        }}
         onRunStart={() => setIsOptimisticallyRunning(true)}
         onShowHistory={() => setShowHistory(true)}
       />

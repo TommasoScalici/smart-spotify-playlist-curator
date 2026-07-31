@@ -37,7 +37,13 @@ setGlobalOptions({ maxInstances: 1 });
 
 import { onCall } from 'firebase-functions/v2/https';
 
-// --- Functions Definitions with Lazy Loading ---
+import { exchangeSpotifyTokenHandler } from './controllers/auth-controller';
+import { estimateCurationHandler, triggerCurationHandler } from './controllers/curation-controller';
+import { suggestReferenceArtistsHandler } from './controllers/discovery-controller';
+import { getPlaylistMetricsHandler } from './controllers/playlist-controller';
+import { getTrackDetailsHandler, searchSpotifyHandler } from './controllers/spotify-controller';
+
+// --- Functions Definitions ---
 
 // 1. Auth Functions
 export const exchangeSpotifyToken = onCall(
@@ -46,10 +52,7 @@ export const exchangeSpotifyToken = onCall(
     invoker: 'public',
     secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET']
   },
-  async (request) => {
-    const { exchangeSpotifyTokenHandler } = await import('./controllers/auth-controller.js');
-    return exchangeSpotifyTokenHandler(request);
-  }
+  (request) => exchangeSpotifyTokenHandler(request)
 );
 
 // 2. Curation Functions
@@ -65,10 +68,7 @@ export const triggerCuration = onCall(
     ],
     timeoutSeconds: 540
   },
-  async (request) => {
-    const { triggerCurationHandler } = await import('./controllers/curation-controller.js');
-    return triggerCurationHandler(request);
-  }
+  (request) => triggerCurationHandler(request)
 );
 
 export const estimateCuration = onCall(
@@ -82,10 +82,7 @@ export const estimateCuration = onCall(
     ],
     timeoutSeconds: 120
   },
-  async (request) => {
-    const { estimateCurationHandler } = await import('./controllers/curation-controller.js');
-    return estimateCurationHandler(request);
-  }
+  (request) => estimateCurationHandler(request)
 );
 
 // 3. Discovery Functions
@@ -100,11 +97,7 @@ export const suggestReferenceArtists = onCall(
     ],
     timeoutSeconds: 60
   },
-  async (request) => {
-    const { suggestReferenceArtistsHandler } =
-      await import('./controllers/discovery-controller.js');
-    return suggestReferenceArtistsHandler(request);
-  }
+  (request) => suggestReferenceArtistsHandler(request)
 );
 
 // 4. Playlist Functions
@@ -114,10 +107,7 @@ export const getPlaylistMetrics = onCall(
     maxInstances: 10,
     secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET']
   },
-  async (request) => {
-    const { getPlaylistMetricsHandler } = await import('./controllers/playlist-controller.js');
-    return getPlaylistMetricsHandler(request);
-  }
+  (request) => getPlaylistMetricsHandler(request)
 );
 
 // 5. Spotify Functions
@@ -128,10 +118,7 @@ export const searchSpotify = onCall(
     secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET'],
     timeoutSeconds: 30
   },
-  async (request) => {
-    const { searchSpotifyHandler } = await import('./controllers/spotify-controller.js');
-    return searchSpotifyHandler(request);
-  }
+  (request) => searchSpotifyHandler(request)
 );
 
 export const getTrackDetails = onCall(
@@ -141,8 +128,5 @@ export const getTrackDetails = onCall(
     secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET'],
     timeoutSeconds: 30
   },
-  async (request) => {
-    const { getTrackDetailsHandler } = await import('./controllers/spotify-controller.js');
-    return getTrackDetailsHandler(request);
-  }
+  (request) => getTrackDetailsHandler(request)
 );

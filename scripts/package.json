@@ -17,16 +17,16 @@
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "@spotify/web-api-ts-sdk": "^1.2.0",
-    "dotenv": "^17.3.1",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "firebase-admin": "^10.3.0",
+    "firebase-admin": "^14.2.0",
     "open": "^11.0.0",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/open": "^6.2.1",
-    "esbuild": "^0.27.3",
+    "esbuild": "^0.28.1",
     "glob": "^13.0.6"
   }
 }

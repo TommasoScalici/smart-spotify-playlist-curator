@@ -123,19 +123,27 @@ export const FunctionsService = {
    */
   async triggerCuration(
     playlistId: string,
-    options?: { planId?: string }
+    options?: { excludedAiTrackUris?: string[]; planId?: string }
   ): Promise<OrchestrationResult> {
-    const trigger = httpsCallable<{ planId?: string; playlistId?: string }, unknown>(
-      functions,
-      'triggerCuration'
-    );
+    const trigger = httpsCallable<
+      { excludedAiTrackUris?: string[]; planId?: string; playlistId?: string },
+      unknown
+    >(functions, 'triggerCuration');
     const result = await trigger({
+      excludedAiTrackUris: options?.excludedAiTrackUris,
       planId: options?.planId,
       playlistId
     });
 
     // Validate response using Zod schema
     const validated = OrchestrationResultSchema.parse(result.data);
+
+    // Check if any playlist curation actually failed
+    const failedResult = validated.results.find((r) => r.status === 'error');
+    if (failedResult) {
+      throw new Error(failedResult.error ?? `Curation failed for "${failedResult.name}"`);
+    }
+
     return validated;
   }
 };

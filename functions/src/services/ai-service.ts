@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { AiGenerationConfig } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
@@ -11,14 +11,6 @@ export interface AiSuggestion {
   track: string;
 }
 
-// Global Quality Constraints to reduce hallucinations and bad suggestions
-const QUALITY_CONSTRAINTS = [
-  'Do NOT suggest live versions, remixes, or acoustic versions unless explicitly asked.',
-  'Do NOT suggest intro/outro tracks, commentary, or spoken word tracks.',
-  'Do NOT suggest songs that are under 1 minute long.',
-  'Ensure the track and artist names match Spotify metadata exactly.'
-];
-
 // Strict Negative Constraints (The "No-Go" List)
 const BANNED_TERMS = [
   'Live',
@@ -30,8 +22,6 @@ const BANNED_TERMS = [
   'Demo',
   'Commentary'
 ];
-
-const INSTRUMENTAL_KEYWORDS = ['instrumental', 'lofi', 'beats', 'study', 'focus'];
 
 // Validation Schema for AI Response (Zod acts as a runtime safety net)
 const AiResponseSchema = z.array(
@@ -49,19 +39,19 @@ const ArtistResponseSchema = z.array(
 );
 
 export class AiService {
-  private genAI: GoogleGenerativeAI;
+  private ai: GoogleGenAI;
 
   constructor() {
     if (!config.GOOGLE_AI_API_KEY) {
       throw new Error('GOOGLE_AI_API_KEY is not set in environment variables.');
     }
-    this.genAI = new GoogleGenerativeAI(config.GOOGLE_AI_API_KEY);
+    this.ai = new GoogleGenAI({ apiKey: config.GOOGLE_AI_API_KEY });
   }
 
   /**
    * Generates track suggestions using Google's Gemini AI.
-   * Uses Native Structured Output and Chain-of-Thought prompting.
-   * @param config - The AI generation settings (model, temperature, etc.)
+   * Uses Native Structured Output and System Instruction prompting.
+   * @param aiConfig - The AI generation settings (model, temperature, etc.)
    * @param prompt - The base prompt describing the playlist
    * @param count - Number of tracks to request
    * @param excludedTracks - List of "Artist - Track" strings to exclude
@@ -75,67 +65,30 @@ export class AiService {
     excludedTracks: string[] = [], // Semantic "Artist - Track" strings
     referenceArtists: string[] = []
   ): Promise<AiSuggestion[]> {
-    logger.info(`Sending request to Gemini AI...`, { count, model: aiConfig.model });
+    const selectedModel = this.resolveModel(aiConfig.model);
+
+    logger.info(`Sending request to Gemini AI via @google/genai...`, {
+      count,
+      model: selectedModel
+    });
 
     const requestStart = Date.now();
 
-    // Create model instance with aiConfig-specified model
-    // Using native responseSchema for structured output
-    const model = this.genAI.getGenerativeModel({
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          items: {
-            properties: {
-              artist: { type: SchemaType.STRING },
-              reasoning: { type: SchemaType.STRING },
-              track: { type: SchemaType.STRING }
-            },
-            required: ['artist', 'track', 'reasoning'],
-            type: SchemaType.OBJECT
-          },
-          type: SchemaType.ARRAY
-        },
-        temperature: aiConfig.temperature
-      },
-      model: aiConfig.model
-    });
+    let fullPrompt = `Task: Generate exactly ${count} tracks for a Spotify playlist.
 
-    let fullPrompt = `Task: Generate exactly ${count} tracks for a Spotify playlist based on the user's description.
-
-Context: You are an expert music curator with deep knowledge of Spotify's catalog.
-CRITICAL CONSTRAINT: We are running in Spotify Development Mode. This means we CANNOT access the Spotify Audio Features API (tempo, energy, valence, instrumentalness).
-You MUST rely entirely on your internal knowledge to ensure tracks match the requested vibe, genre, and sonic characteristics.
-
-User Prompt: "${prompt}"`;
+User Prompt & Vibe Description:
+"${prompt}"`;
 
     // Inject Reference Artists ("Style Anchors")
     if (referenceArtists.length > 0) {
-      fullPrompt += `\n\nStyle Anchors (Vibe References):
-The following artists represent the core sound of this playlist. Use them to ground your suggestions:
+      fullPrompt += `\n\nStyle Anchors (Vibe & Genre References):
+The following artists define the sonic profile and quality bar for this playlist:
 ${referenceArtists.map((artist) => `- ${artist}`).join('\n')}`;
     }
 
-    // Smart Instrumental Logic
-    const isInstrumental = INSTRUMENTAL_KEYWORDS.some((keyword) =>
-      prompt.toLowerCase().includes(keyword)
-    );
-
-    if (isInstrumental) {
-      fullPrompt += `\n\nHIGH PRIORITY: This playlist is INSTRUMENTAL.
-Do NOT suggest tracks with vocals or lyrics. Focus on beats, melodies, and atmosphere.`;
+    if (aiConfig.isInstrumentalOnly) {
+      fullPrompt += `\n\nHIGH PRIORITY: This playlist is 100% INSTRUMENTAL. Zero vocals allowed.`;
     }
-
-    // Apply Global Quality Constraints
-    fullPrompt += `\n\nGlobal Constraints (STRICT):`;
-    QUALITY_CONSTRAINTS.forEach((constraint) => {
-      fullPrompt += `\n- ${constraint}`;
-    });
-
-    // Apply Banned Terms Logic
-    fullPrompt += `\n\nNegative Constraints (The "No-Go" List):
-Unless the user explicitly asks for them, strictly REJECT any track title containing:
-${BANNED_TERMS.join(', ')}.`;
 
     if (excludedTracks.length > 0) {
       fullPrompt += `\n\nSpecific Exclusions (Do NOT suggest these - already in playlist):
@@ -143,23 +96,41 @@ ${JSON.stringify(excludedTracks)}`;
     }
 
     fullPrompt += `\n\nReasoning Requirement:
-For each suggestion, you MUST provide a 'reasoning' field explaining WHY this track fits the vibe and why you are confident it matches the criteria (especially regarding instrumental/vocal status and genre fit), since we cannot verify with audio features.`;
+For each suggestion, state WHY this track fits the vibe and genre, and confirm its instrumental/vocal status.`;
 
     try {
-      const result = await model.generateContent(fullPrompt);
-      const response = result.response;
-      const text = response.text();
+      const response = await this.ai.models.generateContent({
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            items: {
+              properties: {
+                artist: { type: Type.STRING },
+                reasoning: { type: Type.STRING },
+                track: { type: Type.STRING }
+              },
+              required: ['artist', 'track', 'reasoning'],
+              type: Type.OBJECT
+            },
+            type: Type.ARRAY
+          },
+          systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly),
+          temperature: aiConfig.temperature
+        },
+        contents: fullPrompt,
+        model: selectedModel
+      });
+
+      const text = response.text || '';
 
       logger.info('AI Response received', {
-        candidateCount: response.candidates?.length,
         durationMs: Date.now() - requestStart
       });
 
-      // Native structured output should return valid JSON directly, but we still parse safely
+      // Native structured output should return valid JSON directly
       let suggestions: AiSuggestion[];
       try {
         const parsed = JSON.parse(text);
-        // Strict Schema Validation
         suggestions = AiResponseSchema.parse(parsed);
       } catch (parseError) {
         logger.error('Failed to parse or validate AI response', {
@@ -192,28 +163,11 @@ For each suggestion, you MUST provide a 'reasoning' field explaining WHY this tr
     count: number,
     excludedArtists: string[] = []
   ): Promise<string[]> {
+    const selectedModel = this.resolveModel(generationConfig.model);
+
     logger.info(`Sending artist suggestion request to Gemini AI...`, {
       count,
-      model: generationConfig.model
-    });
-
-    // Using native responseSchema for artists too
-    const model = this.genAI.getGenerativeModel({
-      generationConfig: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          items: {
-            properties: {
-              name: { type: SchemaType.STRING }
-            },
-            required: ['name'],
-            type: SchemaType.OBJECT
-          },
-          type: SchemaType.ARRAY
-        },
-        temperature: generationConfig.temperature
-      },
-      model: generationConfig.model
+      model: selectedModel
     });
 
     let prompt = `Suggest exactly ${count} famous or representative artists for a Spotify playlist.
@@ -222,17 +176,36 @@ Playlist Name: "${playlistName}"`;
       prompt += `\nPlaylist Description: ${description}`;
     }
     prompt += `\n\nIdentify artists that perfectly capture the sonic profile and "vibe" of this playlist.
-Suggest ONLY real, well-known artists that are likely to be on Spotify.`;
+Suggest ONLY real, well-known artists that are on Spotify.`;
 
     if (excludedArtists.length > 0) {
-      prompt += `\n\nSpecific Exclusions (Do NOT suggest these - already selected/added):
+      prompt += `\n\nSpecific Exclusions (Do NOT suggest these - already added):
       ${JSON.stringify(excludedArtists)}`;
     }
 
     try {
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const response = await this.ai.models.generateContent({
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            items: {
+              properties: {
+                name: { type: Type.STRING }
+              },
+              required: ['name'],
+              type: Type.OBJECT
+            },
+            type: Type.ARRAY
+          },
+          systemInstruction:
+            'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.',
+          temperature: generationConfig.temperature
+        },
+        contents: prompt,
+        model: selectedModel
+      });
 
+      const text = response.text || '';
       const parsed = JSON.parse(text);
       const data = ArtistResponseSchema.parse(parsed);
 
@@ -241,5 +214,52 @@ Suggest ONLY real, well-known artists that are likely to be on Spotify.`;
       logger.error('Error suggesting artists:', error);
       throw error;
     }
+  }
+
+  /**
+   * Builds system instructions ensuring persona separation, genre adherence,
+   * instrumental enforcement, and negative constraints.
+   */
+  private buildSystemInstruction(isInstrumentalOnly?: boolean): string {
+    let instruction = `You are an elite, world-class music curator with authoritative knowledge of Spotify's catalog, genres, subgenres, and musical attributes.
+
+CORE DUTIES & MANDATES:
+1. STRICT GENRE FIDELITY:
+   - Every single track MUST match the exact target genre, subgenre, mood, and vibe of the requested playlist.
+   - REJECT any track from incompatible genres (e.g. NEVER suggest rap, hip-hop, or pop songs for a progressive metal or rock playlist; NEVER suggest heavy metal for a lo-fi study playlist).
+   - Perform a MANDATORY GENRE SELF-CHECK for each track candidate before selecting it: Ask "Does this artist/track authentically belong to the target genre?" If not, DO NOT INCLUDE IT.
+
+2. VOCAL VS. INSTRUMENTAL ENFORCEMENT:`;
+
+    if (isInstrumentalOnly) {
+      instruction += `
+   - ABSOLUTE REQUIREMENT - 100% INSTRUMENTAL ONLY:
+   - This playlist MUST contain ONLY instrumental music.
+   - Strictly FORBIDDEN: Any singing, vocal melodies, rap verses, spoken word, or clear vocal samples.
+   - Verify every suggestion is an instrumental piece (e.g., instrumental beats, solos, orchestral, synthwave, ambient, or prog-metal instrumentals).`;
+    } else {
+      instruction += `
+   - Match vocal styles to the target genre norms (e.g., clean/growled vocals for metal, melodic singing for pop/indie).`;
+    }
+
+    instruction += `
+
+3. QUALITY & NEGATIVE CONSTRAINTS (STRICT):
+   - Do NOT suggest live versions, remixes, radio edits, remaster labels, acoustic versions, commentary, or intro/outro tracks unless explicitly requested.
+   - Reject any track titles containing: ${BANNED_TERMS.join(', ')}.
+   - Do NOT suggest songs under 1 minute long.
+   - Ensure artist names and track titles match official Spotify catalog metadata.
+
+4. REASONING REQUIREMENT:
+   - In the 'reasoning' field, explicitly specify: (1) the genre/subgenre classification, and (2) confirmation of vocal/instrumental status proving it meets the playlist criteria.`;
+
+    return instruction;
+  }
+
+  private resolveModel(modelName?: string): string {
+    if (!modelName || modelName === 'gemini-2.5-flash') {
+      return 'gemini-3.6-flash';
+    }
+    return modelName;
   }
 }

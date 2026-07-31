@@ -87,10 +87,14 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
     );
   }
 
-  const { planId, playlistId } = parseResult.data;
+  const { excludedAiTrackUris, planId, playlistId } = parseResult.data;
   const uid = request.auth.uid;
 
-  logger.info(`Received triggerCuration from user ${uid}`, { planId, playlistId });
+  logger.info(`Received triggerCuration from user ${uid}`, {
+    excludedCount: excludedAiTrackUris?.length || 0,
+    planId,
+    playlistId
+  });
 
   const configService = ServiceFactory.getConfigService();
   let config: null | PlaylistConfig;
@@ -130,7 +134,7 @@ export async function triggerCurationHandler(request: CallableRequest<TriggerCur
 
   try {
     const useCase = new CurationUseCase();
-    return await useCase.execute(config, uid, callerName, planId);
+    return await useCase.execute(config, uid, callerName, planId, excludedAiTrackUris);
   } catch (e) {
     logger.error('Orchestrator reached terminal error', {
       error: e instanceof Error ? { message: e.message, stack: e.stack } : e,

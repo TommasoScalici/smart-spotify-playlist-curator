@@ -5,17 +5,16 @@ import { AiService } from '../../src/services/ai-service';
 
 // Mock dependencies
 const mockGenerateContent = vi.fn();
-const mockGetGenerativeModel = vi.fn(() => ({
-  generateContent: mockGenerateContent
-}));
 
-vi.mock('@google/generative-ai', () => ({
-  GoogleGenerativeAI: vi.fn().mockImplementation(function () {
+vi.mock('@google/genai', () => ({
+  GoogleGenAI: vi.fn().mockImplementation(function () {
     return {
-      getGenerativeModel: mockGetGenerativeModel
+      models: {
+        generateContent: mockGenerateContent
+      }
     };
   }),
-  SchemaType: {
+  Type: {
     ARRAY: 'ARRAY',
     OBJECT: 'OBJECT',
     STRING: 'STRING'
@@ -40,16 +39,14 @@ describe('AiService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGenerateContent.mockReset();
-    mockGetGenerativeModel.mockClear();
-    // Re-setup default behavior if needed, or rely on individual tests
     aiService = new AiService();
   });
 
   const mockPromptConfig: AiGenerationConfig = {
     enabled: true,
     isInstrumentalOnly: false,
-    model: 'gemini-2.5-flash',
-    temperature: 0.7,
+    model: 'gemini-3.6-flash',
+    temperature: 0.5,
     tracksToAdd: 5
   };
 
@@ -58,13 +55,10 @@ describe('AiService', () => {
   it('should generate suggestions successfully', async () => {
     // Mock Successful response
     mockGenerateContent.mockResolvedValue({
-      response: {
-        text: () =>
-          JSON.stringify([
-            { artist: 'Artist A', reasoning: 'Reasoning A', track: 'Track A' },
-            { artist: 'Artist B', reasoning: 'Reasoning B', track: 'Track B' }
-          ])
-      }
+      text: JSON.stringify([
+        { artist: 'Artist A', reasoning: 'Reasoning A', track: 'Track A' },
+        { artist: 'Artist B', reasoning: 'Reasoning B', track: 'Track B' }
+      ])
     });
 
     const result = await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 2);
@@ -77,9 +71,7 @@ describe('AiService', () => {
   it('should handle invalid JSON response by throwing error', async () => {
     // Mock Invalid JSON
     mockGenerateContent.mockResolvedValue({
-      response: {
-        text: () => 'Invalid JSON String' // Not JSON
-      }
+      text: 'Invalid JSON String' // Not JSON
     });
 
     // Should throw error now (Robustness)
@@ -88,15 +80,17 @@ describe('AiService', () => {
 
   it('should include negative constraints in prompt', async () => {
     mockGenerateContent.mockResolvedValue({
-      response: { text: () => '[]' }
+      text: '[]'
     });
 
     const excluded = ['Excluded - Track'];
     await aiService.generateSuggestions(mockPromptConfig, mockPrompt, 5, excluded);
 
-    // Verify prompt construction logic indirectly via mock call arg
+    // Verify prompt construction logic via mock call args
     const callArg = mockGenerateContent.mock.calls[0][0];
-    expect(callArg).toContain('Specific Exclusions (Do NOT suggest these - already in playlist):');
-    expect(callArg).toContain('Global Constraints (STRICT):');
+    expect(callArg.contents).toContain(
+      'Specific Exclusions (Do NOT suggest these - already in playlist):'
+    );
+    expect(callArg.config.systemInstruction).toContain('QUALITY & NEGATIVE CONSTRAINTS (STRICT):');
   });
 });

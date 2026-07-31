@@ -208,8 +208,8 @@ describe('SpotifyService - Smart Update', () => {
       2,
       playlistId,
       3,
-      2,
-      1
+      1,
+      2
     );
   });
 
@@ -252,8 +252,8 @@ describe('SpotifyService - Smart Update', () => {
     expect(mockSpotifyInstance.playlists.movePlaylistItems).toHaveBeenCalledWith(
       playlistId,
       1,
-      0,
-      1
+      1,
+      0
     );
   });
 });

@@ -8,11 +8,7 @@ export interface PoolTrack {
 }
 
 export type SizeLimitStrategy =
-  | 'drop_least_popular'
-  | 'drop_most_popular'
-  | 'drop_newest'
-  | 'drop_oldest'
-  | 'drop_random';
+  'drop_least_popular' | 'drop_most_popular' | 'drop_newest' | 'drop_oldest' | 'drop_random';
 
 export class SelectionStrategy {
   public static truncatePool(

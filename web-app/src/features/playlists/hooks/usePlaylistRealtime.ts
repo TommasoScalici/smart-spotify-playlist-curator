@@ -33,10 +33,17 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
     const unsubscribe = FirestoreService.subscribeLatestLog(user.uid, config.id, (log) => {
       setLatestLog(log);
       setIsLoadingLog(false);
+      if (log?.metadata?.state === 'completed') {
+        queryClient.invalidateQueries({ queryKey: ['playlistMetrics', config.id] });
+      }
     });
 
     return () => unsubscribe();
-  }, [user?.uid, config.id]);
+  }, [user?.uid, config.id, queryClient]);
+
+  const refetchMetrics = () => {
+    queryClient.invalidateQueries({ queryKey: ['playlistMetrics', config.id] });
+  };
 
   const toggleEnabledMutation = useMutation({
     mutationFn: async (enabled: boolean) => {
@@ -104,6 +111,7 @@ export function usePlaylistRealtime({ config }: UsePlaylistRealtimeProps) {
     lastUpdatedText,
     latestLog,
     metrics,
+    refetchMetrics,
     setIsOptimisticallyRunning: (val: boolean) => setLastManualTriggerAt(val ? Date.now() : null),
     toggleEnabled: (enabled: boolean) => toggleEnabledMutation.mutate(enabled)
   };

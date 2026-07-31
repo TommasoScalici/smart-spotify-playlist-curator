@@ -1,5 +1,6 @@
 import { CurationEstimate, CurationRules } from '@smart-spotify-curator/shared';
 import { AlertTriangle, ArrowRight, History, Info, Loader2, Music2, Play, X } from 'lucide-react';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,7 @@ interface ConfirmCurationModalProps {
   isLoading?: boolean;
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (planId?: string) => void;
+  onConfirm: (planId?: string, excludedAiTrackUris?: string[]) => void;
   playlistName?: string;
 }
 
@@ -33,6 +34,31 @@ export const ConfirmCurationModal = ({
   onConfirm,
   playlistName = 'Playlist'
 }: ConfirmCurationModalProps) => {
+  const [excludedAiUris, setExcludedAiUris] = useState<Set<string>>(new Set());
+
+  const handleClose = () => {
+    setExcludedAiUris(new Set());
+    onClose();
+  };
+
+  const handleToggleRemoveAiTrack = (uri: string) => {
+    setExcludedAiUris((prev) => {
+      const next = new Set(prev);
+      if (next.has(uri)) {
+        next.delete(uri);
+      } else {
+        next.add(uri);
+      }
+      return next;
+    });
+  };
+
+  const effectiveAiTracksToAdd = Math.max(0, (estimate?.aiTracksToAdd || 0) - excludedAiUris.size);
+  const effectivePredictedFinal = Math.max(
+    0,
+    (estimate?.predictedFinal || 0) - excludedAiUris.size
+  );
+
   // Helper to calculate total changes for visual impact
   const totalChanges = estimate
     ? estimate.duplicatesToRemove +
@@ -40,7 +66,7 @@ export const ConfirmCurationModal = ({
       estimate.artistLimitRemoved +
       estimate.sizeLimitRemoved +
       estimate.mandatoryToAdd +
-      estimate.aiTracksToAdd
+      effectiveAiTracksToAdd
     : 0;
 
   // Derived lists for accordion details
@@ -54,8 +80,8 @@ export const ConfirmCurationModal = ({
   const aiTracks = estimate?.added?.filter((t) => t.source === 'ai');
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
-      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-border/50 bg-background/80 text-foreground max-h-[90vh] w-[95vw] overflow-y-auto shadow-2xl backdrop-blur-xl duration-300 sm:max-w-[500px] md:max-w-[800px] lg:max-w-[950px]">
+    <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
+      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-border/50 bg-background/80 text-foreground max-h-[90vh] w-[95vw] overflow-y-auto shadow-2xl backdrop-blur-xl duration-300 sm:max-w-125 md:max-w-200 lg:max-w-237.5">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-3 text-2xl font-light tracking-wide">
             <div className="bg-primary/20 text-primary flex h-10 w-10 items-center justify-center rounded-full shadow-[0_0_15px_rgba(29,185,84,0.3)]">
@@ -111,7 +137,7 @@ export const ConfirmCurationModal = ({
                   </span>
                   <div className="flex items-baseline gap-1">
                     <span className="text-primary text-3xl font-bold">
-                      {estimate.predictedFinal}
+                      {effectivePredictedFinal}
                     </span>
                     <span className="text-primary/80 text-sm">tracks</span>
                   </div>
@@ -260,9 +286,11 @@ export const ConfirmCurationModal = ({
                   <ChangeRow
                     bg="bg-purple-400/10"
                     color="text-purple-400"
-                    count={estimate.aiTracksToAdd}
+                    count={effectiveAiTracksToAdd}
+                    excludedUris={excludedAiUris}
                     icon={<Music2 className="h-3 w-3" />}
                     label="AI Suggestions"
+                    onRemoveTrack={handleToggleRemoveAiTrack}
                     tracks={aiTracks}
                     type="add"
                   />
@@ -287,7 +315,7 @@ export const ConfirmCurationModal = ({
           <Button
             className="hover:bg-muted hover:text-foreground"
             disabled={isLoading}
-            onClick={onClose}
+            onClick={handleClose}
             variant="ghost"
           >
             Cancel
@@ -295,7 +323,7 @@ export const ConfirmCurationModal = ({
           <Button
             className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(29,185,84,0.3)] transition-all hover:scale-105 active:scale-95"
             disabled={isLoading || !estimate}
-            onClick={() => onConfirm(estimate?.planId)}
+            onClick={() => onConfirm(estimate?.planId, Array.from(excludedAiUris))}
           >
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

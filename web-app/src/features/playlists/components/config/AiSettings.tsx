@@ -1,7 +1,14 @@
 import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Bot, RefreshCw, Sparkles } from 'lucide-react';
-import { useState } from 'react';
-import { Control, Controller, FieldErrors, UseFormRegister, UseFormWatch } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import {
+  Control,
+  Controller,
+  FieldErrors,
+  UseFormRegister,
+  UseFormSetValue,
+  UseFormWatch
+} from 'react-hook-form';
 import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
@@ -20,6 +27,7 @@ interface AiSettingsProps {
   control: Control<PlaylistConfig>;
   errors: FieldErrors<PlaylistConfig>;
   register: UseFormRegister<PlaylistConfig>;
+  setValue?: UseFormSetValue<PlaylistConfig>;
   watch: UseFormWatch<PlaylistConfig>;
 }
 
@@ -78,21 +86,29 @@ function generatePromptPreview(
   }
 
   if (isInstrumental) {
-    prompt += '\n\n**IMPORTANT**: Only suggest instrumental tracks (no vocals).';
+    prompt +=
+      '\n\n**IMPORTANT Constraint**: Strictly suggest INSTRUMENTAL tracks only (no vocals or singing).';
   }
 
-  prompt += '\n\nSuggest tracks that match this vibe perfectly.';
+  prompt += '\n\nSuggest tracks that match this vibe and genre perfectly.';
 
   return prompt;
 }
 
-export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps) => {
+export const AiSettings = ({ control, errors, register, setValue, watch }: AiSettingsProps) => {
   const playlistName = watch('name');
   const playlistDescription = watch('settings.description');
   const isInstrumental = watch('aiGeneration.isInstrumentalOnly');
   const isAiEnabled = watch('aiGeneration.enabled');
   const aiConfig = watch('aiGeneration');
   const referenceArtists = watch('settings.referenceArtists') || [];
+  const currentModel = watch('aiGeneration.model');
+
+  useEffect(() => {
+    if (setValue && (currentModel === 'gemini-2.5-flash' || !currentModel)) {
+      setValue('aiGeneration.model', 'gemini-3.6-flash', { shouldDirty: true });
+    }
+  }, [currentModel, setValue]);
 
   const [promptPreview, setPromptPreview] = useState(() =>
     generatePromptPreview(playlistName, playlistDescription, isInstrumental, referenceArtists)
@@ -177,7 +193,7 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
                 render={({ field }) => (
                   <NumberInput
                     className={cn(
-                      'max-w-[150px]',
+                      'max-w-37.5',
                       errors.aiGeneration?.tracksToAdd && 'border-destructive'
                     )}
                     id="tracksToAdd"
@@ -226,7 +242,7 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
                 </Button>
               </div>
               <Textarea
-                className="bg-muted min-h-[120px] cursor-not-allowed resize-none font-mono text-sm"
+                className="bg-muted min-h-30 cursor-not-allowed resize-none font-mono text-sm"
                 id="prompt-preview"
                 readOnly
                 value={promptPreview}
@@ -256,6 +272,11 @@ export const AiSettings = ({ control, errors, register, watch }: AiSettingsProps
                     {...register('aiGeneration.model')}
                     className="bg-muted"
                     disabled
+                    value={
+                      currentModel === 'gemini-2.5-flash' || !currentModel
+                        ? 'gemini-3.6-flash'
+                        : currentModel
+                    }
                   />
                 </div>
                 {/* Temperature */}

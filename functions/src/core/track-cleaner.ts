@@ -3,11 +3,7 @@ import { normalizeSpotifyUri, PlaylistConfig, TrackInfo } from '@smart-spotify-c
 import { TrackWithMeta } from './types-internal';
 
 export type RemovalReason =
-  | 'artist_limit'
-  | 'duplicate'
-  | 'expired'
-  | 'size_limit'
-  | 'unsupported_format';
+  'artist_limit' | 'duplicate' | 'expired' | 'size_limit' | 'unsupported_format';
 
 export interface RemovedTrack {
   artist: string;

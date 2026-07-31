@@ -7,16 +7,21 @@ import { FirestoreService } from '@/services/firestore-service';
 
 export function usePlaylistEditor(id?: string, userUid?: string) {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
+  const isNew = id === 'new';
+  const [loading, setLoading] = useState(id !== 'new');
   const [config, setConfig] = useState<PlaylistConfig | undefined>(undefined);
-  const [isNew, setIsNew] = useState(false);
 
   const loadConfig = useCallback(
     async (docId: string, uid: string) => {
       try {
-        setLoading(true);
         const playlist = await FirestoreService.getUserPlaylistById(uid, docId);
         if (playlist) {
+          if (
+            playlist.aiGeneration &&
+            (playlist.aiGeneration.model === 'gemini-2.5-flash' || !playlist.aiGeneration.model)
+          ) {
+            playlist.aiGeneration.model = 'gemini-3.6-flash';
+          }
           setConfig(playlist);
         } else {
           toast.error('Playlist not found', {
@@ -38,10 +43,8 @@ export function usePlaylistEditor(id?: string, userUid?: string) {
   useEffect(() => {
     if (!userUid) return;
 
-    if (id === 'new') {
-      setIsNew(true);
-      setLoading(false);
-    } else if (id) {
+    if (id && id !== 'new') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       loadConfig(id, userUid);
     }
   }, [id, userUid, loadConfig]);

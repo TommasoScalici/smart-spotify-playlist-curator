@@ -34,6 +34,19 @@ export class PromptGenerator {
   ]);
 
   /**
+   * Extracts genre and style keywords from playlist name and description.
+   */
+  public static extractGenreKeywords(playlistName: string, description?: string): string[] {
+    const combinedText = `${playlistName} ${description || ''}`
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '');
+    const words = combinedText
+      .split(/\s+/)
+      .filter((word) => word.length > 2 && !this.STOP_WORDS.has(word));
+    return Array.from(new Set(words));
+  }
+
+  /**
    * Generates an AI prompt from playlist metadata.
    * Extracts meaningful words from title and description as cues.
    * @param playlistName - Name of the playlist
@@ -74,10 +87,11 @@ export class PromptGenerator {
     }
 
     if (isInstrumentalOnly) {
-      prompt += '\n\n**IMPORTANT**: Only suggest instrumental tracks (no vocals).';
+      prompt +=
+        '\n\n**IMPORTANT Constraint**: Strictly suggest INSTRUMENTAL tracks only (no vocals or singing).';
     }
 
-    prompt += '\n\nSuggest tracks that match this vibe perfectly.';
+    prompt += '\n\nSuggest tracks that match this vibe and genre perfectly.';
 
     return prompt;
   }

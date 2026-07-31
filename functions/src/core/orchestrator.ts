@@ -18,6 +18,50 @@ export class PlaylistOrchestrator {
     private firestoreLogger: FirestoreLogger
   ) {}
 
+  public applyExclusions(session: CurationSession, excludedAiUris: string[]): void {
+    if (!excludedAiUris || excludedAiUris.length === 0) return;
+
+    const excludedSet = new Set(excludedAiUris.map((u) => normalizeSpotifyUri(u)));
+
+    session.newAiTracks = session.newAiTracks.filter(
+      (t) => !excludedSet.has(normalizeSpotifyUri(t.uri))
+    );
+
+    session.finalTrackList = this.slotManager.arrangePlaylist(
+      session.config.mandatoryTracks,
+      session.survivingTracks,
+      session.newAiTracks,
+      session.config.settings.targetTotalTracks,
+      session.config.curationRules.shuffleAtEnd,
+      session.config.curationRules.sizeLimitStrategy
+    );
+
+    const finalSet = new Set(session.finalTrackList);
+    const removalReasons = new Map<string, 'other' | RemovalReason>();
+
+    for (const track of session.survivingTracks) {
+      if (!finalSet.has(track.uri)) {
+        removalReasons.set(track.uri, 'size_limit');
+      }
+    }
+
+    session.diff = {
+      ...DiffCalculator.calculate(
+        session.currentTracks,
+        session.survivingTracks,
+        session.finalTrackList,
+        session.config.mandatoryTracks,
+        session.newAiTracks,
+        removalReasons
+      ),
+      stats: {
+        final: session.finalTrackList.length,
+        success: true,
+        target: session.config.settings.targetTotalTracks
+      }
+    };
+  }
+
   public async createPlan(
     config: PlaylistConfig,
     spotifyService: SpotifyService,

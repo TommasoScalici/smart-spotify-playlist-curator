@@ -15,7 +15,8 @@ export class CurationUseCase {
     config: PlaylistConfig,
     callerUid: string,
     callerName?: string,
-    planId?: string
+    planId?: string,
+    excludedAiTrackUris?: string[]
   ): Promise<OrchestrationResult> {
     if (config.ownerId !== callerUid) {
       logger.warn(
@@ -94,6 +95,35 @@ export class CurationUseCase {
 
         if (session) {
           session.ownerName = callerName;
+
+          // Rehydrate Date fields that Firestore serialized as Timestamps
+          if (session.survivingTracks) {
+            session.survivingTracks = session.survivingTracks.map((t) => ({
+              ...t,
+              addedAt:
+                t.addedAt &&
+                typeof (t.addedAt as unknown as { toDate?: () => Date }).toDate === 'function'
+                  ? (t.addedAt as unknown as { toDate: () => Date }).toDate()
+                  : new Date(t.addedAt as unknown as number | string)
+            }));
+          }
+          if (session.newAiTracks) {
+            session.newAiTracks = session.newAiTracks.map((t) => {
+              if (!t.addedAt) return t;
+              const raw = t.addedAt as unknown as { toDate?: () => Date };
+              return {
+                ...t,
+                addedAt:
+                  typeof raw.toDate === 'function'
+                    ? raw.toDate()
+                    : new Date(t.addedAt as unknown as number | string)
+              };
+            });
+          }
+
+          if (excludedAiTrackUris && excludedAiTrackUris.length > 0) {
+            orchestrator.applyExclusions(session, excludedAiTrackUris);
+          }
           await orchestrator.executePlan(session, spotifyService);
           await planRef.delete();
         }
@@ -102,6 +132,7 @@ export class CurationUseCase {
       }
 
       await persistSpotifyTokens(config.ownerId, spotifyService, originalRefreshToken);
+      await playlistRef.update({ lastCuratedAt: new Date().toISOString() });
       results.push({ name: config.name, status: 'success' });
     } catch (error) {
       const errMsg = (error as Error).message;

@@ -146,7 +146,13 @@ export const ConfigEditor = ({
 
         {/* Section 3: AI Configuration */}
         <section className="space-y-4">
-          <AiSettings control={control} errors={errors} register={register} watch={watch} />
+          <AiSettings
+            control={control}
+            errors={errors}
+            register={register}
+            setValue={setValue}
+            watch={watch}
+          />
         </section>
 
         {/* Section 4: Mandatory Tracks */}
@@ -176,7 +182,7 @@ export const ConfigEditor = ({
                   </TooltipTrigger>
                   <TooltipContent
                     align="start"
-                    className="bg-destructive text-destructive-foreground mb-4 max-w-[300px] space-y-1.5 border-none p-3 shadow-xl"
+                    className="bg-destructive text-destructive-foreground mb-4 max-w-75 space-y-1.5 border-none p-3 shadow-xl"
                     side="top"
                   >
                     <p className="mb-1 text-xs font-bold tracking-wider uppercase opacity-70">
@@ -198,7 +204,7 @@ export const ConfigEditor = ({
 
           <div className="flex w-full flex-row items-center justify-center gap-6 sm:w-auto">
             <Button
-              className="w-full min-w-[140px] shadow-lg transition-all sm:w-auto"
+              className="w-full min-w-35 shadow-lg transition-all sm:w-auto"
               onClick={onCancel}
               size="lg"
               type="button"
@@ -208,7 +214,7 @@ export const ConfigEditor = ({
             </Button>
             <Button
               className={cn(
-                'w-full min-w-[180px] shadow-lg transition-all sm:w-auto',
+                'w-full min-w-45 shadow-lg transition-all sm:w-auto',
                 totalErrors > 0 && 'opacity-90'
               )}
               disabled={isSubmitting}

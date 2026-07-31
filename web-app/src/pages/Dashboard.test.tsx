@@ -56,12 +56,14 @@ describe('Dashboard', () => {
     expect(screen.getAllByTestId('skeleton').length).toBeGreaterThan(0);
   });
 
-  it('renders onboarding hero when spotify is not linked', () => {
+  it('renders onboarding hero when spotify is not linked', async () => {
     (useSpotifyStatus as Mock).mockReturnValue({ data: { isLinked: false }, isLoading: false });
 
     renderDashboard();
 
-    expect(screen.getByTestId('onboarding-hero')).toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.getByTestId('onboarding-hero')).toBeInTheDocument();
+    });
   });
 
   it('renders playlists when loaded', async () => {

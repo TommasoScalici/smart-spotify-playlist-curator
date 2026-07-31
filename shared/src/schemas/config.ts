@@ -6,8 +6,8 @@ import { MandatoryTrackSchema } from './tracks';
 export const AiGenerationConfigSchema = z.object({
   enabled: z.boolean().default(true),
   isInstrumentalOnly: z.boolean().default(false).optional(),
-  model: z.string().default('gemini-2.5-flash'),
-  temperature: z.number().min(0).max(1).default(0.7),
+  model: z.string().default('gemini-3.6-flash'),
+  temperature: z.number().min(0).max(1).default(0.5),
   tracksToAdd: z.number().min(0).max(50).default(10)
 });
 
@@ -38,8 +38,8 @@ export const PlaylistConfigSchema = z
   .object({
     aiGeneration: AiGenerationConfigSchema.default({
       enabled: true,
-      model: 'gemini-2.5-flash',
-      temperature: 0.7,
+      model: 'gemini-3.6-flash',
+      temperature: 0.5,
       tracksToAdd: 10
     }),
     curationRules: CurationRulesSchema.default({

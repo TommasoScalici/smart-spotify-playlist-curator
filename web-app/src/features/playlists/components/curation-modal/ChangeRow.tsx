@@ -1,5 +1,5 @@
 import { BaseTrack } from '@smart-spotify-curator/shared';
-import { ChevronDown, ChevronRight, PlayCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, PlayCircle, Undo2, X } from 'lucide-react';
 import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,10 @@ interface ChangeRowProps {
   className?: string;
   color: string;
   count: number;
+  excludedUris?: Set<string>;
   icon: React.ReactNode;
   label: string;
+  onRemoveTrack?: (uri: string) => void;
   tracks?: BaseTrack[];
   type: 'add' | 'remove';
 }
@@ -21,8 +23,10 @@ export const ChangeRow = ({
   className,
   color,
   count,
+  excludedUris,
   icon,
   label,
+  onRemoveTrack,
   tracks,
   type
 }: ChangeRowProps) => {
@@ -72,44 +76,94 @@ export const ChangeRow = ({
       {/* Expanded Track List */}
       {isOpen && hasTracks && (
         <div className="animate-in slide-in-from-top-2 fade-in pr-2 pb-2 pl-9 duration-200">
-          <div className="border-border/50 bg-background/40 max-h-[160px] overflow-y-auto rounded-md border p-2">
+          <div className="border-border/50 bg-background/40 max-h-45 overflow-y-auto rounded-md border p-2">
             <ul className="space-y-1">
-              {tracks.map((track, index) => (
-                <li
-                  className="border-border/50 flex flex-col gap-2 border-b pb-1 last:border-0 last:pb-0"
-                  key={`${track.uri}-${index}`}
-                >
-                  <div className="group flex items-center justify-between gap-2 text-xs">
-                    <div className="flex flex-1 flex-col truncate">
-                      <span className="text-foreground/90 truncate font-medium">{track.name}</span>
-                      <span className="text-muted-foreground truncate">{track.artist}</span>
+              {tracks.map((track, index) => {
+                const isExcluded = excludedUris?.has(track.uri);
+
+                return (
+                  <li
+                    className="border-border/50 flex flex-col gap-2 border-b pb-1 last:border-0 last:pb-0"
+                    key={`${track.uri}-${index}`}
+                  >
+                    <div className="group flex items-center justify-between gap-2 text-xs">
+                      <div className="flex flex-1 flex-col truncate">
+                        <span
+                          className={cn(
+                            'truncate font-medium transition-all',
+                            isExcluded
+                              ? 'text-muted-foreground line-through opacity-60'
+                              : 'text-foreground/90'
+                          )}
+                        >
+                          {track.name}
+                        </span>
+                        <span
+                          className={cn(
+                            'truncate transition-all',
+                            isExcluded
+                              ? 'text-muted-foreground/60 line-through'
+                              : 'text-muted-foreground'
+                          )}
+                        >
+                          {track.artist}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          className="text-muted-foreground hover:text-foreground p-1 opacity-0 transition-opacity group-hover:opacity-100"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setPreviewTrackUri(previewTrackUri === track.uri ? null : track.uri);
+                          }}
+                          title="Preview Track"
+                          type="button"
+                        >
+                          <PlayCircle className="h-4 w-4" />
+                        </button>
+                        {onRemoveTrack && (
+                          <button
+                            className={cn(
+                              'p-1 transition-all',
+                              isExcluded
+                                ? 'text-amber-400 opacity-100 hover:text-amber-300'
+                                : 'text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100'
+                            )}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRemoveTrack(track.uri);
+                            }}
+                            title={
+                              isExcluded
+                                ? 'Restore AI track suggestion'
+                                : 'Exclude this AI track from curation'
+                            }
+                            type="button"
+                          >
+                            {isExcluded ? (
+                              <Undo2 className="h-3.5 w-3.5" />
+                            ) : (
+                              <X className="h-4 w-4" />
+                            )}
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <button
-                      className="text-muted-foreground hover:text-foreground p-1 opacity-0 transition-opacity group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setPreviewTrackUri(previewTrackUri === track.uri ? null : track.uri);
-                      }}
-                      title="Preview Track"
-                      type="button"
-                    >
-                      <PlayCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                  {previewTrackUri === track.uri && (
-                    <div className="animate-in fade-in slide-in-from-top-1 mt-1 duration-200">
-                      <iframe
-                        allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-                        className="bg-background/50 rounded-md"
-                        height="80"
-                        src={`https://open.spotify.com/embed/track/${track.uri.split(':').pop()}?theme=0`}
-                        title={`Spotify player - ${track.name}`}
-                        width="100%"
-                      />
-                    </div>
-                  )}
-                </li>
-              ))}
+                    {previewTrackUri === track.uri && (
+                      <div className="animate-in fade-in slide-in-from-top-1 mt-1 duration-200">
+                        <iframe
+                          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                          className="bg-background/50 rounded-md"
+                          height="80"
+                          src={`https://open.spotify.com/embed/track/${track.uri.split(':').pop()}?theme=0`}
+                          title={`Spotify player - ${track.name}`}
+                          width="100%"
+                        />
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </div>

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { toast } from 'sonner';
 import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
@@ -90,8 +90,11 @@ describe('RunButton', () => {
     const confirmBtn = await screen.findByText(/Run Automation/i);
     fireEvent.click(confirmBtn);
 
-    expect(FunctionsService.triggerCuration).toHaveBeenCalledWith(mockPlaylistId, {
-      planId: 'plan-xyz'
+    await waitFor(() => {
+      expect(FunctionsService.triggerCuration).toHaveBeenCalledWith(mockPlaylistId, {
+        excludedAiTrackUris: [],
+        planId: 'plan-xyz'
+      });
     });
     expect(toast.promise).toHaveBeenCalled();
   });
@@ -117,6 +120,8 @@ describe('RunButton', () => {
       expect(btn).toBeDisabled();
     });
 
-    resolveCuration({ message: 'Done' });
+    await act(async () => {
+      resolveCuration({ message: 'Done' });
+    });
   });
 });

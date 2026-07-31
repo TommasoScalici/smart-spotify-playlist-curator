@@ -65,11 +65,11 @@ export const RunButton = ({
     }
   };
 
-  const handleConfirm = async (planId?: string) => {
+  const handleConfirm = async (planId?: string, excludedAiTrackUris?: string[]) => {
     setShowModal(false);
     setLoading(true);
     onRunStart?.();
-    const promise = FunctionsService.triggerCuration(playlistId, { planId });
+    const promise = FunctionsService.triggerCuration(playlistId, { excludedAiTrackUris, planId });
     toast.promise(promise, {
       error: (err: unknown) => `Failed: ${err instanceof Error ? err.message : String(err)}`,
       loading: 'Running automation...',

@@ -62,6 +62,7 @@ export const CurationEstimateSchema = z.object({
 export type CurationEstimate = z.infer<typeof CurationEstimateSchema>;
 
 export const TriggerCurationRequestSchema = z.object({
+  excludedAiTrackUris: z.array(z.string()).optional(),
   planId: z.string().optional(),
   playlistId: z.string().min(1, 'Playlist ID is required')
 });

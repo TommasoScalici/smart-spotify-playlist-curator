@@ -53,6 +53,6 @@ describe('SpotifyPlaylistManager: Smart Update', () => {
     // First target: 'TrackC'. Found at actual index 2. Moved to 0.
     // Result after move: TrackC (0), TrackA (1), TrackB (2).
 
-    expect(mockSpotify.playlists.movePlaylistItems).toHaveBeenCalledWith(playlistId, 2, 0, 1);
+    expect(mockSpotify.playlists.movePlaylistItems).toHaveBeenCalledWith(playlistId, 2, 1, 0);
   });
 });

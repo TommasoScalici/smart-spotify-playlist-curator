@@ -20,20 +20,13 @@ async function build() {
     await esbuild.build({
       bundle: true,
       entryPoints: [path.join(FUNCTIONS_DIR, 'src', 'index.ts')],
-      external: [
-        'firebase-admin',
-        'firebase-functions',
-        '@spotify/web-api-ts-sdk',
-        'zod',
-        '@google/generative-ai',
-        'dotenv'
-      ],
+      external: ['firebase-admin', 'firebase-functions'],
       format: 'cjs', // CommonJS for standard Firebase Functions
       logLevel: 'info',
       outfile: path.join(DIST_DIR, 'index.js'),
       platform: 'node',
       sourcemap: 'inline', // Good for debugging in Cloud Console
-      target: 'node20' // Cloud Functions Gen 2 (Node 20+)
+      target: 'node24' // Cloud Functions Gen 2 (Node 24)
     });
 
     console.log('✅ Bundle complete: functions/dist/index.js');
@@ -43,19 +36,16 @@ async function build() {
       fs.readFileSync(path.join(FUNCTIONS_DIR, 'package.json'), 'utf-8')
     );
 
+    const deployDependencies = { ...originalPackageJson.dependencies };
+    delete deployDependencies['@smart-spotify-curator/shared'];
+
     const deployPackageJson = {
-      dependencies: originalPackageJson.dependencies,
+      dependencies: deployDependencies,
       engines: originalPackageJson.engines,
       main: 'index.js',
       name: originalPackageJson.name,
       type: 'commonjs' // Explicitly state CJS
     };
-
-    // Remove the workspace dependency before writing
-    // We bundled it, so we don't need it in 'node_modules'
-    if (deployPackageJson.dependencies['@smart-spotify-curator/shared']) {
-      delete deployPackageJson.dependencies['@smart-spotify-curator/shared'];
-    }
 
     fs.writeFileSync(
       path.join(DIST_DIR, 'package.json'),

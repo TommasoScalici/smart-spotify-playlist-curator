@@ -44,12 +44,13 @@ export const ArtistSelector = ({
   const [nToGenerate, setNToGenerate] = useState(3);
   const [temperature, setTemperature] = useState(0.7);
 
-  useEffect(() => {
-    if (!open) {
+  const handleOpenChange = (newOpen: boolean) => {
+    setOpen(newOpen);
+    if (!newOpen) {
       setResults([]);
       setQuery('');
     }
-  }, [open]);
+  };
 
   // ... (existing useEffect for open state)
 
@@ -237,7 +238,7 @@ export const ArtistSelector = ({
       </div>
 
       {/* Search Input */}
-      <Popover onOpenChange={setOpen} open={open}>
+      <Popover onOpenChange={handleOpenChange} open={open}>
         <PopoverTrigger asChild>
           <Button
             aria-expanded={open}
@@ -255,7 +256,7 @@ export const ArtistSelector = ({
         </PopoverTrigger>
         <PopoverContent
           align="start"
-          className="border-primary/20 w-[85vw] overflow-hidden p-0 shadow-2xl sm:w-[400px]"
+          className="border-primary/20 w-[85vw] overflow-hidden p-0 shadow-2xl sm:w-100"
         >
           <Command className="rounded-none" shouldFilter={false}>
             <CommandInput
@@ -264,7 +265,7 @@ export const ArtistSelector = ({
               placeholder="Search Spotify artists..."
               value={query}
             />
-            <CommandList className="max-h-[400px]">
+            <CommandList className="max-h-100">
               {loading && (
                 <div className="text-muted-foreground flex items-center justify-center py-6 text-sm">
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

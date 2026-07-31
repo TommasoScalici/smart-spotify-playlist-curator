@@ -3,8 +3,8 @@ import { PlaylistConfig } from '@smart-spotify-curator/shared';
 export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
   aiGeneration: {
     enabled: true,
-    model: 'gemini-2.5-flash',
-    temperature: 0.7,
+    model: 'gemini-3.6-flash',
+    temperature: 0.5,
     tracksToAdd: 10
   },
   curationRules: {
