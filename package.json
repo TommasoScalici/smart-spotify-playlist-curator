@@ -19,7 +19,7 @@
     "lint:fix": "npm run lint --workspaces --if-present -- --fix",
     "format": "prettier --write .",
     "prepare": "husky",
-    "type-check": "tsc -b",
+    "type-check": "npm run build --workspace=shared && tsc -b",
     "test": "npm run test --workspaces --if-present"
   },
   "lint-staged": {

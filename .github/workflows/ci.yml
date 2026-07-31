@@ -42,6 +42,7 @@ jobs:
           cache: 'npm'
           cache-dependency-path: package-lock.json
       - run: npm ci
+      - run: npm run build --workspace=shared
       - run: npm run type-check # Root check
       - run: npm run lint # Root lint (runs all workspaces)
 

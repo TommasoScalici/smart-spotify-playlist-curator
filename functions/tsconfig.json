@@ -8,8 +8,12 @@
     "target": "ESNext",
     "types": ["node", "vitest/globals"],
     "composite": true,
-    "declaration": true
+    "declaration": true,
+    "paths": {
+      "@smart-spotify-curator/shared": ["../shared/dist/index.d.ts"]
+    }
   },
   "compileOnSave": true,
-  "include": ["src", "tests"]
+  "include": ["src", "tests"],
+  "references": [{ "path": "../shared" }]
 }

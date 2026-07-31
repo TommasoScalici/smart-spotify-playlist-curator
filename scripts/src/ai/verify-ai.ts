@@ -1,35 +1,30 @@
-import { AiService } from '../../../functions/src/services/ai-service.js';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 async function main() {
-  console.log('Initializing AiService...');
+  console.log('Initializing Gemini AI verification...');
 
   try {
-    const aiService = new AiService();
+    const apiKey = process.env.GOOGLE_AI_API_KEY;
+    if (!apiKey) {
+      throw new Error('GOOGLE_AI_API_KEY is not set in environment.');
+    }
 
-    const prompt = 'Suggest 3 upbeat pop songs from the 80s';
-    const promptConfig = {
-      enabled: true,
-      isInstrumentalOnly: false,
-      model: 'gemini-3.6-flash',
-      temperature: 0.7,
-      tracksToAdd: 3
-    };
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
     console.log('Sending request to Gemini AI...');
     const start = Date.now();
-    const suggestions = await aiService.generateSuggestions(promptConfig, prompt, 3);
+    const result = await model.generateContent('Suggest 3 upbeat pop songs from the 80s');
     const duration = Date.now() - start;
 
     console.log(`Response received in ${duration}ms`);
-    console.log('Result:', JSON.stringify(suggestions, null, 2));
-
-    if (suggestions.length > 0 && suggestions[0].artist && suggestions[0].track) {
-      console.log('\u2705 Verification SUCCESS: Received valid JSON tracks.');
-    } else {
-      console.error('\u274C Verification FAILED: Invalid format or empty response.');
-    }
+    console.log('Result:', result.response.text());
+    console.log('✅ Verification SUCCESS: Received valid AI response.');
   } catch (error) {
-    console.error('\u274C Verification ERROR:', error);
+    console.error('❌ Verification ERROR:', error);
   }
 }
 

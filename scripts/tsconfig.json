@@ -7,8 +7,11 @@
     "declaration": true,
     "rootDir": "./src",
     "outDir": "dist",
-    "types": ["node", "express"]
+    "types": ["node", "express"],
+    "paths": {
+      "@smart-spotify-curator/shared": ["../shared/dist/index.d.ts"]
+    }
   },
   "include": ["src/**/*"],
-  "references": [{ "path": "../shared" }, { "path": "../functions" }]
+  "references": [{ "path": "../shared" }]
 }
