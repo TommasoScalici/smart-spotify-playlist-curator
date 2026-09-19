@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { PlaylistConfig, PlaylistConfigSchema } from '@smart-spotify-curator/shared';
 import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Loader2, Save } from 'lucide-react';
+import { useMemo } from 'react';
 import { FieldErrors, Resolver, useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { DEFAULT_PLAYLIST_CONFIG } from '@/constants/defaults';
 import { useAuth } from '@/contexts/AuthContext';
+import { countAllErrors, getFlatErrorMessages } from '@/lib/form-utils';
 import { cn } from '@/lib/utils';
 import { FirestoreService } from '@/services/firestore-service';
 
@@ -25,36 +27,6 @@ interface ConfigEditorProps {
   onSubmit: (data: PlaylistConfig) => Promise<void>;
 }
 
-/**
- * Recursively counts all error messages in the form errors object.
- */
-const countAllErrors = (obj: null | Record<string, unknown> | undefined): number => {
-  let count = 0;
-  if (!obj || typeof obj !== 'object') return 0;
-  if ('message' in obj) return 1;
-  for (const key in obj) {
-    count += countAllErrors(obj[key] as Record<string, unknown>);
-  }
-  return count;
-};
-
-/**
- * Recursively extracts all error messages into a flat array.
- */
-const getFlatErrorMessages = (obj: null | Record<string, unknown> | undefined): string[] => {
-  const messages: string[] = [];
-  const walk = (item: unknown) => {
-    if (!item || typeof item !== 'object') return;
-    const record = item as Record<string, unknown>;
-    if ('message' in record && typeof record.message === 'string') messages.push(record.message);
-    else {
-      for (const key in record) walk(record[key]);
-    }
-  };
-  walk(obj);
-  return messages;
-};
-
 export const ConfigEditor = ({
   initialConfig,
   isAddMode,
@@ -70,16 +42,20 @@ export const ConfigEditor = ({
     queryKey: ['playlists', user?.uid]
   });
 
-  // Composite schema with duplicate check
-  const validationSchema = PlaylistConfigSchema.superRefine((data, ctx) => {
-    if (isAddMode && existingPlaylists.some((p: PlaylistConfig) => p.id === data.id)) {
-      ctx.addIssue({
-        code: 'custom',
-        message: 'This playlist is already being curated by you',
-        path: ['id']
-      });
-    }
-  });
+  // Composite schema with duplicate check (memoized to avoid recalculating schema on each render)
+  const validationSchema = useMemo(
+    () =>
+      PlaylistConfigSchema.superRefine((data, ctx) => {
+        if (isAddMode && existingPlaylists.some((p: PlaylistConfig) => p.id === data.id)) {
+          ctx.addIssue({
+            code: 'custom',
+            message: 'This playlist is already being curated by you',
+            path: ['id']
+          });
+        }
+      }),
+    [isAddMode, existingPlaylists]
+  );
 
   const {
     control,
