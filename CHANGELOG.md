@@ -1,3 +1,9 @@
+## [1.15.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.0...v1.15.1) (2026-09-19)
+
+### Bug Fixes
+
+- **ai:** align supported models to Gemini 3.8 Flash default and 3.5 Flash-Lite alternative with automatic fallback ([9a8c4ca](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/9a8c4cafa7edc8fcdd87877f1364298e1d60f509))
+
 # [1.15.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.14.0...v1.15.0) (2026-09-19)
 
 ### Features
