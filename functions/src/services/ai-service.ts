@@ -1,5 +1,10 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { AiGenerationConfig, DEFAULT_AI_MODEL } from '@smart-spotify-curator/shared';
+import {
+  AiGenerationConfig,
+  DEFAULT_AI_MODEL,
+  FALLBACK_AI_MODEL,
+  SUPPORTED_AI_MODELS
+} from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
 
@@ -99,7 +104,7 @@ ${JSON.stringify(excludedTracks)}`;
 For each suggestion, state WHY this track fits the vibe and genre, and confirm its instrumental/vocal status.`;
 
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.executeGenerateContent(selectedModel, {
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -117,8 +122,7 @@ For each suggestion, state WHY this track fits the vibe and genre, and confirm i
           systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly),
           temperature: aiConfig.temperature
         },
-        contents: fullPrompt,
-        model: selectedModel
+        contents: fullPrompt
       });
 
       const text = response.text || '';
@@ -184,7 +188,7 @@ Suggest ONLY real, well-known artists that are on Spotify.`;
     }
 
     try {
-      const response = await this.ai.models.generateContent({
+      const response = await this.executeGenerateContent(selectedModel, {
         config: {
           responseMimeType: 'application/json',
           responseSchema: {
@@ -201,8 +205,7 @@ Suggest ONLY real, well-known artists that are on Spotify.`;
             'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.',
           temperature: generationConfig.temperature
         },
-        contents: prompt,
-        model: selectedModel
+        contents: prompt
       });
 
       const text = response.text || '';
@@ -256,8 +259,41 @@ CORE DUTIES & MANDATES:
     return instruction;
   }
 
+  /**
+   * Executes a Gemini API generateContent call with automatic fallback to FALLBACK_AI_MODEL.
+   */
+  private async executeGenerateContent(
+    preferredModel: string,
+    params: {
+      config: Parameters<GoogleGenAI['models']['generateContent']>[0]['config'];
+      contents: string;
+    }
+  ) {
+    try {
+      return await this.ai.models.generateContent({
+        ...params,
+        model: preferredModel
+      });
+    } catch (error) {
+      if (preferredModel !== FALLBACK_AI_MODEL) {
+        logger.warn(
+          `AI request failed with primary model ${preferredModel}. Falling back to ${FALLBACK_AI_MODEL}...`,
+          { error }
+        );
+        return await this.ai.models.generateContent({
+          ...params,
+          model: FALLBACK_AI_MODEL
+        });
+      }
+      throw error;
+    }
+  }
+
   private resolveModel(modelName?: string): string {
-    if (!modelName || modelName === 'gemini-2.5-flash' || modelName === 'gemini-3.6-flash') {
+    if (
+      !modelName ||
+      !SUPPORTED_AI_MODELS.includes(modelName as (typeof SUPPORTED_AI_MODELS)[number])
+    ) {
       return DEFAULT_AI_MODEL;
     }
     return modelName;

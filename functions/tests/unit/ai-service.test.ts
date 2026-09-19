@@ -93,4 +93,45 @@ describe('AiService', () => {
     );
     expect(callArg.config.systemInstruction).toContain('QUALITY & NEGATIVE CONSTRAINTS (STRICT):');
   });
+
+  it('should route unsupported models to gemini-3.8-flash by default', async () => {
+    mockGenerateContent.mockResolvedValue({
+      text: JSON.stringify([{ artist: 'Artist', reasoning: 'Reason', track: 'Track' }])
+    });
+
+    await aiService.generateSuggestions(
+      { ...mockPromptConfig, model: 'unsupported-model' },
+      mockPrompt,
+      1
+    );
+
+    expect(mockGenerateContent).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'gemini-3.8-flash' })
+    );
+  });
+
+  it('should fall back to gemini-3.5-flash-lite when primary model call fails', async () => {
+    mockGenerateContent
+      .mockRejectedValueOnce(new Error('Rate limit exceeded on 3.8'))
+      .mockResolvedValueOnce({
+        text: JSON.stringify([{ artist: 'Artist', reasoning: 'Reason', track: 'Track' }])
+      });
+
+    const result = await aiService.generateSuggestions(
+      { ...mockPromptConfig, model: 'gemini-3.8-flash' },
+      mockPrompt,
+      1
+    );
+
+    expect(result).toHaveLength(1);
+    expect(mockGenerateContent).toHaveBeenCalledTimes(2);
+    expect(mockGenerateContent).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ model: 'gemini-3.8-flash' })
+    );
+    expect(mockGenerateContent).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({ model: 'gemini-3.5-flash-lite' })
+    );
+  });
 });

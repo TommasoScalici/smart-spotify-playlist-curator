@@ -11,6 +11,7 @@ export {
   EstimateCurationRequestSchema,
   ExchangeSpotifyTokenRequestSchema,
   ExchangeSpotifyTokenResponseSchema,
+  FALLBACK_AI_MODEL,
   GetPlaylistMetricsRequestSchema,
   GetTrackDetailsRequestSchema,
   MandatoryTrackSchema,

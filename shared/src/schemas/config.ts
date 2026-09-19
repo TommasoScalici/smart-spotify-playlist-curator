@@ -4,7 +4,8 @@ import { SearchResultSchema } from './search';
 import { MandatoryTrackSchema } from './tracks';
 
 export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
-export const SUPPORTED_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.8-pro'] as const;
+export const FALLBACK_AI_MODEL = 'gemini-3.5-flash-lite';
+export const SUPPORTED_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.5-flash-lite'] as const;
 
 export const AiGenerationConfigSchema = z.object({
   enabled: z.boolean().default(true),
