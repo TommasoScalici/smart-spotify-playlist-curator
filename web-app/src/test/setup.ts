@@ -21,12 +21,23 @@ vi.mock('firebase/auth', () => ({
 
 vi.mock('firebase/firestore', () => ({
   collection: vi.fn(),
+  deleteDoc: vi.fn(),
   doc: vi.fn(),
   getDoc: vi.fn(),
   getDocs: vi.fn(),
   getFirestore: vi.fn(),
+  limit: vi.fn(),
+  onSnapshot: vi.fn(),
+  orderBy: vi.fn(),
   query: vi.fn(),
-  where: vi.fn()
+  setDoc: vi.fn(),
+  startAfter: vi.fn(),
+  updateDoc: vi.fn(),
+  where: vi.fn(),
+  writeBatch: vi.fn(() => ({
+    commit: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn()
+  }))
 }));
 
 vi.mock('firebase/functions', () => ({

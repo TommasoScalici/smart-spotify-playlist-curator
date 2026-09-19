@@ -14,9 +14,9 @@ export default function Login() {
   return (
     <div className="bg-background animate-in fade-in relative flex min-h-screen items-center justify-center overflow-hidden p-6 duration-1000">
       {/* Ambient Glow */}
-      <div className="bg-primary/20 pointer-events-none absolute top-1/4 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full opacity-50 blur-[120px]" />
+      <div className="bg-primary/20 pointer-events-none absolute top-1/4 left-1/2 h-125 w-125 -translate-x-1/2 rounded-full opacity-50 blur-[120px]" />
 
-      <div className="relative w-full max-w-[400px] space-y-8 text-center">
+      <div className="relative w-full max-w-100 space-y-8 text-center">
         <div className="space-y-6">
           <div className="bg-primary/10 text-primary ring-primary/20 shadow-primary/20 animate-bounce-subtle inline-flex items-center justify-center rounded-3xl p-4 shadow-2xl ring-1 backdrop-blur-xl">
             <Music className="h-10 w-10" />
@@ -48,14 +48,14 @@ export default function Login() {
             Sign in with Google
           </Button>
 
-          <div className="text-muted-foreground flex items-center justify-center gap-4 text-[10px] font-bold tracking-widest uppercase opacity-40">
+          <div className="text-muted-foreground text-2xs flex items-center justify-center gap-4 font-bold tracking-widest uppercase opacity-40">
             <span>v{__APP_VERSION__}</span>
             <span className="h-1 w-1 rounded-full bg-current" />
             <span>OAuth 2.0</span>
           </div>
         </div>
 
-        <p className="text-muted-foreground/40 text-[10px] font-medium">
+        <p className="text-muted-foreground/40 text-2xs font-medium">
           By signing in, you agree to our terms and privacy policy.
         </p>
       </div>

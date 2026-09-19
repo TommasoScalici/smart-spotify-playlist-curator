@@ -10,13 +10,17 @@ import {
   collection,
   deleteDoc,
   doc,
+  DocumentData,
   getDoc,
   getDocs,
   limit,
   onSnapshot,
   orderBy,
+  Query,
   query,
+  QueryDocumentSnapshot,
   setDoc,
+  startAfter,
   updateDoc,
   where,
   writeBatch
@@ -59,28 +63,45 @@ export const FirestoreService = {
   },
 
   /**
-   * Soft delete all activity log entries for a user.
+   * Soft delete all activity log entries for a user in paginated batches.
    * @param uid - The user ID
    */
   async clearAllActivities(uid: string): Promise<void> {
     const logsRef = collection(db, 'users', uid, 'logs');
-    // We fetch current logs to mark them as deleted.
-    // We don't use a 'where' query for deletion to ensure we catch legacy logs missing the field.
-    const snapshot = await getDocs(query(logsRef, limit(500)));
+    const BATCH_SIZE = 500;
+    let lastDoc: null | QueryDocumentSnapshot<DocumentData> = null;
+    let hasMore = true;
 
-    const batch = writeBatch(db);
-    let count = 0;
+    while (hasMore) {
+      const q: Query<DocumentData> = lastDoc
+        ? query(logsRef, orderBy('__name__'), startAfter(lastDoc), limit(BATCH_SIZE))
+        : query(logsRef, orderBy('__name__'), limit(BATCH_SIZE));
 
-    snapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.deleted !== true) {
-        batch.update(doc.ref, { deleted: true });
-        count++;
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        break;
       }
-    });
 
-    if (count > 0) {
-      await batch.commit();
+      const batch = writeBatch(db);
+      let count = 0;
+
+      snapshot.forEach((docSnapshot: QueryDocumentSnapshot<DocumentData>) => {
+        const data = docSnapshot.data();
+        if (data.deleted !== true) {
+          batch.update(docSnapshot.ref, { deleted: true });
+          count++;
+        }
+      });
+
+      if (count > 0) {
+        await batch.commit();
+      }
+
+      if (snapshot.size < BATCH_SIZE) {
+        hasMore = false;
+      } else {
+        lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      }
     }
   },
 

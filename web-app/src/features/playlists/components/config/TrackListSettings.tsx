@@ -10,6 +10,7 @@ import {
   useWatch
 } from 'react-hook-form';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
@@ -127,7 +128,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
                 <p className="text-muted-foreground truncate text-xs">{displayMeta.artist}</p>
               )}
               <Button
-                className="text-primary h-auto w-fit p-0 text-left text-[10px] opacity-100 transition-opacity hover:underline sm:opacity-0 sm:group-hover:opacity-100"
+                className="text-primary text-2xs h-auto w-fit p-0 text-left opacity-100 transition-opacity hover:underline sm:opacity-0 sm:group-hover:opacity-100"
                 onClick={() => {
                   // Clear fields to show search again
                   setValue(`mandatoryTracks.${index}.uri`, '');
@@ -148,7 +149,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
         <div className="flex items-center gap-2">
           <div className="space-y-1">
             <LabelWithTooltip
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              className="text-muted-foreground text-2xs font-bold tracking-wider uppercase"
               htmlFor={`min-${index}`}
               tooltip="The earliest position this track can appear in the playlist (1 = Start)."
             >
@@ -180,7 +181,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
           <span className="text-muted-foreground mt-6 text-xs">-</span>
           <div className="space-y-1">
             <LabelWithTooltip
-              className="text-muted-foreground text-[10px] font-bold tracking-wider uppercase"
+              className="text-muted-foreground text-2xs font-bold tracking-wider uppercase"
               htmlFor={`max-${index}`}
               tooltip="The latest position this track can appear in the playlist."
             >
@@ -227,7 +228,7 @@ const TrackRow = ({ control, errors, index, remove, setValue }: TrackRowProps) =
 
       {(trackErrors?.positionRange?.min || trackErrors?.positionRange?.max) && (
         <div className="basis-full text-center sm:text-right">
-          <p className="text-destructive text-[10px] leading-none font-medium">
+          <p className="text-destructive text-2xs leading-none font-medium">
             {trackErrors.positionRange?.min?.message || trackErrors.positionRange?.max?.message}
           </p>
         </div>
@@ -251,9 +252,11 @@ export const TrackListSettings = ({ control, errors, setValue }: TrackListSettin
             <CardDescription>
               Pin specific songs to exact positions (e.g., Opener, Closer).
             </CardDescription>
-            <p className="mt-2 inline-block rounded-md border border-amber-500/20 bg-amber-500/10 px-2.5 py-1 text-[11px] font-medium text-amber-500">
-              ⚡ Pinned tracks bypass all rules (Age, Artist Limits).
-            </p>
+            <div>
+              <Badge className="text-2xs mt-2" variant="warning">
+                ⚡ Pinned tracks bypass all rules (Age, Artist Limits).
+              </Badge>
+            </div>
           </div>
           <Button
             className="w-full sm:w-auto"

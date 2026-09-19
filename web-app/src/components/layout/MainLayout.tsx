@@ -113,7 +113,7 @@ export const MainLayout = () => {
                 <div className="max-h-[calc(100vh-5rem)] space-y-4 overflow-y-auto p-4">
                   {/* Nav Links */}
                   <div className="space-y-2">
-                    <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
+                    <p className="text-muted-foreground text-2xs px-2 font-bold tracking-wider uppercase">
                       Navigation
                     </p>
                     <Link
@@ -129,7 +129,7 @@ export const MainLayout = () => {
                   {/* Spotify Status (Mobile) */}
                   {user && (
                     <div className="space-y-2">
-                      <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
+                      <p className="text-muted-foreground text-2xs px-2 font-bold tracking-wider uppercase">
                         Spotify
                       </p>
                       <div
@@ -160,7 +160,7 @@ export const MainLayout = () => {
                               <p className="text-xs font-bold">
                                 {isSpotifyLinked ? 'Connected' : 'Disconnected'}
                               </p>
-                              <p className="text-muted-foreground text-[10px]">
+                              <p className="text-muted-foreground text-2xs">
                                 {isSpotifyLinked
                                   ? data?.profile?.displayName || 'Active'
                                   : 'Action Required'}
@@ -200,7 +200,7 @@ export const MainLayout = () => {
                   {/* User Profile (Mobile) */}
                   {user && (
                     <div className="space-y-2">
-                      <p className="text-muted-foreground px-2 text-[10px] font-bold tracking-wider uppercase">
+                      <p className="text-muted-foreground text-2xs px-2 font-bold tracking-wider uppercase">
                         Account
                       </p>
                       <div className="bg-accent border-border/50 flex items-center justify-between rounded-xl border p-3">
@@ -211,10 +211,10 @@ export const MainLayout = () => {
                             src={user.photoURL || undefined}
                           />
                           <div>
-                            <p className="max-w-[120px] truncate text-xs font-bold">
+                            <p className="max-w-30 truncate text-xs font-bold">
                               {user.displayName}
                             </p>
-                            <p className="text-muted-foreground max-w-[120px] truncate text-[10px]">
+                            <p className="text-muted-foreground text-2xs max-w-30 truncate">
                               {user.email}
                             </p>
                           </div>
@@ -315,7 +315,7 @@ export const MainLayout = () => {
                         />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56" forceMount>
+                    <DropdownMenuContent align="end" className="w-56">
                       <DropdownMenuLabel className="font-normal">
                         <div className="flex flex-col space-y-1">
                           <p className="text-sm leading-none font-medium">{user.displayName}</p>

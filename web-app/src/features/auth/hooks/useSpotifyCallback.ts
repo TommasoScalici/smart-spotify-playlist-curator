@@ -14,12 +14,38 @@ export function useSpotifyCallback() {
   const linkingRef = useRef(false);
 
   const code = searchParams.get('code');
-  const [status, setStatus] = useState<'error' | 'processing' | 'success'>(() => {
-    return code ? 'processing' : 'error';
-  });
-  const [errorMsg, setErrorMsg] = useState(() => {
-    return code ? '' : 'No authentication code received from Spotify.';
-  });
+  const errorParam = searchParams.get('error');
+  const errorDescription = searchParams.get('error_description');
+
+  const getInitialState = () => {
+    if (errorParam === 'access_denied') {
+      return {
+        errorMsg:
+          'Spotify authorization was cancelled or denied. Please grant permissions to proceed.',
+        status: 'error' as const
+      };
+    }
+    if (errorParam) {
+      return {
+        errorMsg: errorDescription || `Spotify authorization failed (${errorParam}).`,
+        status: 'error' as const
+      };
+    }
+    if (!code) {
+      return {
+        errorMsg: 'No authentication code received from Spotify.',
+        status: 'error' as const
+      };
+    }
+    return {
+      errorMsg: '',
+      status: 'processing' as const
+    };
+  };
+
+  const initialState = getInitialState();
+  const [status, setStatus] = useState<'error' | 'processing' | 'success'>(initialState.status);
+  const [errorMsg, setErrorMsg] = useState(initialState.errorMsg);
 
   const { data: spotifyData } = useSpotifyStatus(user?.uid);
   const isActuallyLinked = spotifyData?.isLinked;

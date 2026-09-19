@@ -6,7 +6,6 @@ import { Toaster } from './components/ui/sonner';
 import { AuthProvider } from './contexts/AuthContext';
 import Login from './features/auth/pages/LoginPage';
 import SpotifyCallback from './features/auth/pages/SpotifyCallbackPage';
-import './App.css';
 import Dashboard from './features/dashboard/pages/DashboardPage';
 import EditPlaylist from './features/playlists/pages/PlaylistEditorPage';
 

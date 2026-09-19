@@ -25,16 +25,19 @@ export const TrackItem = ({ track, variant = 'default' }: TrackItemProps) => {
         </span>
         {reason && (
           <Badge
-            className={cn(
-              'shrink-0 px-1.5 py-0 text-[10px] uppercase',
-              reason === 'duplicate' && 'border-blue-500/20 bg-blue-500/10 text-blue-500',
-              reason === 'expired' && 'border-amber-500/20 bg-amber-500/10 text-amber-500',
-              reason === 'artist_limit' && 'border-purple-500/20 bg-purple-500/10 text-purple-500',
-              reason === 'size_limit' && 'border-rose-500/20 bg-rose-500/10 text-rose-500',
-              (reason === 'other' || !reason) &&
-                'bg-muted text-muted-foreground border-muted-foreground/20'
-            )}
-            variant="outline"
+            className="shrink-0"
+            size="xs"
+            variant={
+              reason === 'duplicate'
+                ? 'info'
+                : reason === 'expired'
+                  ? 'warning'
+                  : reason === 'artist_limit'
+                    ? 'purple'
+                    : reason === 'size_limit'
+                      ? 'pink'
+                      : 'outline'
+            }
           >
             {reason === 'artist_limit'
               ? 'Artist limit'

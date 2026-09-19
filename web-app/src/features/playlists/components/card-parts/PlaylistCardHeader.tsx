@@ -9,6 +9,7 @@ interface PlaylistCardHeaderProps {
   config: PlaylistConfig;
   imageUrl?: null | string;
   isToggling: boolean;
+  name?: string;
   onToggle: (enabled: boolean) => void;
   owner?: string;
 }
@@ -17,13 +18,15 @@ export const PlaylistCardHeader = ({
   config,
   imageUrl,
   isToggling,
+  name,
   onToggle,
   owner
 }: PlaylistCardHeaderProps) => {
   const [imgError, setImgError] = useState(false);
 
-  // Prioritize fresh imageUrl from metrics over potentially stale config.imageUrl
+  // Prioritize fresh metadata from metrics over potentially stale config
   const coverUrl = imageUrl || config.imageUrl;
+  const displayName = name || config.name;
 
   // Track the last URL we saw to know when to reset the error state (Recommended React Pattern > useEffect)
   const [lastCoverUrl, setLastCoverUrl] = useState(coverUrl);
@@ -41,7 +44,7 @@ export const PlaylistCardHeader = ({
         <div className="h-20 w-20 overflow-hidden rounded-lg border border-white/10 shadow-lg transition-transform duration-500 group-hover:scale-105">
           {showImage ? (
             <img
-              alt={config.name}
+              alt={displayName}
               className="h-full w-full object-cover"
               onError={() => setImgError(true)}
               src={coverUrl}
@@ -67,11 +70,11 @@ export const PlaylistCardHeader = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <h3 className="text-foreground group-hover:text-primary line-clamp-1 cursor-help text-xl leading-tight font-bold tracking-tight drop-shadow-sm transition-colors md:line-clamp-2">
-                {config.name}
+                {displayName}
               </h3>
             </TooltipTrigger>
             <TooltipContent>
-              <p>{config.name}</p>
+              <p>{displayName}</p>
             </TooltipContent>
           </Tooltip>
         </TooltipProvider>

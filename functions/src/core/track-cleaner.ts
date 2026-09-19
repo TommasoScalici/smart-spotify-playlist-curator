@@ -53,9 +53,19 @@ export class TrackCleaner {
       }
 
       const normalizedName = item.name.toLowerCase().replace(/\s+/g, ' ').trim();
+      const cleanName = normalizedName
+        .replace(
+          /\s*[-–]\s*(?:remastered(?:\s*\d+)?|remaster|single version|single|album version|radio edit|bonus track).*$/i,
+          ''
+        )
+        .replace(
+          /\s*\((?:remastered(?:\s*\d+)?|remaster|single version|single|album version|radio edit|bonus track)[^)]*\)/i,
+          ''
+        )
+        .trim();
       const normalizedArtist = item.artist.toLowerCase().replace(/\s+/g, ' ').trim();
-      const normalizedAlbum = item.album.toLowerCase().replace(/\s+/g, ' ').trim();
-      const signature = `${normalizedName}:${normalizedArtist}:${normalizedAlbum}`;
+      const primaryArtist = normalizedArtist.split(',')[0].trim();
+      const signature = `${cleanName || normalizedName}:${primaryArtist}`;
 
       const normalizedUri = normalizeSpotifyUri(item.uri);
 
@@ -90,7 +100,6 @@ export class TrackCleaner {
       }
 
       // 3. Artist Limit Check (Protect VIPs)
-      const primaryArtist = item.artist.split(',')[0].trim().toLowerCase();
       const isVarious = primaryArtist === 'various artists';
 
       if (!isVarious) {

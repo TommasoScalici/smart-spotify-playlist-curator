@@ -5,6 +5,7 @@ export const PlaylistMetricsSchema = z.object({
   followers: z.number(),
   imageUrl: z.string().url().optional().nullable(),
   lastUpdated: z.string(), // ISO 8601 timestamp
+  name: z.string().optional(),
   owner: z.string().optional(),
   tracks: z.number()
 });

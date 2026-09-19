@@ -65,10 +65,9 @@ export const OnboardingHero = () => {
   }, [features.length]);
 
   return (
-    <div className="bg-card/80 dark:bg-card/95 border-border/50 animate-in fade-in zoom-in-95 relative mx-4 my-auto flex min-h-[500px] w-full max-w-4xl flex-col items-center overflow-hidden rounded-3xl border-2 p-6 text-center shadow-2xl ring-1 ring-black/5 backdrop-blur-3xl transition-all duration-1000 sm:mx-auto sm:min-h-fit sm:p-8 md:p-10 dark:ring-white/5">
+    <div className="bg-card/80 dark:bg-card/95 border-border/50 animate-in fade-in zoom-in-95 relative mx-4 my-auto flex min-h-125 w-full max-w-4xl flex-col items-center overflow-hidden rounded-3xl border-2 p-6 text-center shadow-2xl ring-1 ring-black/5 backdrop-blur-3xl transition-all duration-1000 sm:mx-auto sm:min-h-fit sm:p-8 md:p-10 dark:ring-white/5">
       {/* Dynamic Ambient Background */}
       <div className="from-primary/10 via-background to-secondary/10 absolute inset-0 z-0 bg-linear-to-br" />
-      <div className="pointer-events-none absolute inset-0 z-0 bg-[url('/noise.svg')] opacity-20" />
 
       {/* Content */}
       <div className="relative z-10 w-full max-w-2xl space-y-6 md:space-y-8">
@@ -87,7 +86,7 @@ export const OnboardingHero = () => {
         </div>
 
         {/* Feature Slideshow */}
-        <div className="relative mx-auto flex min-h-[120px] w-full max-w-xl items-center justify-center md:min-h-[140px]">
+        <div className="relative mx-auto flex min-h-30 w-full max-w-xl items-center justify-center md:min-h-35">
           {features.map((feature, idx) => (
             <div
               className={cn(
@@ -128,7 +127,7 @@ export const OnboardingHero = () => {
               className={cn(
                 'h-2 rounded-full p-0 transition-all duration-500 hover:scale-110 active:scale-95 md:h-2.5',
                 idx === currentSlide
-                  ? 'bg-primary ring-primary/30 w-8 shadow-[0_0_20px_hsl(var(--primary)/0.8)] ring-2 md:w-10'
+                  ? 'bg-primary ring-primary/30 glow-primary w-8 ring-2 md:w-10'
                   : 'bg-foreground/30 hover:bg-foreground/50 w-2 shadow-md md:w-2.5 dark:bg-white/40 dark:hover:bg-white/60'
               )}
               key={idx}
@@ -142,8 +141,9 @@ export const OnboardingHero = () => {
         {/* CTA */}
         <div className="space-y-4 pt-4 md:space-y-6 md:pt-6">
           <Button
-            className="group bg-primary hover:bg-primary/90 text-primary-foreground relative h-12 w-full overflow-hidden rounded-full px-8 text-base font-bold shadow-[0_0_20px_hsl(var(--primary)/0.3)] transition-all duration-300 hover:scale-105 hover:shadow-[0_0_30px_hsl(var(--primary)/0.5)] active:scale-95 sm:w-auto md:h-13 md:px-10 md:text-lg"
+            className="group relative h-12 w-full overflow-hidden rounded-full px-8 text-base font-bold sm:w-auto md:h-13 md:px-10 md:text-lg"
             onClick={login}
+            variant="glow"
           >
             <div className="absolute inset-0 -translate-x-full bg-linear-to-r from-white/0 via-white/20 to-white/0 transition-transform duration-1000 group-hover:translate-x-full" />
             <span className="relative flex items-center justify-center gap-2">
@@ -152,7 +152,7 @@ export const OnboardingHero = () => {
             </span>
           </Button>
 
-          <div className="text-foreground/50 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 text-[10px] font-bold tracking-widest uppercase md:gap-x-6 md:text-xs">
+          <div className="text-foreground/50 text-2xs flex flex-wrap items-center justify-center gap-x-4 gap-y-2 px-4 font-bold tracking-widest uppercase md:gap-x-6 md:text-xs">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
               <Zap className="h-3 w-3" /> Fully Automated
             </span>
