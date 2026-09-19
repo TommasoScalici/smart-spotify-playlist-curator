@@ -1,3 +1,9 @@
+# [1.15.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.14.0...v1.15.0) (2026-09-19)
+
+### Features
+
+- **security:** enforce OAuth CSRF state, centralize Gemini 3.8 Flash and validate RPC boundaries ([f36ac68](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/f36ac6892c776b53d41d0a8e4d84d0c38131fd19))
+
 # [1.14.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.13.0...v1.14.0) (2026-09-19)
 
 ### Features
