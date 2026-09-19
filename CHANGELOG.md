@@ -1,3 +1,9 @@
+# [1.14.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.13.0...v1.14.0) (2026-09-19)
+
+### Features
+
+- implement centralized design system, resolve core bugs and upgrade dependencies ([34fc67b](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/34fc67b80b28fecf3c08e9a299e42f323b36dc11))
+
 # [1.13.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.12.0...v1.13.0) (2026-07-31)
 
 ### Bug Fixes
