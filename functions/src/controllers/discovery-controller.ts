@@ -1,23 +1,11 @@
+import {
+  SuggestReferenceArtistsRequest,
+  SuggestReferenceArtistsRequestSchema
+} from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
-import { z } from 'zod';
 
 import { DiscoveryUseCase } from '../core/discovery-usecase.js';
-
-const AiConfigSchema = z.object({
-  model: z.string().optional(),
-  temperature: z.number().optional()
-});
-
-const SuggestReferenceArtistsSchema = z.object({
-  aiConfig: AiConfigSchema.optional(),
-  count: z.number().optional(),
-  description: z.string().optional(),
-  excludedArtists: z.array(z.string()).optional(),
-  playlistName: z.string().min(1)
-});
-
-type SuggestReferenceArtistsRequest = z.infer<typeof SuggestReferenceArtistsSchema>;
 
 export async function suggestReferenceArtistsHandler(
   request: CallableRequest<SuggestReferenceArtistsRequest>
@@ -26,7 +14,7 @@ export async function suggestReferenceArtistsHandler(
     throw new HttpsError('unauthenticated', 'Authentication required.');
   }
 
-  const parseResult = SuggestReferenceArtistsSchema.safeParse(request.data);
+  const parseResult = SuggestReferenceArtistsRequestSchema.safeParse(request.data);
   if (!parseResult.success) {
     throw new HttpsError('invalid-argument', 'Playlist name is required.');
   }

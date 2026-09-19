@@ -1,16 +1,12 @@
-import { PlaylistMetricsSchema } from '@smart-spotify-curator/shared';
+import {
+  GetPlaylistMetricsRequest,
+  GetPlaylistMetricsRequestSchema,
+  PlaylistMetricsSchema
+} from '@smart-spotify-curator/shared';
 import { logger } from 'firebase-functions/v2';
 import { CallableRequest, HttpsError } from 'firebase-functions/v2/https';
-import { z } from 'zod';
 
 import { PlaylistUseCase } from '../core/playlist-usecase.js';
-
-// Request Schema
-const GetPlaylistMetricsRequestSchema = z.object({
-  playlistId: z.string().startsWith('spotify:playlist:')
-});
-
-type GetPlaylistMetricsRequest = z.infer<typeof GetPlaylistMetricsRequestSchema>;
 
 /**
  * Cloud Function Handler: getPlaylistMetrics

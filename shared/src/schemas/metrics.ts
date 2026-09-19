@@ -11,3 +11,11 @@ export const PlaylistMetricsSchema = z.object({
 });
 
 export type PlaylistMetrics = z.infer<typeof PlaylistMetricsSchema>;
+
+export const GetPlaylistMetricsRequestSchema = z.object({
+  playlistId: z
+    .string()
+    .startsWith('spotify:playlist:', { message: 'Must be a valid Spotify Playlist URI' })
+});
+
+export type GetPlaylistMetricsRequest = z.infer<typeof GetPlaylistMetricsRequestSchema>;

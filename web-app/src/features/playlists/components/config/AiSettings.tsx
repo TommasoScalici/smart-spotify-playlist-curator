@@ -1,4 +1,4 @@
-import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
+import { DEFAULT_AI_MODEL, PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
 import { Bot, RefreshCw, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -105,8 +105,11 @@ export const AiSettings = ({ control, errors, register, setValue, watch }: AiSet
   const currentModel = watch('aiGeneration.model');
 
   useEffect(() => {
-    if (setValue && (currentModel === 'gemini-2.5-flash' || !currentModel)) {
-      setValue('aiGeneration.model', 'gemini-3.6-flash', { shouldDirty: true });
+    if (
+      setValue &&
+      (currentModel === 'gemini-2.5-flash' || currentModel === 'gemini-3.6-flash' || !currentModel)
+    ) {
+      setValue('aiGeneration.model', DEFAULT_AI_MODEL, { shouldDirty: true });
     }
   }, [currentModel, setValue]);
 
@@ -273,8 +276,10 @@ export const AiSettings = ({ control, errors, register, setValue, watch }: AiSet
                     className="bg-muted"
                     disabled
                     value={
-                      currentModel === 'gemini-2.5-flash' || !currentModel
-                        ? 'gemini-3.6-flash'
+                      currentModel === 'gemini-2.5-flash' ||
+                      currentModel === 'gemini-3.6-flash' ||
+                      !currentModel
+                        ? DEFAULT_AI_MODEL
                         : currentModel
                     }
                   />

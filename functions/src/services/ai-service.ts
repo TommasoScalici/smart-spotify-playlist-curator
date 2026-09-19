@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+import { AiGenerationConfig, DEFAULT_AI_MODEL } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
 
@@ -257,8 +257,8 @@ CORE DUTIES & MANDATES:
   }
 
   private resolveModel(modelName?: string): string {
-    if (!modelName || modelName === 'gemini-2.5-flash') {
-      return 'gemini-3.6-flash';
+    if (!modelName || modelName === 'gemini-2.5-flash' || modelName === 'gemini-3.6-flash') {
+      return DEFAULT_AI_MODEL;
     }
     return modelName;
   }

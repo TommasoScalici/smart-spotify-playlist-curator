@@ -6,7 +6,7 @@ export const SpotifyProfileSchema = z.object({
   displayName: z.string().nullable(),
   email: z.string().email(),
   id: z.string(),
-  linkedAt: z.date(),
+  linkedAt: z.coerce.date(),
   product: z.string(),
   status: z.enum(['active', 'invalid']).default('active')
 });
@@ -14,10 +14,10 @@ export const SpotifyProfileSchema = z.object({
 export type SpotifyProfile = z.infer<typeof SpotifyProfileSchema>;
 
 export const UserSchema = z.object({
-  createdAt: z.date(),
+  createdAt: z.coerce.date(),
   displayName: z.string().optional(),
   email: z.string().email(),
-  lastLoginAt: z.date(),
+  lastLoginAt: z.coerce.date(),
   photoURL: z.string().url().optional(),
   spotifyProfile: SpotifyProfileSchema.optional().nullable(),
   theme: z.enum(['light', 'dark', 'system']).default('system'),
@@ -33,3 +33,17 @@ export const SpotifyTokensSchema = z.object({
 });
 
 export type SpotifyTokens = z.infer<typeof SpotifyTokensSchema>;
+
+export const ExchangeSpotifyTokenRequestSchema = z.object({
+  code: z.string().min(1, 'Authorization code is required'),
+  redirectUri: z.string().url('Valid redirect URI is required')
+});
+
+export type ExchangeSpotifyTokenRequest = z.infer<typeof ExchangeSpotifyTokenRequestSchema>;
+
+export const ExchangeSpotifyTokenResponseSchema = z.object({
+  profile: SpotifyProfileSchema.optional(),
+  success: z.boolean()
+});
+
+export type ExchangeSpotifyTokenResponse = z.infer<typeof ExchangeSpotifyTokenResponseSchema>;

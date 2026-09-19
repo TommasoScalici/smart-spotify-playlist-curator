@@ -18,7 +18,11 @@ export function useSpotifyCallback() {
   const errorDescription = searchParams.get('error_description');
 
   const getInitialState = () => {
+    const stateParam = searchParams.get('state');
+    const storedState = sessionStorage.getItem('spotify_auth_state');
+
     if (errorParam === 'access_denied') {
+      if (storedState) sessionStorage.removeItem('spotify_auth_state');
       return {
         errorMsg:
           'Spotify authorization was cancelled or denied. Please grant permissions to proceed.',
@@ -26,10 +30,20 @@ export function useSpotifyCallback() {
       };
     }
     if (errorParam) {
+      if (storedState) sessionStorage.removeItem('spotify_auth_state');
       return {
         errorMsg: errorDescription || `Spotify authorization failed (${errorParam}).`,
         status: 'error' as const
       };
+    }
+    if (storedState) {
+      sessionStorage.removeItem('spotify_auth_state');
+      if (!stateParam || stateParam !== storedState) {
+        return {
+          errorMsg: 'Invalid or missing authorization state. Possible CSRF security risk detected.',
+          status: 'error' as const
+        };
+      }
     }
     if (!code) {
       return {

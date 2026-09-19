@@ -20,12 +20,16 @@ export const useSpotifyAuth = () => {
     const redirectUri =
       import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`;
 
+    const state = crypto.randomUUID();
+    sessionStorage.setItem('spotify_auth_state', state);
+
     const params = new URLSearchParams({
       client_id: SPOTIFY_CLIENT_ID,
       redirect_uri: redirectUri,
       response_type: 'code',
       scope: SCOPES.join(' '),
-      show_dialog: 'true'
+      show_dialog: 'true',
+      state
     });
 
     window.location.href = `https://accounts.spotify.com/authorize?${params.toString()}`;

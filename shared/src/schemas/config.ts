@@ -3,10 +3,13 @@ import { z } from 'zod';
 import { SearchResultSchema } from './search';
 import { MandatoryTrackSchema } from './tracks';
 
+export const DEFAULT_AI_MODEL = 'gemini-3.8-flash';
+export const SUPPORTED_AI_MODELS = ['gemini-3.8-flash', 'gemini-3.8-pro'] as const;
+
 export const AiGenerationConfigSchema = z.object({
   enabled: z.boolean().default(true),
   isInstrumentalOnly: z.boolean().default(false).optional(),
-  model: z.string().default('gemini-3.6-flash'),
+  model: z.string().default(DEFAULT_AI_MODEL),
   temperature: z.number().min(0).max(1).default(0.5),
   tracksToAdd: z.number().min(0).max(50).default(10)
 });
@@ -38,7 +41,7 @@ export const PlaylistConfigSchema = z
   .object({
     aiGeneration: AiGenerationConfigSchema.default({
       enabled: true,
-      model: 'gemini-3.6-flash',
+      model: DEFAULT_AI_MODEL,
       temperature: 0.5,
       tracksToAdd: 10
     }),

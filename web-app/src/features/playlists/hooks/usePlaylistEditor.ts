@@ -1,4 +1,4 @@
-import { PlaylistConfig } from '@smart-spotify-curator/shared';
+import { DEFAULT_AI_MODEL, PlaylistConfig } from '@smart-spotify-curator/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -18,9 +18,11 @@ export function usePlaylistEditor(id?: string, userUid?: string) {
         if (playlist) {
           if (
             playlist.aiGeneration &&
-            (playlist.aiGeneration.model === 'gemini-2.5-flash' || !playlist.aiGeneration.model)
+            (playlist.aiGeneration.model === 'gemini-2.5-flash' ||
+              playlist.aiGeneration.model === 'gemini-3.6-flash' ||
+              !playlist.aiGeneration.model)
           ) {
-            playlist.aiGeneration.model = 'gemini-3.6-flash';
+            playlist.aiGeneration.model = DEFAULT_AI_MODEL;
           }
           setConfig(playlist);
         } else {

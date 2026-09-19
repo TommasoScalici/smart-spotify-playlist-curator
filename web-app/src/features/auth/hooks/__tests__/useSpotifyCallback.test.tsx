@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { User } from 'firebase/auth';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -16,7 +16,7 @@ vi.mock('@/features/auth/hooks/useSpotifyStatus', () => ({
 
 vi.mock('@/services/functions-service', () => ({
   FunctionsService: {
-    linkSpotifyAccount: vi.fn()
+    linkSpotifyAccount: vi.fn().mockResolvedValue({ profile: undefined, success: true })
   }
 }));
 
@@ -71,5 +71,31 @@ describe('useSpotifyCallback', () => {
 
     expect(result.current.status).toBe('error');
     expect(result.current.errorMsg).toBe('No authentication code received from Spotify.');
+  });
+
+  it('rejects with error on mismatched state parameter (CSRF protection)', () => {
+    sessionStorage.setItem('spotify_auth_state', 'expected-state-123');
+    const { result } = renderHook(() => useSpotifyCallback(), {
+      wrapper: createWrapper(['/callback?code=valid-code&state=attacker-state-456'])
+    });
+
+    expect(result.current.status).toBe('error');
+    expect(result.current.errorMsg).toContain('Possible CSRF security risk detected');
+    expect(sessionStorage.getItem('spotify_auth_state')).toBeNull();
+  });
+
+  it('proceeds with processing when state parameter matches sessionStorage', async () => {
+    sessionStorage.setItem('spotify_auth_state', 'expected-state-123');
+    const { result } = renderHook(() => useSpotifyCallback(), {
+      wrapper: createWrapper(['/callback?code=valid-code&state=expected-state-123'])
+    });
+
+    expect(result.current.status).toBe('processing');
+    expect(result.current.errorMsg).toBe('');
+    expect(sessionStorage.getItem('spotify_auth_state')).toBeNull();
+
+    await waitFor(() => {
+      expect(result.current.status).toBe('success');
+    });
   });
 });
