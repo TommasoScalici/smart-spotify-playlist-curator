@@ -1,3 +1,9 @@
+# [1.16.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.2...v1.16.0) (2026-10-07)
+
+### Features
+
+- **ai:** migrate to Interactions API with thinking level and stateless sessions ([d69bdbc](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/d69bdbcd08c38616b0dc05f900ca12734cbf5f13))
+
 ## [1.15.2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.1...v1.15.2) (2026-10-07)
 
 ### Bug Fixes
