@@ -56,7 +56,7 @@ export class AiService {
   /**
    * Generates track suggestions using Google's Gemini AI.
    * Uses Native Structured Output and System Instruction prompting.
-   * @param aiConfig - The AI generation settings (model, temperature, etc.)
+   * @param aiConfig - The AI generation settings (model, instrumentalOnly, etc.)
    * @param prompt - The base prompt describing the playlist
    * @param count - Number of tracks to request
    * @param excludedTracks - List of "Artist - Track" strings to exclude
@@ -119,8 +119,7 @@ For each suggestion, state WHY this track fits the vibe and genre, and confirm i
             },
             type: Type.ARRAY
           },
-          systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly),
-          temperature: aiConfig.temperature
+          systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly)
         },
         contents: fullPrompt
       });
@@ -202,8 +201,7 @@ Suggest ONLY real, well-known artists that are on Spotify.`;
             type: Type.ARRAY
           },
           systemInstruction:
-            'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.',
-          temperature: generationConfig.temperature
+            'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.'
         },
         contents: prompt
       });

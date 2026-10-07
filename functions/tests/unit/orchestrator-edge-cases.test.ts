@@ -40,7 +40,7 @@ describe('PlaylistOrchestrator Edge Cases', () => {
   let mockFirestoreLogger: MockFirestoreLogger;
 
   const mockConfig: PlaylistConfig = {
-    aiGeneration: { enabled: true, model: 'gemini', temperature: 0.7, tracksToAdd: 5 },
+    aiGeneration: { enabled: true, model: 'gemini-3.8-flash', tracksToAdd: 5 },
     curationRules: {
       maxTrackAgeDays: 30,
       maxTracksPerArtist: 1,

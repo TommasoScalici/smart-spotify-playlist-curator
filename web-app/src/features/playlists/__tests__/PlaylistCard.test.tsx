@@ -23,8 +23,7 @@ const mockConfig: { _docId: string } & PlaylistConfig = {
   _docId: 'doc123', // Firestore Doc ID
   aiGeneration: {
     enabled: true,
-    model: 'gemini-1.5-flash',
-    temperature: 0.7,
+    model: 'gemini-3.8-flash',
     tracksToAdd: 10
   },
   curationRules: {

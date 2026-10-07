@@ -7,7 +7,6 @@ import { getAuthorizedSpotifyService, persistSpotifyTokens } from './auth-servic
 export interface SuggestArtistsParams {
   aiConfig?: {
     model?: string;
-    temperature?: number;
   };
   count?: number;
   description?: string;
@@ -24,7 +23,6 @@ export class DiscoveryUseCase {
     const finalAiConfig = {
       enabled: true,
       model: aiConfig?.model || DEFAULT_AI_MODEL,
-      temperature: aiConfig?.temperature || 0.7,
       tracksToAdd: 0
     };
 

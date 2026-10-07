@@ -8,8 +8,7 @@ describe('Shared Schema Validation', () => {
       const validConfig = {
         aiGeneration: {
           enabled: true,
-          model: 'gemini-2.5-flash',
-          temperature: 0.5,
+          model: 'gemini-3.8-flash',
           tracksToAdd: 5
         },
         curationRules: {

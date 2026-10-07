@@ -5,7 +5,7 @@ import { TrackCleaner } from '../../src/core/track-cleaner';
 
 describe('TrackCleaner Robustness', () => {
   const mockConfig: PlaylistConfig = {
-    aiGeneration: { enabled: false, model: 'gemini', temperature: 0.7, tracksToAdd: 0 },
+    aiGeneration: { enabled: false, model: 'gemini-3.8-flash', tracksToAdd: 0 },
     curationRules: {
       maxTrackAgeDays: 100,
       maxTracksPerArtist: 10,

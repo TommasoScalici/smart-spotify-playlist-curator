@@ -60,7 +60,7 @@ describe('CurationEstimator', () => {
   };
 
   const mockConfig: PlaylistConfig = {
-    aiGeneration: { enabled: true, model: 'gemini', temperature: 0.7, tracksToAdd: 10 },
+    aiGeneration: { enabled: true, model: 'gemini-3.8-flash', tracksToAdd: 10 },
     curationRules: {
       maxTrackAgeDays: 30,
       maxTracksPerArtist: 2,

@@ -267,7 +267,7 @@ export const AiSettings = ({ control, errors, setValue, watch }: AiSettingsProps
               <Label className="text-muted-foreground mb-4 block text-xs tracking-wider uppercase">
                 Advanced Settings
               </Label>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Model */}
                 <div className="space-y-2">
                   <LabelWithTooltip
@@ -299,31 +299,6 @@ export const AiSettings = ({ control, errors, setValue, watch }: AiSettingsProps
                           Gemini 3.5 Flash-Lite (Fast / Cost-Effective)
                         </option>
                       </select>
-                    )}
-                  />
-                </div>
-                {/* Temperature */}
-                <div className="space-y-2">
-                  <LabelWithTooltip
-                    className={cn(errors.aiGeneration?.temperature && 'text-destructive')}
-                    htmlFor="temperature"
-                    tooltip="Controls the randomness of the AI. Lower values are more focused, higher values are more creative."
-                  >
-                    Temperature
-                  </LabelWithTooltip>
-                  <Controller
-                    control={control}
-                    name="aiGeneration.temperature"
-                    render={({ field }) => (
-                      <NumberInput
-                        className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
-                        id="temperature"
-                        max={1}
-                        min={0}
-                        onChange={field.onChange}
-                        step={0.1}
-                        value={field.value || 0}
-                      />
                     )}
                   />
                 </div>

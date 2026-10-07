@@ -45,8 +45,7 @@ describe('AiService', () => {
   const mockPromptConfig: AiGenerationConfig = {
     enabled: true,
     isInstrumentalOnly: false,
-    model: 'gemini-3.6-flash',
-    temperature: 0.5,
+    model: 'gemini-3.8-flash',
     tracksToAdd: 5
   };
 

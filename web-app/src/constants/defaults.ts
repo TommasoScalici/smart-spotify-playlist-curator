@@ -4,7 +4,6 @@ export const DEFAULT_PLAYLIST_CONFIG: Partial<PlaylistConfig> = {
   aiGeneration: {
     enabled: true,
     model: DEFAULT_AI_MODEL,
-    temperature: 0.5,
     tracksToAdd: 10
   },
   curationRules: {

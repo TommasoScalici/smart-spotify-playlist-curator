@@ -34,8 +34,7 @@ export type SearchSpotifyResponse = z.infer<typeof SearchSpotifyResponseSchema>;
 export const SuggestReferenceArtistsRequestSchema = z.object({
   aiConfig: z
     .object({
-      model: z.string().optional(),
-      temperature: z.number().optional()
+      model: z.string().optional()
     })
     .optional(),
   count: z.number().optional().default(5),
