@@ -14,16 +14,20 @@ async function main() {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    console.log('Sending request to Gemini AI (gemini-3.8-flash)...');
+    console.log('Sending request to Gemini AI (gemini-3.8-flash via Interactions API)...');
     const start = Date.now();
-    const response = await ai.models.generateContent({
-      contents: 'Suggest 3 upbeat pop songs from the 80s',
-      model: 'gemini-3.8-flash'
+    const interaction = await ai.interactions.create({
+      generation_config: {
+        thinking_level: 'low'
+      },
+      input: 'Suggest 3 upbeat pop songs from the 80s',
+      model: 'gemini-3.8-flash',
+      store: false
     });
     const duration = Date.now() - start;
 
     console.log(`Response received in ${duration}ms`);
-    console.log('Result:', response.text);
+    console.log('Result:', interaction.output_text);
     console.log('✅ Verification SUCCESS: Received valid AI response.');
   } catch (error) {
     console.error('❌ Verification ERROR:', error);

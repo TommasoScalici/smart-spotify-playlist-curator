@@ -12,7 +12,7 @@ A cutting-edge **Private Playlist Utility** that automatically curates, maintain
 ### 🧠 AI-Powered Curation
 
 - **Dual-Model Strategy & Auto-Fallback**: Defaults to **Google Gemini 3.8 Flash** (`gemini-3.8-flash`) for deep musical intelligence and nuance, with **Gemini 3.5 Flash-Lite** (`gemini-3.5-flash-lite`) as a high-speed alternative and automatic fallback.
-- **Native Structured Output**: Powered by the official `@google/genai` SDK with strict JSON schema definitions (`Type.OBJECT` / `Type.ARRAY`) and system instructions, eliminating hallucinations and JSON parsing errors.
+- **Native Structured Output & Interactions API**: Powered by the official `@google/genai` Interactions API (`client.interactions.create`) with strict JSON schema definitions (`response_format`), calibrated reasoning (`thinking_level`), and stateless privacy (`store: false`).
 - **Context-Aware Prompts & Style Anchors**: Dynamically generates prompts from playlist titles, user descriptions, style keywords, and configured **Reference Artists** (style anchors).
 - **AI Reference Artist Discovery**: Built-in helper to automatically suggest complementary reference artists directly from the UI (`suggestReferenceArtists`).
 - **Instrumental-Only Filtering**: Dedicated constraint toggle to ensure recommendations are strictly instrumental (no vocals).
@@ -67,20 +67,20 @@ Since this tool uses the Spotify API in Development Mode:
 
 ## 🛠 Tech Stack
 
-| Layer                    | Technology               | Version / Configuration                                                              |
-| :----------------------- | :----------------------- | :----------------------------------------------------------------------------------- |
-| **Runtime**              | Node.js                  | `v24` (LTS)                                                                          |
-| **Language**             | TypeScript               | `v5.9` (Strict Mode, Composite Projects)                                             |
-| **AI Engine**            | Google Gemini            | `gemini-3.8-flash` (default), `gemini-3.5-flash-lite` (fallback) via `@google/genai` |
-| **Backend (FaaS)**       | Firebase Cloud Functions | Gen 2, Region `us-central1`, Memory 512MiB+                                          |
-| **Frontend**             | React                    | `v19` + Vite `v8`                                                                    |
-| **Styling**              | Tailwind CSS             | `v4` (CSS-first `@theme`) + `shadcn/ui` + CVA                                        |
-| **State Management**     | TanStack Query           | `v5` (Optimistic UI & Cache invalidation)                                            |
-| **Database**             | Cloud Firestore          | User-Centric Schema: `users/{uid}/playlists`                                         |
-| **Schema Validation**    | Zod                      | `v4` (Contract-first shared schemas)                                                 |
-| **Testing**              | Vitest                   | `v4` (Workspace-native runner for Unit & Integration)                                |
-| **Linting & Formatting** | ESLint & Prettier        | ESLint `v10` (Flat Config), Prettier `v3`                                            |
-| **Versioning**           | semantic-release         | Conventional Commits & Automated Changelogs                                          |
+| Layer                    | Technology               | Version / Configuration                                                                               |
+| :----------------------- | :----------------------- | :---------------------------------------------------------------------------------------------------- |
+| **Runtime**              | Node.js                  | `v24` (LTS)                                                                                           |
+| **Language**             | TypeScript               | `v5.9` (Strict Mode, Composite Projects)                                                              |
+| **AI Engine**            | Google Gemini            | `gemini-3.8-flash` (default), `gemini-3.5-flash-lite` (fallback) via `@google/genai` Interactions API |
+| **Backend (FaaS)**       | Firebase Cloud Functions | Gen 2, Region `us-central1`, Memory 512MiB+                                                           |
+| **Frontend**             | React                    | `v19` + Vite `v8`                                                                                     |
+| **Styling**              | Tailwind CSS             | `v4` (CSS-first `@theme`) + `shadcn/ui` + CVA                                                         |
+| **State Management**     | TanStack Query           | `v5` (Optimistic UI & Cache invalidation)                                                             |
+| **Database**             | Cloud Firestore          | User-Centric Schema: `users/{uid}/playlists`                                                          |
+| **Schema Validation**    | Zod                      | `v4` (Contract-first shared schemas)                                                                  |
+| **Testing**              | Vitest                   | `v4` (Workspace-native runner for Unit & Integration)                                                 |
+| **Linting & Formatting** | ESLint & Prettier        | ESLint `v10` (Flat Config), Prettier `v3`                                                             |
+| **Versioning**           | semantic-release         | Conventional Commits & Automated Changelogs                                                           |
 
 ---
 

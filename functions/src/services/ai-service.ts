@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI } from '@google/genai';
 import {
   AiGenerationConfig,
   DEFAULT_AI_MODEL,
@@ -42,6 +42,19 @@ const ArtistResponseSchema = z.array(
     name: z.string().min(1)
   })
 );
+
+interface ExecuteModelInteractionParams {
+  generation_config?: {
+    thinking_level?: 'high' | 'low' | 'medium' | 'minimal';
+  };
+  input: string;
+  response_format?: Array<{
+    mime_type: string;
+    schema: Record<string, unknown>;
+    type: string;
+  }>;
+  system_instruction?: string;
+}
 
 export class AiService {
   private ai: GoogleGenAI;
@@ -104,27 +117,31 @@ ${JSON.stringify(excludedTracks)}`;
 For each suggestion, state WHY this track fits the vibe and genre, and confirm its instrumental/vocal status.`;
 
     try {
-      const response = await this.executeGenerateContent(selectedModel, {
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            items: {
-              properties: {
-                artist: { type: Type.STRING },
-                reasoning: { type: Type.STRING },
-                track: { type: Type.STRING }
-              },
-              required: ['artist', 'track', 'reasoning'],
-              type: Type.OBJECT
-            },
-            type: Type.ARRAY
-          },
-          systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly)
+      const text = await this.executeInteraction(selectedModel, {
+        generation_config: {
+          thinking_level: 'low'
         },
-        contents: fullPrompt
+        input: fullPrompt,
+        response_format: [
+          {
+            mime_type: 'application/json',
+            schema: {
+              items: {
+                properties: {
+                  artist: { type: 'string' },
+                  reasoning: { type: 'string' },
+                  track: { type: 'string' }
+                },
+                required: ['artist', 'track', 'reasoning'],
+                type: 'object'
+              },
+              type: 'array'
+            },
+            type: 'text'
+          }
+        ],
+        system_instruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly)
       });
-
-      const text = response.text || '';
 
       logger.info('AI Response received', {
         durationMs: Date.now() - requestStart
@@ -187,26 +204,30 @@ Suggest ONLY real, well-known artists that are on Spotify.`;
     }
 
     try {
-      const response = await this.executeGenerateContent(selectedModel, {
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            items: {
-              properties: {
-                name: { type: Type.STRING }
-              },
-              required: ['name'],
-              type: Type.OBJECT
-            },
-            type: Type.ARRAY
-          },
-          systemInstruction:
-            'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.'
+      const text = await this.executeInteraction(selectedModel, {
+        generation_config: {
+          thinking_level: 'minimal'
         },
-        contents: prompt
+        input: prompt,
+        response_format: [
+          {
+            mime_type: 'application/json',
+            schema: {
+              items: {
+                properties: {
+                  name: { type: 'string' }
+                },
+                required: ['name'],
+                type: 'object'
+              },
+              type: 'array'
+            },
+            type: 'text'
+          }
+        ],
+        system_instruction:
+          'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.'
       });
-
-      const text = response.text || '';
       const parsed = JSON.parse(text);
       const data = ArtistResponseSchema.parse(parsed);
 
@@ -258,30 +279,37 @@ CORE DUTIES & MANDATES:
   }
 
   /**
-   * Executes a Gemini API generateContent call with automatic fallback to FALLBACK_AI_MODEL.
+   * Executes a Gemini Interactions API create call with automatic fallback to FALLBACK_AI_MODEL.
    */
-  private async executeGenerateContent(
+  private async executeInteraction(
     preferredModel: string,
-    params: {
-      config: Parameters<GoogleGenAI['models']['generateContent']>[0]['config'];
-      contents: string;
-    }
-  ) {
+    params: ExecuteModelInteractionParams
+  ): Promise<string> {
     try {
-      return await this.ai.models.generateContent({
+      const response = await this.ai.interactions.create({
         ...params,
-        model: preferredModel
+        model: preferredModel,
+        store: false
       });
+      return 'output_text' in response && response.output_text ? response.output_text : '';
     } catch (error) {
       if (preferredModel !== FALLBACK_AI_MODEL) {
         logger.warn(
           `AI request failed with primary model ${preferredModel}. Falling back to ${FALLBACK_AI_MODEL}...`,
           { error }
         );
-        return await this.ai.models.generateContent({
+        const fallbackResponse = await this.ai.interactions.create({
           ...params,
-          model: FALLBACK_AI_MODEL
+          generation_config: {
+            ...params.generation_config,
+            thinking_level: 'minimal'
+          },
+          model: FALLBACK_AI_MODEL,
+          store: false
         });
+        return 'output_text' in fallbackResponse && fallbackResponse.output_text
+          ? fallbackResponse.output_text
+          : '';
       }
       throw error;
     }
