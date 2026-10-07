@@ -1,3 +1,9 @@
+## [1.15.2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.1...v1.15.2) (2026-10-07)
+
+### Bug Fixes
+
+- **ai:** remove deprecated temperature parameter and update documentation ([6a6136f](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/6a6136fb28a1eb63dfa20e45ffcdf3c1723c0e98))
+
 ## [1.15.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.0...v1.15.1) (2026-09-19)
 
 ### Bug Fixes
