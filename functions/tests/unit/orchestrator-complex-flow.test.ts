@@ -38,7 +38,7 @@ describe('PlaylistOrchestrator - Complex Flow ("The Perfect Storm")', () => {
   let trackCleaner: TrackCleaner;
 
   const baseConfig: PlaylistConfig = {
-    aiGeneration: { enabled: true, model: 'gemini', temperature: 0.7, tracksToAdd: 5 },
+    aiGeneration: { enabled: true, model: 'gemini-3.8-flash', tracksToAdd: 5 },
     curationRules: {
       maxTrackAgeDays: 30,
       maxTracksPerArtist: 1, // Strict artist limit

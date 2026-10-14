@@ -1,4 +1,4 @@
-import { AiGenerationConfig, SearchResult } from '@smart-spotify-curator/shared';
+import { AiGenerationConfig, DEFAULT_AI_MODEL, SearchResult } from '@smart-spotify-curator/shared';
 import { Check, ChevronsUpDown, Loader2, Mic2, Wand2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -42,7 +42,6 @@ export const ArtistSelector = ({
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [nToGenerate, setNToGenerate] = useState(3);
-  const [temperature, setTemperature] = useState(0.7);
 
   const handleOpenChange = (newOpen: boolean) => {
     setOpen(newOpen);
@@ -101,22 +100,18 @@ export const ArtistSelector = ({
     }
     setGenerating(true);
     try {
-      // Allow user to override temperature locally for this suggestion
       const baseConfig: AiGenerationConfig = aiConfig || {
         enabled: true,
         isInstrumentalOnly: false,
-        model: 'gpt-4o',
-        temperature: 0.7,
+        model: DEFAULT_AI_MODEL,
         tracksToAdd: 0
       };
-
-      const effectiveConfig = { ...baseConfig, temperature };
 
       const suggested = await FunctionsService.suggestReferenceArtists(
         playlistName,
         description,
         nToGenerate,
-        effectiveConfig,
+        baseConfig,
         value.map((v) => v.name)
       );
 
@@ -213,25 +208,6 @@ export const ArtistSelector = ({
               min={1}
               onChange={(val) => setNToGenerate(val)}
               value={nToGenerate}
-            />
-          </div>
-
-          <div className="flex items-center gap-2">
-            <LabelWithTooltip
-              className="text-muted-foreground text-xs font-medium"
-              htmlFor="ai-temp"
-              tooltip="Creativity (Temperature). Higher values = more random/diverse suggestions."
-            >
-              Temperature:
-            </LabelWithTooltip>
-            <NumberInput
-              className="w-40"
-              id="ai-temp"
-              max={1}
-              min={0}
-              onChange={(val) => setTemperature(val)}
-              step={0.1}
-              value={temperature}
             />
           </div>
         </div>

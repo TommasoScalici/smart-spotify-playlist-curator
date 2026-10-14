@@ -1,5 +1,10 @@
-import { GoogleGenAI, Type } from '@google/genai';
-import { AiGenerationConfig } from '@smart-spotify-curator/shared';
+import { GoogleGenAI } from '@google/genai';
+import {
+  AiGenerationConfig,
+  DEFAULT_AI_MODEL,
+  FALLBACK_AI_MODEL,
+  SUPPORTED_AI_MODELS
+} from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 import { z } from 'zod';
 
@@ -38,6 +43,19 @@ const ArtistResponseSchema = z.array(
   })
 );
 
+interface ExecuteModelInteractionParams {
+  generation_config?: {
+    thinking_level?: 'high' | 'low' | 'medium' | 'minimal';
+  };
+  input: string;
+  response_format?: Array<{
+    mime_type: string;
+    schema: Record<string, unknown>;
+    type: string;
+  }>;
+  system_instruction?: string;
+}
+
 export class AiService {
   private ai: GoogleGenAI;
 
@@ -51,7 +69,7 @@ export class AiService {
   /**
    * Generates track suggestions using Google's Gemini AI.
    * Uses Native Structured Output and System Instruction prompting.
-   * @param aiConfig - The AI generation settings (model, temperature, etc.)
+   * @param aiConfig - The AI generation settings (model, instrumentalOnly, etc.)
    * @param prompt - The base prompt describing the playlist
    * @param count - Number of tracks to request
    * @param excludedTracks - List of "Artist - Track" strings to exclude
@@ -99,29 +117,31 @@ ${JSON.stringify(excludedTracks)}`;
 For each suggestion, state WHY this track fits the vibe and genre, and confirm its instrumental/vocal status.`;
 
     try {
-      const response = await this.ai.models.generateContent({
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            items: {
-              properties: {
-                artist: { type: Type.STRING },
-                reasoning: { type: Type.STRING },
-                track: { type: Type.STRING }
-              },
-              required: ['artist', 'track', 'reasoning'],
-              type: Type.OBJECT
-            },
-            type: Type.ARRAY
-          },
-          systemInstruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly),
-          temperature: aiConfig.temperature
+      const text = await this.executeInteraction(selectedModel, {
+        generation_config: {
+          thinking_level: 'low'
         },
-        contents: fullPrompt,
-        model: selectedModel
+        input: fullPrompt,
+        response_format: [
+          {
+            mime_type: 'application/json',
+            schema: {
+              items: {
+                properties: {
+                  artist: { type: 'string' },
+                  reasoning: { type: 'string' },
+                  track: { type: 'string' }
+                },
+                required: ['artist', 'track', 'reasoning'],
+                type: 'object'
+              },
+              type: 'array'
+            },
+            type: 'text'
+          }
+        ],
+        system_instruction: this.buildSystemInstruction(aiConfig.isInstrumentalOnly)
       });
-
-      const text = response.text || '';
 
       logger.info('AI Response received', {
         durationMs: Date.now() - requestStart
@@ -184,28 +204,30 @@ Suggest ONLY real, well-known artists that are on Spotify.`;
     }
 
     try {
-      const response = await this.ai.models.generateContent({
-        config: {
-          responseMimeType: 'application/json',
-          responseSchema: {
-            items: {
-              properties: {
-                name: { type: Type.STRING }
-              },
-              required: ['name'],
-              type: Type.OBJECT
-            },
-            type: Type.ARRAY
-          },
-          systemInstruction:
-            'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.',
-          temperature: generationConfig.temperature
+      const text = await this.executeInteraction(selectedModel, {
+        generation_config: {
+          thinking_level: 'minimal'
         },
-        contents: prompt,
-        model: selectedModel
+        input: prompt,
+        response_format: [
+          {
+            mime_type: 'application/json',
+            schema: {
+              items: {
+                properties: {
+                  name: { type: 'string' }
+                },
+                required: ['name'],
+                type: 'object'
+              },
+              type: 'array'
+            },
+            type: 'text'
+          }
+        ],
+        system_instruction:
+          'You are an expert music curator. Suggest only authentic, real artists on Spotify matching the exact playlist genre.'
       });
-
-      const text = response.text || '';
       const parsed = JSON.parse(text);
       const data = ArtistResponseSchema.parse(parsed);
 
@@ -256,9 +278,49 @@ CORE DUTIES & MANDATES:
     return instruction;
   }
 
+  /**
+   * Executes a Gemini Interactions API create call with automatic fallback to FALLBACK_AI_MODEL.
+   */
+  private async executeInteraction(
+    preferredModel: string,
+    params: ExecuteModelInteractionParams
+  ): Promise<string> {
+    try {
+      const response = await this.ai.interactions.create({
+        ...params,
+        model: preferredModel,
+        store: false
+      });
+      return 'output_text' in response && response.output_text ? response.output_text : '';
+    } catch (error) {
+      if (preferredModel !== FALLBACK_AI_MODEL) {
+        logger.warn(
+          `AI request failed with primary model ${preferredModel}. Falling back to ${FALLBACK_AI_MODEL}...`,
+          { error }
+        );
+        const fallbackResponse = await this.ai.interactions.create({
+          ...params,
+          generation_config: {
+            ...params.generation_config,
+            thinking_level: 'minimal'
+          },
+          model: FALLBACK_AI_MODEL,
+          store: false
+        });
+        return 'output_text' in fallbackResponse && fallbackResponse.output_text
+          ? fallbackResponse.output_text
+          : '';
+      }
+      throw error;
+    }
+  }
+
   private resolveModel(modelName?: string): string {
-    if (!modelName || modelName === 'gemini-2.5-flash') {
-      return 'gemini-3.6-flash';
+    if (
+      !modelName ||
+      !SUPPORTED_AI_MODELS.includes(modelName as (typeof SUPPORTED_AI_MODELS)[number])
+    ) {
+      return DEFAULT_AI_MODEL;
     }
     return modelName;
   }

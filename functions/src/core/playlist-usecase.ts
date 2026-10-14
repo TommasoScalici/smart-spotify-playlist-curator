@@ -37,6 +37,7 @@ export class PlaylistUseCase {
       lastCuratedAt = currentData?.lastCuratedAt || null;
 
       const needsUpdate =
+        (Boolean(playlistData.name) && playlistData.name !== currentData?.name) ||
         playlistData.imageUrl !== currentData?.imageUrl ||
         playlistData.owner !== currentData?.owner;
 
@@ -44,6 +45,7 @@ export class PlaylistUseCase {
         logger.info(`Syncing fresh metadata for playlist ${spotifyId}`);
         await playlistRef.update({
           imageUrl: playlistData.imageUrl || '',
+          name: playlistData.name || currentData?.name || '',
           owner: playlistData.owner || 'Unknown'
         });
       }
@@ -60,6 +62,7 @@ export class PlaylistUseCase {
       followers: playlistData.followers || 0,
       imageUrl: playlistData.imageUrl,
       lastUpdated: latestActivity,
+      name: playlistData.name,
       owner: playlistData.owner,
       tracks: playlistData.totalTracks || 0
     };

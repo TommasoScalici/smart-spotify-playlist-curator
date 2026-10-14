@@ -11,6 +11,7 @@ import {
   UseFormWatch
 } from 'react-hook-form';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
@@ -155,9 +156,9 @@ export const BasicSettings = ({
                     {displayName}
                   </h4>
                   {bgMetrics?.description && (
-                    <span className="text-muted-foreground bg-background/50 hidden rounded-full border px-1.5 py-0.5 text-[10px] tracking-wider uppercase sm:inline-block">
+                    <Badge className="hidden sm:inline-block" size="xs" variant="outline">
                       Original
-                    </span>
+                    </Badge>
                   )}
                 </div>
                 <p className="text-muted-foreground mt-1 flex items-center justify-center gap-1.5 truncate text-sm sm:justify-start">
@@ -208,7 +209,7 @@ export const BasicSettings = ({
           <Textarea
             id="description"
             {...register('settings.description')}
-            className="bg-muted min-h-[80px] cursor-not-allowed resize-none"
+            className="bg-muted min-h-20 cursor-not-allowed resize-none"
             placeholder="A brief description for the playlist cover."
             readOnly
           />

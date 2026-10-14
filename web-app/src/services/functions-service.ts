@@ -2,12 +2,17 @@ import {
   AiGenerationConfig,
   CurationEstimate,
   CurationEstimateSchema,
+  ExchangeSpotifyTokenResponse,
+  ExchangeSpotifyTokenResponseSchema,
   OrchestrationResult,
   OrchestrationResultSchema,
   PlaylistMetrics,
+  PlaylistMetricsSchema,
   SearchResult,
-  SpotifyProfile,
-  TrackInfo
+  SearchSpotifyResponseSchema,
+  SuggestReferenceArtistsResponseSchema,
+  TrackInfo,
+  TrackInfoSchema
 } from '@smart-spotify-curator/shared';
 import { httpsCallable } from 'firebase/functions';
 
@@ -32,12 +37,12 @@ export const FunctionsService = {
    * @returns Playlist metrics including followers, tracks, and last updated timestamp
    */
   async getPlaylistMetrics(playlistId: string): Promise<PlaylistMetrics> {
-    const getMetrics = httpsCallable<{ playlistId: string }, PlaylistMetrics>(
+    const getMetrics = httpsCallable<{ playlistId: string }, unknown>(
       functions,
       'getPlaylistMetrics'
     );
     const result = await getMetrics({ playlistId });
-    return result.data;
+    return PlaylistMetricsSchema.parse(result.data);
   },
 
   /**
@@ -46,9 +51,9 @@ export const FunctionsService = {
    * @returns Track metadata with name, artist, and imageUrl
    */
   async getTrackDetails(trackUri: string): Promise<TrackInfo> {
-    const getDetails = httpsCallable<{ trackUri: string }, TrackInfo>(functions, 'getTrackDetails');
+    const getDetails = httpsCallable<{ trackUri: string }, unknown>(functions, 'getTrackDetails');
     const result = await getDetails({ trackUri });
-    return result.data;
+    return TrackInfoSchema.parse(result.data);
   },
 
   /**
@@ -60,17 +65,13 @@ export const FunctionsService = {
   async linkSpotifyAccount(
     code: string,
     redirectUri: string
-  ): Promise<{ profile?: SpotifyProfile; success: boolean }> {
-    const exchange = httpsCallable<
-      { code: string; redirectUri: string },
-      { profile?: SpotifyProfile; success: boolean }
-    >(functions, 'exchangeSpotifyToken');
+  ): Promise<ExchangeSpotifyTokenResponse> {
+    const exchange = httpsCallable<{ code: string; redirectUri: string }, unknown>(
+      functions,
+      'exchangeSpotifyToken'
+    );
     const result = await exchange({ code, redirectUri });
-    const profile = result.data.profile;
-    if (profile && typeof profile.linkedAt === 'string') {
-      profile.linkedAt = new Date(profile.linkedAt);
-    }
-    return { profile, success: result.data.success };
+    return ExchangeSpotifyTokenResponseSchema.parse(result.data);
   },
 
   /**
@@ -83,12 +84,13 @@ export const FunctionsService = {
     query: string,
     type: 'artist' | 'playlist' | 'track'
   ): Promise<SearchResult[]> {
-    const search = httpsCallable<
-      { limit: number; query: string; type: string },
-      { results: SearchResult[] }
-    >(functions, 'searchSpotify');
+    const search = httpsCallable<{ limit: number; query: string; type: string }, unknown>(
+      functions,
+      'searchSpotify'
+    );
     const result = await search({ limit: 10, query, type });
-    return result.data.results;
+    const parsed = SearchSpotifyResponseSchema.parse(result.data);
+    return parsed.results;
   },
 
   /**
@@ -109,10 +111,11 @@ export const FunctionsService = {
         excludedArtists?: string[];
         playlistName: string;
       },
-      { artists: SearchResult[] }
+      unknown
     >(functions, 'suggestReferenceArtists');
     const result = await suggest({ aiConfig, count, description, excludedArtists, playlistName });
-    return result.data.artists;
+    const parsed = SuggestReferenceArtistsResponseSchema.parse(result.data);
+    return parsed.artists;
   },
 
   /**

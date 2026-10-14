@@ -81,10 +81,10 @@ export const ConfirmCurationModal = ({
 
   return (
     <Dialog onOpenChange={(open) => !open && handleClose()} open={isOpen}>
-      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-border/50 bg-background/80 text-foreground max-h-[90vh] w-[95vw] overflow-y-auto shadow-2xl backdrop-blur-xl duration-300 sm:max-w-125 md:max-w-200 lg:max-w-237.5">
+      <DialogContent className="animate-in fade-in zoom-in-95 data-[state=closed]:animate-out data-[state=closed]:fade-out data-[state=closed]:zoom-out-95 border-border/50 bg-background/80 text-foreground max-h-[90vh] w-[95vw] overflow-y-auto shadow-2xl backdrop-blur-xl duration-300 sm:max-w-lg md:max-w-2xl lg:max-w-4xl">
         <DialogHeader className="space-y-4">
           <DialogTitle className="flex items-center gap-3 text-2xl font-light tracking-wide">
-            <div className="bg-primary/20 text-primary flex h-10 w-10 items-center justify-center rounded-full shadow-[0_0_15px_rgba(29,185,84,0.3)]">
+            <div className="bg-primary/20 text-primary glow-primary flex h-10 w-10 items-center justify-center rounded-full">
               <Info className="h-5 w-5" />
             </div>
             <div className="flex flex-col">
@@ -321,9 +321,9 @@ export const ConfirmCurationModal = ({
             Cancel
           </Button>
           <Button
-            className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_20px_rgba(29,185,84,0.3)] transition-all hover:scale-105 active:scale-95"
             disabled={isLoading || !estimate}
             onClick={() => onConfirm(estimate?.planId, Array.from(excludedAiUris))}
+            variant="glow"
           >
             {isLoading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

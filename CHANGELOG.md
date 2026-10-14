@@ -1,3 +1,44 @@
+# [1.16.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.2...v1.16.0) (2026-10-07)
+
+### Features
+
+- **ai:** migrate to Interactions API with thinking level and stateless sessions ([d69bdbc](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/d69bdbcd08c38616b0dc05f900ca12734cbf5f13))
+
+## [1.15.2](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.1...v1.15.2) (2026-10-07)
+
+### Bug Fixes
+
+- **ai:** remove deprecated temperature parameter and update documentation ([6a6136f](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/6a6136fb28a1eb63dfa20e45ffcdf3c1723c0e98))
+
+## [1.15.1](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.0...v1.15.1) (2026-09-19)
+
+### Bug Fixes
+
+- **ai:** align supported models to Gemini 3.8 Flash default and 3.5 Flash-Lite alternative with automatic fallback ([9a8c4ca](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/9a8c4cafa7edc8fcdd87877f1364298e1d60f509))
+
+# [1.15.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.14.0...v1.15.0) (2026-09-19)
+
+### Features
+
+- **security:** enforce OAuth CSRF state, centralize Gemini 3.8 Flash and validate RPC boundaries ([f36ac68](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/f36ac6892c776b53d41d0a8e4d84d0c38131fd19))
+
+# [1.14.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.13.0...v1.14.0) (2026-09-19)
+
+### Features
+
+- implement centralized design system, resolve core bugs and upgrade dependencies ([34fc67b](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/34fc67b80b28fecf3c08e9a299e42f323b36dc11))
+
+# [1.13.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.12.0...v1.13.0) (2026-07-31)
+
+### Bug Fixes
+
+- **ci:** add build step in release job before semantic-release ([c677740](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/c6777401a8868d0542263b80d51fed79b2b8a5f6))
+- **ci:** align typescript composite project references, workspace builds and decouple script helpers ([7ffea4e](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/7ffea4eb78dabf9f2de9e21a7ea37d9aaaa81a79))
+
+### Features
+
+- **ai:** upgrade model to Gemini 3.6 Flash, update core dependencies & build system ([eee5299](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/eee5299b54d012d8d91ed9bcbad5f56326c77aed))
+
 # [1.12.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.11.3...v1.12.0) (2026-04-05)
 
 ### Features

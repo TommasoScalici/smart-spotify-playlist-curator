@@ -1,4 +1,10 @@
-import { PlaylistConfig, SearchResult } from '@smart-spotify-curator/shared';
+import {
+  DEFAULT_AI_MODEL,
+  FALLBACK_AI_MODEL,
+  PlaylistConfig,
+  SearchResult,
+  SUPPORTED_AI_MODELS
+} from '@smart-spotify-curator/shared';
 import { Bot, RefreshCw, Sparkles } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import {
@@ -13,7 +19,6 @@ import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LabelWithTooltip } from '@/components/ui/label-with-tooltip';
 import { NumberInput } from '@/components/ui/number-input';
@@ -26,7 +31,7 @@ import { ArtistSelector } from './ArtistSelector';
 interface AiSettingsProps {
   control: Control<PlaylistConfig>;
   errors: FieldErrors<PlaylistConfig>;
-  register: UseFormRegister<PlaylistConfig>;
+  register?: UseFormRegister<PlaylistConfig>;
   setValue?: UseFormSetValue<PlaylistConfig>;
   watch: UseFormWatch<PlaylistConfig>;
 }
@@ -95,7 +100,7 @@ function generatePromptPreview(
   return prompt;
 }
 
-export const AiSettings = ({ control, errors, register, setValue, watch }: AiSettingsProps) => {
+export const AiSettings = ({ control, errors, setValue, watch }: AiSettingsProps) => {
   const playlistName = watch('name');
   const playlistDescription = watch('settings.description');
   const isInstrumental = watch('aiGeneration.isInstrumentalOnly');
@@ -105,8 +110,12 @@ export const AiSettings = ({ control, errors, register, setValue, watch }: AiSet
   const currentModel = watch('aiGeneration.model');
 
   useEffect(() => {
-    if (setValue && (currentModel === 'gemini-2.5-flash' || !currentModel)) {
-      setValue('aiGeneration.model', 'gemini-3.6-flash', { shouldDirty: true });
+    if (
+      setValue &&
+      (!currentModel ||
+        !SUPPORTED_AI_MODELS.includes(currentModel as (typeof SUPPORTED_AI_MODELS)[number]))
+    ) {
+      setValue('aiGeneration.model', DEFAULT_AI_MODEL, { shouldDirty: true });
     }
   }, [currentModel, setValue]);
 
@@ -258,49 +267,38 @@ export const AiSettings = ({ control, errors, register, setValue, watch }: AiSet
               <Label className="text-muted-foreground mb-4 block text-xs tracking-wider uppercase">
                 Advanced Settings
               </Label>
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* Model */}
                 <div className="space-y-2">
                   <LabelWithTooltip
                     htmlFor="model"
-                    tooltip="The AI model used for generating suggestions. Currently fixed."
+                    tooltip="Choose the Gemini model: 3.8 Flash for maximum intelligence and nuance, or 3.5 Flash-Lite for high speed and cost efficiency."
                   >
                     AI Model
                   </LabelWithTooltip>
-                  <Input
-                    id="model"
-                    {...register('aiGeneration.model')}
-                    className="bg-muted"
-                    disabled
-                    value={
-                      currentModel === 'gemini-2.5-flash' || !currentModel
-                        ? 'gemini-3.6-flash'
-                        : currentModel
-                    }
-                  />
-                </div>
-                {/* Temperature */}
-                <div className="space-y-2">
-                  <LabelWithTooltip
-                    className={cn(errors.aiGeneration?.temperature && 'text-destructive')}
-                    htmlFor="temperature"
-                    tooltip="Controls the randomness of the AI. Lower values are more focused, higher values are more creative."
-                  >
-                    Temperature
-                  </LabelWithTooltip>
                   <Controller
                     control={control}
-                    name="aiGeneration.temperature"
+                    name="aiGeneration.model"
                     render={({ field }) => (
-                      <NumberInput
-                        className={cn(errors.aiGeneration?.temperature && 'border-destructive')}
-                        id="temperature"
-                        max={1}
-                        min={0}
-                        onChange={field.onChange}
-                        step={0.1}
-                        value={field.value || 0}
-                      />
+                      <select
+                        className="border-input bg-background/50 ring-offset-background focus-visible:ring-ring hover:bg-accent/5 flex h-11 w-full rounded-md border px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none dark:scheme-dark"
+                        id="model"
+                        {...field}
+                        value={
+                          SUPPORTED_AI_MODELS.includes(
+                            field.value as (typeof SUPPORTED_AI_MODELS)[number]
+                          )
+                            ? field.value
+                            : DEFAULT_AI_MODEL
+                        }
+                      >
+                        <option className="bg-background text-foreground" value={DEFAULT_AI_MODEL}>
+                          Gemini 3.8 Flash (Default / High Quality)
+                        </option>
+                        <option className="bg-background text-foreground" value={FALLBACK_AI_MODEL}>
+                          Gemini 3.5 Flash-Lite (Fast / Cost-Effective)
+                        </option>
+                      </select>
                     )}
                   />
                 </div>

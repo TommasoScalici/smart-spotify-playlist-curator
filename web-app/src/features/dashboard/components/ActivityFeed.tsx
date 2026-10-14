@@ -1,3 +1,4 @@
+import { formatDistanceToNow } from 'date-fns';
 import {
   Activity,
   AlertCircle,
@@ -13,6 +14,7 @@ import {
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,18 +23,12 @@ import { ActivityLog, useActivityFeed } from '@/features/dashboard/hooks/useActi
 import { cn } from '@/lib/utils';
 import { FirestoreService } from '@/services/firestore-service';
 
-// Simple time ago formatter
 const formatTimeAgo = (isoString: string) => {
-  const date = new Date(isoString);
-  const now = new Date();
-  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (seconds < 60) return 'just now';
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  try {
+    return formatDistanceToNow(new Date(isoString), { addSuffix: true });
+  } catch {
+    return 'recently';
+  }
 };
 
 // ...
@@ -85,7 +81,7 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
     <div
       className={cn(
         'custom-scrollbar space-y-4 overflow-y-auto pr-2',
-        isDrawer ? 'h-full p-6' : 'max-h-[300px]'
+        isDrawer ? 'h-full p-6' : 'max-h-75'
       )}
     >
       {loading && (
@@ -101,7 +97,7 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
       {!loading && activities.length > 0 && (
         <div className="mb-2 flex justify-end">
           <Button
-            className="hover:bg-destructive/10 hover:text-destructive group/clear h-7 gap-1.5 text-[10px] font-bold tracking-wider uppercase transition-all"
+            className="hover:bg-destructive/10 hover:text-destructive group/clear text-2xs h-7 gap-1.5 font-bold tracking-wider uppercase transition-all"
             onClick={handleClearAll}
             size="sm"
             variant="ghost"
@@ -169,20 +165,14 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
                   {meta?.playlistName || 'Unknown Playlist'}
                 </span>
               </div>
-              <span
-                className={cn(
-                  'rounded border px-2 py-0.5 text-[9px] font-bold tracking-wider uppercase',
-                  isError
-                    ? 'border-red-500/20 bg-red-500/10 text-red-500'
-                    : isSuccess
-                      ? 'border-green-500/20 bg-green-500/10 text-green-500'
-                      : isRunning
-                        ? 'border-blue-500/20 bg-blue-500/10 text-blue-500'
-                        : 'border-zinc-500/20 bg-zinc-500/10 text-zinc-500'
-                )}
+              <Badge
+                size="xs"
+                variant={
+                  isError ? 'destructive' : isSuccess ? 'success' : isRunning ? 'info' : 'outline'
+                }
               >
                 {meta?.state || 'idle'}
-              </span>
+              </Badge>
             </div>
 
             {/* Message */}
@@ -192,64 +182,64 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
             {meta && (
               <div className="mt-1 flex flex-wrap gap-1.5 pl-6">
                 {meta.diff?.added?.length || meta.addedCount ? (
-                  <span className="inline-flex items-center rounded border border-green-500/20 bg-green-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-green-500">
+                  <Badge size="xs" variant="success">
                     +{meta.diff?.added?.length || meta.addedCount} Added
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.removed?.length || meta.removedCount ? (
-                  <span className="inline-flex items-center rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-red-500">
+                  <Badge size="xs" variant="destructive">
                     -{meta.diff?.removed?.length || meta.removedCount} Removed
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.added?.filter((t) => t.reason === 'ai_suggestion').length ||
                 meta.aiTracksAdded ? (
-                  <span className="inline-flex items-center rounded border border-purple-500/20 bg-purple-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-purple-500">
+                  <Badge size="xs" variant="purple">
                     {meta.diff?.added?.filter((t) => t.reason === 'ai_suggestion').length ||
                       meta.aiTracksAdded}{' '}
                     AI
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.removed?.filter((t) => t.reason === 'duplicate').length ||
                 meta.duplicatesRemoved ? (
-                  <span className="inline-flex items-center rounded border border-amber-500/20 bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500">
+                  <Badge size="xs" variant="warning">
                     -
                     {meta.diff?.removed?.filter((t) => t.reason === 'duplicate').length ||
                       meta.duplicatesRemoved}{' '}
                     Dups
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.removed?.filter((t) => t.reason === 'expired').length ||
                 meta.expiredRemoved ? (
-                  <span className="inline-flex items-center rounded border border-rose-500/20 bg-rose-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-rose-500">
+                  <Badge size="xs" variant="pink">
                     -
                     {meta.diff?.removed?.filter((t) => t.reason === 'expired').length ||
                       meta.expiredRemoved}{' '}
                     Expired
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.removed?.filter((t) => t.reason === 'artist_limit').length ||
                 meta.artistLimitRemoved ? (
-                  <span className="inline-flex items-center rounded border border-indigo-500/20 bg-indigo-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-indigo-500">
+                  <Badge size="xs" variant="indigo">
                     -
                     {meta.diff?.removed?.filter((t) => t.reason === 'artist_limit').length ||
                       meta.artistLimitRemoved}{' '}
                     Artist Limit
-                  </span>
+                  </Badge>
                 ) : null}
                 {meta.diff?.removed?.filter((t) => t.reason === 'size_limit').length ||
                 meta.sizeLimitRemoved ? (
-                  <span className="inline-flex items-center rounded border border-pink-500/20 bg-pink-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-pink-500">
+                  <Badge size="xs" variant="pink">
                     -
                     {meta.diff?.removed?.filter((t) => t.reason === 'size_limit').length ||
                       meta.sizeLimitRemoved}{' '}
                     Size Limit
-                  </span>
+                  </Badge>
                 ) : null}
               </div>
             )}
 
             {/* Footer Info */}
-            <div className="text-muted-foreground flex w-full flex-wrap items-center gap-2 pt-2 pl-6 text-[10px] font-medium">
+            <div className="text-muted-foreground text-2xs flex w-full flex-wrap items-center gap-2 pt-2 pl-6 font-medium">
               <div className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 <span>{formatTimeAgo(activity.timestamp)}</span>
@@ -259,10 +249,7 @@ export const ActivityFeed = ({ isDrawer, onActivitySelect, onClose }: ActivityFe
                 <div className="flex items-center gap-1">
                   <span className="opacity-50">•</span>
                   <User className="h-3 w-3" />
-                  <span
-                    className="max-w-[100px] truncate"
-                    title={`Triggered by ${meta.triggeredBy}`}
-                  >
+                  <span className="max-w-25 truncate" title={`Triggered by ${meta.triggeredBy}`}>
                     {meta.triggeredBy}
                   </span>
                 </div>

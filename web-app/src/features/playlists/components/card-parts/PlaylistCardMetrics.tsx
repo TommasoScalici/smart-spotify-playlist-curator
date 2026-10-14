@@ -26,7 +26,7 @@ export const PlaylistCardMetrics = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex cursor-help flex-col items-center justify-center p-1 text-center">
-                <span className="text-muted-foreground mb-1 text-[10px] font-medium tracking-tight uppercase">
+                <span className="text-muted-foreground text-2xs mb-1 font-medium tracking-tight uppercase">
                   Followers
                 </span>
                 <div className="text-foreground flex items-center gap-1 text-sm font-bold">
@@ -44,7 +44,7 @@ export const PlaylistCardMetrics = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex cursor-help flex-col items-center justify-center border-x border-white/5 p-1 text-center">
-                <span className="text-muted-foreground mb-1 text-[10px] font-medium tracking-tight uppercase">
+                <span className="text-muted-foreground text-2xs mb-1 font-medium tracking-tight uppercase">
                   Activity
                 </span>
                 <div className="flex items-center gap-1 text-xs font-bold text-amber-400">
@@ -71,7 +71,7 @@ export const PlaylistCardMetrics = ({
           <Tooltip>
             <TooltipTrigger asChild>
               <div className="flex cursor-help flex-col items-center justify-center p-1 text-center">
-                <span className="text-muted-foreground mb-1 text-[10px] font-medium tracking-tight uppercase">
+                <span className="text-muted-foreground text-2xs mb-1 font-medium tracking-tight uppercase">
                   Tracks
                 </span>
                 <div className="text-foreground flex items-center gap-1 text-sm font-bold">

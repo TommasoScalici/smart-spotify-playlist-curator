@@ -23,8 +23,7 @@ const mockConfig: { _docId: string } & PlaylistConfig = {
   _docId: 'doc123', // Firestore Doc ID
   aiGeneration: {
     enabled: true,
-    model: 'gemini-1.5-flash',
-    temperature: 0.7,
+    model: 'gemini-3.8-flash',
     tracksToAdd: 10
   },
   curationRules: {
@@ -122,5 +121,14 @@ describe('PlaylistCard', () => {
 
     // Dialog should open
     expect(await screen.findByText('Delete Playlist from App?')).toBeInTheDocument();
+  });
+
+  it('renders card content without flashing full-card skeleton when metrics are loading', () => {
+    (FunctionsService.getPlaylistMetrics as Mock).mockReturnValue(new Promise(() => {}));
+
+    render(<PlaylistCard config={mockConfig} />, { wrapper: createWrapper() });
+
+    expect(screen.getByText('Chill Vibes')).toBeInTheDocument();
+    expect(screen.queryByTestId('skeleton')).not.toBeInTheDocument();
   });
 });

@@ -60,12 +60,7 @@ export const triggerCuration = onCall(
   {
     cors: true,
     memory: '512MiB',
-    secrets: [
-      'SPOTIFY_CLIENT_ID',
-      'SPOTIFY_CLIENT_SECRET',
-      'SPOTIFY_REFRESH_TOKEN',
-      'GOOGLE_AI_API_KEY'
-    ],
+    secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'GOOGLE_AI_API_KEY'],
     timeoutSeconds: 540
   },
   (request) => triggerCurationHandler(request)
@@ -74,12 +69,7 @@ export const triggerCuration = onCall(
 export const estimateCuration = onCall(
   {
     cors: true,
-    secrets: [
-      'SPOTIFY_CLIENT_ID',
-      'SPOTIFY_CLIENT_SECRET',
-      'SPOTIFY_REFRESH_TOKEN',
-      'GOOGLE_AI_API_KEY'
-    ],
+    secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'GOOGLE_AI_API_KEY'],
     timeoutSeconds: 120
   },
   (request) => estimateCurationHandler(request)
@@ -89,12 +79,7 @@ export const estimateCuration = onCall(
 export const suggestReferenceArtists = onCall(
   {
     cors: true,
-    secrets: [
-      'SPOTIFY_CLIENT_ID',
-      'SPOTIFY_CLIENT_SECRET',
-      'SPOTIFY_REFRESH_TOKEN',
-      'GOOGLE_AI_API_KEY'
-    ],
+    secrets: ['SPOTIFY_CLIENT_ID', 'SPOTIFY_CLIENT_SECRET', 'GOOGLE_AI_API_KEY'],
     timeoutSeconds: 60
   },
   (request) => suggestReferenceArtistsHandler(request)

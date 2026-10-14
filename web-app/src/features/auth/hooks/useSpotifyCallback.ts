@@ -14,12 +14,52 @@ export function useSpotifyCallback() {
   const linkingRef = useRef(false);
 
   const code = searchParams.get('code');
-  const [status, setStatus] = useState<'error' | 'processing' | 'success'>(() => {
-    return code ? 'processing' : 'error';
-  });
-  const [errorMsg, setErrorMsg] = useState(() => {
-    return code ? '' : 'No authentication code received from Spotify.';
-  });
+  const errorParam = searchParams.get('error');
+  const errorDescription = searchParams.get('error_description');
+
+  const getInitialState = () => {
+    const stateParam = searchParams.get('state');
+    const storedState = sessionStorage.getItem('spotify_auth_state');
+
+    if (errorParam === 'access_denied') {
+      if (storedState) sessionStorage.removeItem('spotify_auth_state');
+      return {
+        errorMsg:
+          'Spotify authorization was cancelled or denied. Please grant permissions to proceed.',
+        status: 'error' as const
+      };
+    }
+    if (errorParam) {
+      if (storedState) sessionStorage.removeItem('spotify_auth_state');
+      return {
+        errorMsg: errorDescription || `Spotify authorization failed (${errorParam}).`,
+        status: 'error' as const
+      };
+    }
+    if (storedState) {
+      sessionStorage.removeItem('spotify_auth_state');
+      if (!stateParam || stateParam !== storedState) {
+        return {
+          errorMsg: 'Invalid or missing authorization state. Possible CSRF security risk detected.',
+          status: 'error' as const
+        };
+      }
+    }
+    if (!code) {
+      return {
+        errorMsg: 'No authentication code received from Spotify.',
+        status: 'error' as const
+      };
+    }
+    return {
+      errorMsg: '',
+      status: 'processing' as const
+    };
+  };
+
+  const initialState = getInitialState();
+  const [status, setStatus] = useState<'error' | 'processing' | 'success'>(initialState.status);
+  const [errorMsg, setErrorMsg] = useState(initialState.errorMsg);
 
   const { data: spotifyData } = useSpotifyStatus(user?.uid);
   const isActuallyLinked = spotifyData?.isLinked;

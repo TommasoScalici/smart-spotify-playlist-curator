@@ -34,10 +34,10 @@ export const PlaylistCardFooter = ({
 
   return (
     <CardFooter className="relative z-10 mt-auto flex gap-3 p-5 pt-2">
-      <div className="flex min-h-[44px] flex-1 flex-col justify-center">
+      <div className="flex min-h-11 flex-1 flex-col justify-center">
         {isRunning || isError ? (
           <div className="animate-in fade-in slide-in-from-bottom-2 space-y-1.5 duration-300">
-            <div className="flex items-center justify-between px-0.5 text-[10px]">
+            <div className="text-2xs flex items-center justify-between px-0.5">
               <span
                 className={cn(
                   'font-semibold tracking-wider uppercase',
@@ -56,7 +56,7 @@ export const PlaylistCardFooter = ({
               value={isError ? 100 : latestLog?.metadata?.progress || 0}
             />
             {isError && (
-              <p className="text-destructive line-clamp-2 text-[10px] leading-tight font-medium">
+              <p className="text-destructive text-2xs line-clamp-2 leading-tight font-medium">
                 {latestLog?.metadata?.error || 'An unexpected error occurred.'}
               </p>
             )}
@@ -65,7 +65,7 @@ export const PlaylistCardFooter = ({
           <div className="flex w-full gap-2">
             <Button
               aria-label="Edit playlist settings"
-              className="group/btn text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-secondary/10 h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
+              className="group/btn text-muted-foreground hover:text-secondary hover:bg-secondary/10 hover:border-secondary/30 hover:shadow-secondary/10 h-10 min-h-11 w-10 min-w-11 border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
               onClick={onEdit}
               size="icon"
               variant="outline"
@@ -75,7 +75,7 @@ export const PlaylistCardFooter = ({
 
             <Button
               aria-label="Delete playlist"
-              className="group/del text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-destructive/10 h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
+              className="group/del text-muted-foreground hover:text-destructive hover:bg-destructive/10 hover:border-destructive/30 hover:shadow-destructive/10 h-10 min-h-11 w-10 min-w-11 border-white/10 bg-white/5 transition-all hover:scale-105 hover:shadow-lg active:scale-95"
               onClick={onDelete}
               size="icon"
               variant="outline"
@@ -84,7 +84,7 @@ export const PlaylistCardFooter = ({
             </Button>
 
             <RunButton
-              className="h-10 min-h-[44px] flex-1"
+              className="h-10 min-h-11 flex-1"
               curationRules={config.curationRules}
               disabled={!config.enabled}
               onRunComplete={onRunComplete}
@@ -96,7 +96,7 @@ export const PlaylistCardFooter = ({
             <Button
               aria-label="View curation history"
               className={cn(
-                'text-muted-foreground h-10 min-h-[44px] w-10 min-w-[44px] border-white/10 bg-white/5 transition-all',
+                'text-muted-foreground h-10 min-h-11 w-10 min-w-11 border-white/10 bg-white/5 transition-all',
                 !latestLog?.metadata?.diff
                   ? 'cursor-not-allowed opacity-40'
                   : 'hover:text-primary hover:bg-primary/10 hover:border-primary/30 hover:shadow-primary/10 hover:scale-105 hover:shadow-lg'

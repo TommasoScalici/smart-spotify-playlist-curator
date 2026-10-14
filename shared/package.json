@@ -10,14 +10,14 @@
     }
   },
   "scripts": {
-    "build": "tsc",
+    "build": "tsc -b",
     "format": "prettier --write .",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",
     "test": "vitest run"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.5"
   },
   "devDependencies": {}
 }

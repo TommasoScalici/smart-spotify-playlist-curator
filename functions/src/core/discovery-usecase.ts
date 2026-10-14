@@ -1,4 +1,4 @@
-import { SearchResult } from '@smart-spotify-curator/shared';
+import { DEFAULT_AI_MODEL, SearchResult } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
 
 import { ServiceFactory } from '../admin/factory.js';
@@ -7,7 +7,6 @@ import { getAuthorizedSpotifyService, persistSpotifyTokens } from './auth-servic
 export interface SuggestArtistsParams {
   aiConfig?: {
     model?: string;
-    temperature?: number;
   };
   count?: number;
   description?: string;
@@ -23,8 +22,7 @@ export class DiscoveryUseCase {
 
     const finalAiConfig = {
       enabled: true,
-      model: aiConfig?.model || 'gemini-2.5-flash',
-      temperature: aiConfig?.temperature || 0.7,
+      model: aiConfig?.model || DEFAULT_AI_MODEL,
       tracksToAdd: 0
     };
 

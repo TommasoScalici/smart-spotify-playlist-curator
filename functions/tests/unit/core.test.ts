@@ -10,8 +10,7 @@ describe('Core Logic', () => {
     aiGeneration: {
       enabled: true,
       isInstrumentalOnly: false,
-      model: 'gemini-2.5-flash',
-      temperature: 0.7,
+      model: 'gemini-3.8-flash',
       tracksToAdd: 5
     },
     curationRules: {

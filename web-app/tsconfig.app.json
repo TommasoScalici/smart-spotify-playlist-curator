@@ -16,8 +16,10 @@
     "types": ["vitest/globals", "node"],
     "noUncheckedSideEffectImports": true,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@smart-spotify-curator/shared": ["../shared/dist/index.d.ts"]
     }
   },
-  "include": ["src"]
+  "include": ["src"],
+  "references": [{ "path": "../shared" }]
 }

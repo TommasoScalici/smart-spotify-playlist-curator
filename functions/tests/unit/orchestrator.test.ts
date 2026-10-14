@@ -52,8 +52,7 @@ describe('PlaylistOrchestrator', () => {
   const mockConfig: PlaylistConfig = {
     aiGeneration: {
       enabled: true,
-      model: 'gemini',
-      temperature: 0.7,
+      model: 'gemini-3.8-flash',
       tracksToAdd: 10
     },
     curationRules: {

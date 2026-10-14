@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { User } from 'firebase/auth';
 import { BrowserRouter } from 'react-router-dom';
-import { beforeEach, describe, expect, it, Mock, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, Mock, vi } from 'vitest';
 
 import { AuthContext } from '@/contexts/AuthContext';
 import { useSpotifyStatus } from '@/features/auth/hooks/useSpotifyStatus';
@@ -16,6 +16,76 @@ import { MainLayout } from '../MainLayout';
 vi.mock('@/features/auth/hooks/useSpotifyStatus');
 vi.mock('@/services/firestore-service');
 vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+
+vi.mock('@/components/ui/dropdown-menu', async () => {
+  const React = await import('react');
+  const DropdownContext = React.createContext<{
+    open: boolean;
+    setOpen: (val: boolean) => void;
+  }>({
+    open: false,
+    setOpen: () => {}
+  });
+
+  return {
+    DropdownMenu: ({ children }: { children: React.ReactNode }) => {
+      const [open, setOpen] = React.useState(false);
+      return (
+        <DropdownContext.Provider value={{ open, setOpen }}>
+          <div>{children}</div>
+        </DropdownContext.Provider>
+      );
+    },
+    DropdownMenuContent: ({ children }: { children: React.ReactNode }) => {
+      const { open } = React.useContext(DropdownContext);
+      if (!open) return null;
+      return <div role="menu">{children}</div>;
+    },
+    DropdownMenuItem: ({
+      children,
+      className,
+      onClick,
+      onSelect
+    }: {
+      children: React.ReactNode;
+      className?: string;
+      onClick?: (e: React.MouseEvent) => void;
+      onSelect?: (e: React.MouseEvent) => void;
+    }) => {
+      const { setOpen } = React.useContext(DropdownContext);
+      return (
+        <button
+          className={className}
+          onClick={(e) => {
+            onClick?.(e);
+            onSelect?.(e);
+            setOpen(false);
+          }}
+          role="menuitem"
+          type="button"
+        >
+          {children}
+        </button>
+      );
+    },
+    DropdownMenuLabel: ({
+      children,
+      className
+    }: {
+      children: React.ReactNode;
+      className?: string;
+    }) => <div className={className}>{children}</div>,
+    DropdownMenuSeparator: () => <hr />,
+    DropdownMenuTrigger: ({ children }: { children: React.ReactNode }) => {
+      const { setOpen } = React.useContext(DropdownContext);
+      return (
+        <div data-testid="dropdown-trigger" onClick={() => setOpen(true)}>
+          {children}
+        </div>
+      );
+    }
+  };
+});
 
 // Mock ResizeObserver
 global.ResizeObserver = class ResizeObserver {
@@ -44,6 +114,7 @@ const createWrapper = () => {
 
 describe('Layout', () => {
   const mockSignOut = vi.fn();
+  let userActor: ReturnType<typeof userEvent.setup>;
 
   const renderLayout = (user: null | Partial<User>) => {
     return render(
@@ -58,6 +129,15 @@ describe('Layout', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    userActor = userEvent.setup();
+  });
+
+  afterEach(() => {
+    cleanup();
+    document.body.innerHTML = '';
+    document.body.removeAttribute('style');
+    document.body.removeAttribute('aria-hidden');
+    document.body.removeAttribute('data-scroll-locked');
   });
 
   it('renders sign in prompt when user is not logged in', () => {
@@ -102,7 +182,6 @@ describe('Layout', () => {
     const user = { displayName: 'Test User', email: 'test@test.com', uid: '123' };
     (useSpotifyStatus as Mock).mockReturnValue({ data: { isLinked: false }, isLoading: false });
 
-    const userActor = userEvent.setup();
     renderLayout(user);
 
     // Open dropdown
@@ -114,6 +193,7 @@ describe('Layout', () => {
     await userActor.click(logoutBtn);
 
     expect(mockSignOut).toHaveBeenCalled();
+    await waitFor(() => expect(screen.queryByText('Log out')).not.toBeInTheDocument());
   });
 
   it('handles unlink spotify account', async () => {
@@ -123,7 +203,6 @@ describe('Layout', () => {
       isLoading: false
     });
 
-    const userActor = userEvent.setup();
     renderLayout(user);
 
     // Open dropdown
@@ -143,6 +222,10 @@ describe('Layout', () => {
 
     await waitFor(() => {
       expect(FirestoreService.unlinkSpotifyAccount).toHaveBeenCalledWith('123');
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText('Unlink Spotify Account?')).not.toBeInTheDocument();
     });
   });
 });

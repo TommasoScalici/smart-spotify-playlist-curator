@@ -58,21 +58,14 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
     [config.id, config.enabled]
   );
 
-  if (isLoadingMetrics) {
-    return <PlaylistCardSkeleton />;
-  }
-
   return (
     <Card
       className={cn(
-        'group relative flex h-full min-h-65 flex-col overflow-hidden border-0 transition-all duration-500',
+        'group relative flex h-full min-h-65 flex-col overflow-hidden transition-all duration-500',
         'hover:-translate-y-1 hover:shadow-2xl',
-        // Glassmorphism Base
-        'bg-card/40 backdrop-blur-xl',
-        // Border Gradient Trick
-        'before:absolute before:inset-0 before:-z-10 before:rounded-xl before:bg-linear-to-b before:from-white/10 before:to-white/5 before:p-px',
         !config.enabled && 'opacity-60 grayscale-[0.8] hover:grayscale-0'
       )}
+      variant="glass"
     >
       {/* Dynamic Background Mesh */}
       <div
@@ -86,6 +79,7 @@ export const PlaylistCard = ({ config }: PlaylistCardProps) => {
         config={config}
         imageUrl={metrics?.imageUrl}
         isToggling={isToggling}
+        name={metrics?.name}
         onToggle={toggleEnabled}
         owner={metrics?.owner}
       />

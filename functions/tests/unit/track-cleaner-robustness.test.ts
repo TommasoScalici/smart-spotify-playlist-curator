@@ -5,7 +5,7 @@ import { TrackCleaner } from '../../src/core/track-cleaner';
 
 describe('TrackCleaner Robustness', () => {
   const mockConfig: PlaylistConfig = {
-    aiGeneration: { enabled: false, model: 'gemini', temperature: 0.7, tracksToAdd: 0 },
+    aiGeneration: { enabled: false, model: 'gemini-3.8-flash', tracksToAdd: 0 },
     curationRules: {
       maxTrackAgeDays: 100,
       maxTracksPerArtist: 10,
@@ -55,6 +55,32 @@ describe('TrackCleaner Robustness', () => {
     const result = cleaner.processCurrentTracks(tracks, mockConfig, []);
     expect(result.survivingTracks).toHaveLength(1);
     expect(result.removedTracks[0].reason).toBe('duplicate');
+  });
+
+  it('should deduplicate tracks across single and album releases with different album names', () => {
+    const cleaner = new TrackCleaner();
+    const tracks: TrackInfo[] = [
+      {
+        ...baseTrack,
+        album: 'Thriller',
+        artist: 'Michael Jackson',
+        name: 'Billie Jean',
+        uri: 'spotify:track:album1'
+      },
+      {
+        ...baseTrack,
+        album: 'Billie Jean - Single',
+        artist: 'Michael Jackson',
+        name: 'Billie Jean - Remastered',
+        uri: 'spotify:track:single1'
+      }
+    ];
+
+    const result = cleaner.processCurrentTracks(tracks, mockConfig, []);
+    expect(result.survivingTracks).toHaveLength(1);
+    expect(result.removedTracks).toHaveLength(1);
+    expect(result.removedTracks[0].reason).toBe('duplicate');
+    expect(result.removedTracks[0].uri).toBe('spotify:track:single1');
   });
 
   it('should deduplicate multiple artists permutations if string matches exactly (Simple Normalization)', () => {

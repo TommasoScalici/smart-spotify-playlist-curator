@@ -14,6 +14,14 @@ export const TrackInfoSchema = z.object({
 
 export type TrackInfo = z.infer<typeof TrackInfoSchema>;
 
+export const GetTrackDetailsRequestSchema = z.object({
+  trackUri: z
+    .string()
+    .startsWith('spotify:track:', { message: 'Must be a valid Spotify Track URI' })
+});
+
+export type GetTrackDetailsRequest = z.infer<typeof GetTrackDetailsRequestSchema>;
+
 export const PositionRangeSchema = z
   .object({
     max: z.number().min(1),
