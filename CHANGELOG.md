@@ -1,3 +1,9 @@
+# [1.17.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.16.0...v1.17.0) (2026-10-14)
+
+### Features
+
+- **web-app:** upgrade firebase to v13 and add @grpc/grpc-js override ([#5](https://github.com/TommasoScalici/smart-spotify-playlist-curator/issues/5)) ([a29dc81](https://github.com/TommasoScalici/smart-spotify-playlist-curator/commit/a29dc81df3916d71c000c8165a6dea61b223a99e))
+
 # [1.16.0](https://github.com/TommasoScalici/smart-spotify-playlist-curator/compare/v1.15.2...v1.16.0) (2026-10-07)
 
 ### Features
