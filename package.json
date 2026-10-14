@@ -72,7 +72,7 @@
     "vitest": "^4.1.11"
   },
   "overrides": {
-    "fast-xml-parser": "5.3.7",
+    "fast-xml-parser": "5.10.1",
     "eslint-plugin-react-hooks": {
       "eslint": "^10.11.0"
     }
