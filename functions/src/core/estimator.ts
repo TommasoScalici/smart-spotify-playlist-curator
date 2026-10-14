@@ -4,7 +4,7 @@ import {
   PlaylistConfig
 } from '@smart-spotify-curator/shared';
 import * as logger from 'firebase-functions/logger';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'node:crypto';
 
 import { db } from '../admin/firebase.js';
 import { SpotifyService } from '../services/spotify-service.js';
@@ -39,7 +39,7 @@ export class CurationEstimator {
     );
 
     // 2. Validate/Sanitize Session for Storage
-    const planId = uuidv4();
+    const planId = randomUUID();
     const planRef = db.doc(`users/${uid}/curationPlans/${planId}`);
 
     // Save Plan
