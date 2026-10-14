@@ -72,6 +72,7 @@
   },
   "overrides": {
     "fast-xml-parser": "5.10.1",
+    "@grpc/grpc-js": "^1.14.6",
     "eslint-plugin-react-hooks": {
       "eslint": "^10.11.0"
     }
